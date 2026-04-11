@@ -1,57 +1,86 @@
-const USER_TYPES = [
-  {
-    id: 'corporate',
-    label: 'Corporate',
-    sub: 'In a company or org',
-  },
-  {
-    id: 'self-employed',
-    label: 'Self-employed',
-    sub: 'Freelance, founder, or solo',
-  },
-  {
-    id: 'student',
-    label: 'Student',
-    sub: 'Full-time or part-time',
-  },
-  {
-    id: 'figuring-it-out',
-    label: 'Figuring it out',
-    sub: 'Between things or in flux',
-  },
+import { useState } from 'react'
+import OnboardingCorporate from './OnboardingCorporate'
+import OnboardingSelfEmployed from './OnboardingSelfEmployed'
+import OnboardingStudent from './OnboardingStudent'
+import OnboardingFiguringItOut from './OnboardingFiguringItOut'
+
+const SITUATIONS = [
+  { id: 'corporate', label: 'Corporate', sub: 'In a company or organisation' },
+  { id: 'self-employed', label: 'Self-employed', sub: 'Freelance, founder, or solo' },
+  { id: 'student', label: 'Student', sub: 'Full-time or part-time study' },
+  { id: 'figuring-it-out', label: 'Figuring it out', sub: 'Between things or in flux' },
 ]
 
-export default function Onboarding({ onComplete }) {
+function SituationPicker({ onSelect, onBack }) {
   return (
-    <div className="screen justify-between">
-      <div>
-        <div className="mb-10">
-          <p className="text-xs tracking-widest uppercase text-stone-400 mb-3">Daily Focus</p>
-          <h1 className="text-3xl font-bold text-stone-900 leading-tight mb-2">
+    <div className="screen">
+      <div className="flex-1 overflow-y-auto">
+        <div className="mb-6">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-sm font-medium mb-5 transition-colors"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Back
+          </button>
+
+          <span
+            style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)' }}
+            className="text-[13px] font-light block mb-4"
+          >
+            daye
+          </span>
+
+          <h1
+            style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-ink)' }}
+            className="text-[26px] font-light leading-tight mb-1"
+          >
             What's your situation?
           </h1>
-          <p className="text-stone-400 text-sm">
-            This helps tailor your daily focus to what actually matters for you.
+          <p className="text-[13px]" style={{ color: 'var(--color-muted)' }}>
+            This tailors everything to what actually matters for you.
           </p>
         </div>
 
-        <div className="space-y-3">
-          {USER_TYPES.map((type) => (
+        <div className="space-y-2">
+          {SITUATIONS.map((s) => (
             <button
-              key={type.id}
-              onClick={() => onComplete(type.id)}
-              className="w-full text-left p-5 bg-white rounded-2xl border border-stone-100 active:bg-stone-50 transition-all duration-150 active:scale-[0.99]"
+              key={s.id}
+              onClick={() => onSelect(s.id)}
+              className="select-card w-full text-left"
             >
-              <div className="font-semibold text-stone-900 text-base">{type.label}</div>
-              <div className="text-stone-400 text-sm mt-0.5">{type.sub}</div>
+              <div className="font-medium text-sm" style={{ color: 'var(--color-ink)' }}>{s.label}</div>
+              <div className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>{s.sub}</div>
             </button>
           ))}
         </div>
       </div>
 
-      <p className="text-center text-xs text-stone-300 pt-8">
-        You can change this any time in settings.
+      <p className="flex-shrink-0 text-center text-xs pt-4" style={{ color: 'var(--color-muted)', opacity: 0.6 }}>
+        You can update this any time in settings.
       </p>
     </div>
   )
+}
+
+export default function Onboarding({ onComplete, onBack }) {
+  const [userType, setUserType] = useState(null)
+
+  const handlePathBack = () => setUserType(null)
+
+  if (!userType) {
+    return <SituationPicker onSelect={setUserType} onBack={onBack} />
+  }
+
+  const wrap = (profile) => onComplete({ ...profile, userType })
+
+  if (userType === 'corporate') return <OnboardingCorporate onComplete={wrap} onBack={handlePathBack} />
+  if (userType === 'self-employed') return <OnboardingSelfEmployed onComplete={wrap} onBack={handlePathBack} />
+  if (userType === 'student') return <OnboardingStudent onComplete={wrap} onBack={handlePathBack} />
+  if (userType === 'figuring-it-out') return <OnboardingFiguringItOut onComplete={wrap} onBack={handlePathBack} />
+
+  return null
 }

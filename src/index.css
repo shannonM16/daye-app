@@ -1,6 +1,22 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --color-ink: #1a1a1a;
+    --color-linen: #f9f7f5;
+    --color-linen-dark: #f0ede8;
+    --color-border: #e2ddd8;
+    --color-border-dark: #c8c0b8;
+    --color-lavender: #ddd8f0;
+    --color-blush: #f0d8d8;
+    --color-sage: #d8edd8;
+    --color-muted: #8a8480;
+    --color-white: #ffffff;
+
+    --font-serif: 'Cormorant Garamond', Georgia, serif;
+    --font-sans: 'DM Sans', system-ui, sans-serif;
+  }
+
   * {
     box-sizing: border-box;
   }
@@ -12,61 +28,232 @@
   }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background: #fafafa;
-    color: #111;
+    font-family: var(--font-sans);
+    background: var(--color-linen);
+    color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
   }
 }
 
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes loadingPulse {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(340%); }
+}
+
 @layer components {
-  .chip {
-    @apply px-4 py-2 rounded-full border border-stone-200 text-sm font-medium text-stone-600 cursor-pointer transition-all duration-150 select-none;
+
+  /* ── Layout ── */
+  .screen {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    max-width: 430px;
+    margin: 0 auto;
+    background: var(--color-linen);
+    animation: slideIn 220ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .chip-active {
-    @apply bg-stone-900 border-stone-900 text-white;
-  }
-
+  /* ── Buttons ── */
   .btn-primary {
-    @apply w-full py-4 bg-stone-900 text-white font-semibold rounded-2xl text-base tracking-wide transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed;
+    width: 100%;
+    padding: 15px 20px;
+    background: var(--color-ink);
+    color: var(--color-white);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
   }
 
   .btn-ghost {
-    @apply w-full py-3 border border-stone-200 text-stone-600 font-medium rounded-2xl text-sm transition-all duration-150 active:scale-95;
+    width: 100%;
+    padding: 13px 20px;
+    background: transparent;
+    color: var(--color-muted);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 400;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, transform 0.1s;
   }
 
+  .btn-ghost:active {
+    transform: scale(0.98);
+    color: var(--color-ink);
+    border-color: var(--color-border-dark);
+  }
+
+  /* ── Chips (pill style) ── */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--color-white);
+    border: 0.5px solid var(--color-border);
+    border-radius: 20px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--color-ink);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.1s;
+    user-select: none;
+  }
+
+  .chip:active {
+    transform: scale(0.96);
+  }
+
+  .chip-active {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-white);
+  }
+
+  /* ── Grid chips (full-width, 2-col) ── */
+  .grid-chip {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--color-white);
+    border: 0.5px solid var(--color-border);
+    border-radius: 12px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--color-ink);
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.1s;
+    user-select: none;
+  }
+
+  .grid-chip:active {
+    transform: scale(0.97);
+  }
+
+  .grid-chip-active {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-white);
+  }
+
+  /* ── Cards ── */
   .card {
-    @apply bg-white rounded-3xl p-6 border border-stone-100;
+    background: var(--color-white);
+    border-radius: 20px;
+    padding: 20px;
+    border: 1px solid var(--color-border);
   }
 
-  .screen {
-    @apply min-h-screen flex flex-col px-5 py-8 max-w-md mx-auto;
+  /* ── Select cards (onboarding single/multi choice) ── */
+  .select-card {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
   }
 
+  .select-card:active {
+    transform: scale(0.99);
+  }
+
+  .select-card-active {
+    border-color: var(--color-ink);
+    border-left: 3px solid var(--color-ink);
+  }
+
+  /* ── Input fields ── */
+  .input-field {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--color-ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .input-field::placeholder {
+    color: var(--color-muted);
+    opacity: 0.6;
+  }
+
+  .input-field:focus {
+    border-color: var(--color-border-dark);
+  }
+
+  /* ── Progress bar (segmented, 2px) ── */
+  .progress-bar {
+    display: flex;
+    gap: 4px;
+    height: 2px;
+  }
+
+  .progress-segment {
+    flex: 1;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--color-border);
+    transition: background 0.3s;
+  }
+
+  .progress-segment-active {
+    background: var(--color-ink);
+  }
+
+  /* ── Energy slider ── */
   input[type='range'] {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 4px;
+    height: 3px;
     border-radius: 2px;
-    background: #e7e5e4;
+    background: var(--color-border);
     outline: none;
   }
 
   input[type='range']::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: #1c1917;
+    background: var(--color-ink);
     cursor: pointer;
-    box-shadow: 0 0 0 4px rgba(28,25,23,0.1);
+    box-shadow: 0 0 0 4px rgba(26, 26, 26, 0.08);
     transition: box-shadow 0.15s;
   }
 
   input[type='range']::-webkit-slider-thumb:active {
-    box-shadow: 0 0 0 6px rgba(28,25,23,0.15);
+    box-shadow: 0 0 0 7px rgba(26, 26, 26, 0.12);
   }
 }
