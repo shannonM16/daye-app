@@ -19,31 +19,83 @@ function GoogleLogo() {
   )
 }
 
+function ProviderBadge({ provider }) {
+  if (provider === 'apple') {
+    return (
+      <div style={{
+        width: '52px',
+        height: '52px',
+        borderRadius: '50%',
+        background: '#1a1a1a',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: '0 auto 20px',
+        flexShrink: 0,
+      }}>
+        <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: '20px', color: 'white', lineHeight: 1 }}>A</span>
+      </div>
+    )
+  }
+  return (
+    <div style={{
+      width: '52px',
+      height: '52px',
+      borderRadius: '50%',
+      background: '#4285F4',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      margin: '0 auto 20px',
+      flexShrink: 0,
+    }}>
+      <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: '22px', color: 'white', lineHeight: 1 }}>G</span>
+    </div>
+  )
+}
+
+function isValidEmail(val) {
+  return val.includes('@') && val.includes('.') && val.indexOf('@') < val.lastIndexOf('.')
+}
+
 export default function SignUp({ onComplete }) {
   const [firstName, setFirstName] = useState('')
   const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState(false)
   const [socialLoading, setSocialLoading] = useState(null)
-  const [socialNamePrompt, setSocialNamePrompt] = useState(null) // { provider, email }
+  const [socialPrompt, setSocialPrompt] = useState(null) // { provider }
   const [socialName, setSocialName] = useState('')
+  const [socialEmail, setSocialEmail] = useState('')
+  const [socialEmailError, setSocialEmailError] = useState(false)
 
-  const canSubmit = firstName.trim().length > 0 && email.includes('@') && email.includes('.')
+  // ── Manual form ────────────────────────────────────────────────────
+
+  const canSubmit = firstName.trim().length > 0 && isValidEmail(email)
 
   const handleSubmit = () => {
-    if (!canSubmit) return
+    if (!firstName.trim()) return
+    if (!isValidEmail(email)) {
+      setEmailError(true)
+      return
+    }
     onComplete({ firstName: firstName.trim(), email: email.trim() })
   }
 
   const handleKey = (e) => {
-    if (e.key === 'Enter' && canSubmit) handleSubmit()
+    if (e.key === 'Enter') handleSubmit()
   }
+
+  // ── Social login ───────────────────────────────────────────────────
 
   const handleApple = () => {
     setSocialLoading('apple')
     setTimeout(() => {
       setSocialLoading(null)
       setSocialName('')
-      setSocialNamePrompt({ provider: 'apple', email: 'abc123@privaterelay.appleid.com' })
-    }, 1000)
+      setSocialEmail('')
+      setSocialEmailError(false)
+      setSocialPrompt({ provider: 'apple' })
+    }, 800)
   }
 
   const handleGoogle = () => {
@@ -51,52 +103,129 @@ export default function SignUp({ onComplete }) {
     setTimeout(() => {
       setSocialLoading(null)
       setSocialName('')
-      setSocialNamePrompt({ provider: 'google', email: '' })
-    }, 1000)
+      setSocialEmail('')
+      setSocialEmailError(false)
+      setSocialPrompt({ provider: 'google' })
+    }, 800)
   }
 
-  const handleSocialNameContinue = () => {
-    const name = socialName.trim()
-    if (!name) return
-    onComplete({ firstName: name, email: socialNamePrompt.email })
+  const handleSocialContinue = () => {
+    if (!socialName.trim()) return
+    if (!isValidEmail(socialEmail)) {
+      setSocialEmailError(true)
+      return
+    }
+    onComplete({ firstName: socialName.trim(), email: socialEmail.trim() })
   }
 
-  const handleSocialNameKey = (e) => {
-    if (e.key === 'Enter') handleSocialNameContinue()
+  const handleSocialKey = (e) => {
+    if (e.key === 'Enter') handleSocialContinue()
   }
 
-  if (socialNamePrompt) {
+  // ── Social confirmation screen ─────────────────────────────────────
+
+  if (socialPrompt) {
+    const canSocialSubmit = socialName.trim().length > 0 && isValidEmail(socialEmail)
+
     return (
       <div className="screen">
-        <div className="flex-1 overflow-y-auto flex flex-col justify-center">
-          <h2 className="text-[24px] font-medium leading-tight mb-2" style={{ color: 'var(--color-ink)' }}>
-            What should we call you?
+        <div className="flex-1 overflow-y-auto flex flex-col justify-center" style={{ paddingTop: '24px' }}>
+          <ProviderBadge provider={socialPrompt.provider} />
+
+          <h2 style={{
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            fontSize: '24px',
+            fontWeight: 400,
+            color: 'var(--color-ink)',
+            textAlign: 'center',
+            marginBottom: '8px',
+            lineHeight: 1.2,
+          }}>
+            Almost there.
           </h2>
-          <p className="text-sm mb-8" style={{ color: 'var(--color-muted)' }}>
-            Just your first name is fine.
+
+          <p style={{
+            fontFamily: 'var(--font-sans)',
+            fontSize: '13px',
+            color: 'var(--color-muted)',
+            textAlign: 'center',
+            marginBottom: '32px',
+            lineHeight: 1.5,
+          }}>
+            Just confirm a couple of details to personalise your plan.
           </p>
-          <input
-            type="text"
-            value={socialName}
-            onChange={(e) => setSocialName(e.target.value)}
-            onKeyDown={handleSocialNameKey}
-            placeholder="Your first name"
-            className="input-field"
-            autoFocus
-          />
+
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={socialName}
+              onChange={(e) => setSocialName(e.target.value)}
+              onKeyDown={handleSocialKey}
+              placeholder="Your first name"
+              className="input-field"
+              autoFocus
+            />
+            <div>
+              <input
+                type="email"
+                value={socialEmail}
+                onChange={(e) => { setSocialEmail(e.target.value); setSocialEmailError(false) }}
+                onKeyDown={handleSocialKey}
+                placeholder="Your email address"
+                className="input-field"
+              />
+              {socialEmailError && (
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', marginTop: '6px' }}>
+                  Please enter a valid email address
+                </p>
+              )}
+            </div>
+          </div>
+
+          <p style={{
+            fontFamily: 'var(--font-sans)',
+            fontSize: '11px',
+            color: 'var(--color-muted)',
+            textAlign: 'center',
+            marginTop: '16px',
+            opacity: 0.7,
+            lineHeight: 1.5,
+          }}>
+            We only use your email to save your plan. No spam, ever.
+          </p>
         </div>
-        <div className="flex-shrink-0 pt-4">
+
+        <div className="flex-shrink-0 pt-4 space-y-2">
           <button
             className="btn-primary"
-            onClick={handleSocialNameContinue}
-            disabled={!socialName.trim()}
+            onClick={handleSocialContinue}
+            disabled={!canSocialSubmit}
           >
-            Continue
+            Start with Daye
+          </button>
+          <button
+            onClick={() => setSocialPrompt(null)}
+            style={{
+              width: '100%',
+              background: 'none',
+              border: 'none',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '13px',
+              color: 'var(--color-muted)',
+              cursor: 'pointer',
+              padding: '8px 0',
+              textAlign: 'center',
+            }}
+          >
+            Use a different method
           </button>
         </div>
       </div>
     )
   }
+
+  // ── Main sign-up screen ────────────────────────────────────────────
 
   return (
     <div className="screen">
@@ -181,11 +310,16 @@ export default function SignUp({ onComplete }) {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setEmailError(false) }}
               onKeyDown={handleKey}
               placeholder="you@example.com"
               className="input-field"
             />
+            {emailError && (
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', marginTop: '6px' }}>
+                Please enter a valid email address
+              </p>
+            )}
           </div>
         </div>
       </div>
