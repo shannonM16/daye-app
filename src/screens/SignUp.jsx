@@ -80,7 +80,7 @@ export default function SignUp({ onComplete }) {
             value={socialName}
             onChange={(e) => setSocialName(e.target.value)}
             onKeyDown={handleSocialNameKey}
-            placeholder="First name"
+            placeholder="Your first name"
             className="input-field"
             autoFocus
           />
@@ -170,7 +170,7 @@ export default function SignUp({ onComplete }) {
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               onKeyDown={handleKey}
-              placeholder="Shannon"
+              placeholder="Your first name"
               className="input-field"
             />
           </div>

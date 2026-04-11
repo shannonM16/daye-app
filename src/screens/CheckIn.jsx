@@ -28,9 +28,79 @@ const DAY_TYPES = [
 
 const ENERGY_LABELS = ['', 'Depleted', 'Low', 'Okay', 'Good', 'Charged']
 
-function getPressureOptions(userType) {
+const SE_PRESSURE_BY_TYPE = {
+  'freelance-creative': [
+    { id: 'client-deadline', label: 'Client deadline today' },
+    { id: 'waiting-on-feedback', label: 'Waiting on feedback' },
+    { id: 'invoice-overdue', label: 'Invoice overdue' },
+    { id: 'slow-period', label: 'Slow period for work' },
+    { id: 'difficult-client', label: 'Difficult client situation' },
+    { id: 'creative-block', label: 'Creative block' },
+    { id: 'none', label: 'None right now' },
+  ],
+  'consultant': [
+    { id: 'proposal-deadline', label: 'Proposal deadline' },
+    { id: 'client-deliverable', label: 'Client deliverable due' },
+    { id: 'pipeline-quiet', label: 'Pipeline feeling quiet' },
+    { id: 'scope-creep', label: 'Scope creep on a project' },
+    { id: 'contract-negotiation', label: 'Contract negotiation' },
+    { id: 'client-at-risk', label: 'Key client at risk' },
+    { id: 'none', label: 'None right now' },
+  ],
+  'coach-trainer': [
+    { id: 'session-today', label: 'Session to deliver today' },
+    { id: 'enrolments-low', label: 'Programme enrolments low' },
+    { id: 'difficult-client-coach', label: 'Difficult client conversation' },
+    { id: 'course-launch-pressure', label: 'Course launch pressure' },
+    { id: 'content-deadline', label: 'Content deadline' },
+    { id: 'discovery-calls-needed', label: 'Discovery calls needed' },
+    { id: 'none', label: 'None right now' },
+  ],
+  'content-creator': [
+    { id: 'post-due', label: 'Post due today' },
+    { id: 'brand-deal-deadline', label: 'Brand deal deadline' },
+    { id: 'engagement-dropping', label: 'Views or followers dropping' },
+    { id: 'creative-block-content', label: 'Creative block' },
+    { id: 'consistency-pressure', label: 'Consistency pressure' },
+    { id: 'sponsorship-negotiation', label: 'Sponsorship negotiation' },
+    { id: 'none', label: 'None right now' },
+  ],
+  'product-saas': [
+    { id: 'shipping-today', label: 'Shipping a feature today' },
+    { id: 'bug-reported', label: 'User reported a bug' },
+    { id: 'cash-pressure', label: 'Runway or cash pressure' },
+    { id: 'no-new-signups', label: 'No new signups' },
+    { id: 'investor-meeting', label: 'Investor meeting' },
+    { id: 'launch-deadline', label: 'Launch deadline' },
+    { id: 'none', label: 'None right now' },
+  ],
+  'agency-owner': [
+    { id: 'client-at-risk-agency', label: 'Client unhappy or at risk' },
+    { id: 'team-issue', label: 'Team issue or conflict' },
+    { id: 'cash-flow', label: 'Cash flow pressure' },
+    { id: 'new-business-urgent', label: 'New business needed urgently' },
+    { id: 'key-deadline-agency', label: 'Key deadline today' },
+    { id: 'hiring-pressure', label: 'Hiring pressure' },
+    { id: 'none', label: 'None right now' },
+  ],
+  'trades-service': [
+    { id: 'job-overrun', label: 'Job running over time' },
+    { id: 'diary-quiet', label: 'Booking diary quiet' },
+    { id: 'invoice-unpaid', label: 'Invoice unpaid' },
+    { id: 'materials-issue', label: 'Materials issue' },
+    { id: 'difficult-customer', label: 'Difficult customer' },
+    { id: 'pricing-pressure', label: 'Pricing pressure' },
+    { id: 'none', label: 'None right now' },
+  ],
+}
+
+function getPressureOptions(userType, selfEmployedType) {
   switch (userType) {
-    case 'self-employed':
+    case 'self-employed': {
+      if (selfEmployedType && selfEmployedType !== 'other') {
+        const typeOptions = SE_PRESSURE_BY_TYPE[selfEmployedType]
+        if (typeOptions) return typeOptions
+      }
       return [
         { id: 'invoice-overdue', label: 'Invoice overdue or unpaid' },
         { id: 'proposal-deadline', label: 'Proposal or pitch deadline' },
@@ -41,6 +111,7 @@ function getPressureOptions(userType) {
         { id: 'scope-creep', label: 'Scope creep on a project' },
         { id: 'none', label: 'None right now' },
       ]
+    }
     case 'student':
       return [
         { id: 'exam-coming', label: 'Exam coming up' },
@@ -134,7 +205,8 @@ function StepDots({ step }) {
 }
 
 export default function CheckIn({ user, userProfile, initialValues, history = [], streakCount = 0, onSubmit, onViewHistory, onViewSettings }) {
-  const pressureOptions = getPressureOptions(userProfile?.userType)
+  const selfEmployedType = userProfile?.selfEmployedType || userProfile?.workType || null
+  const pressureOptions = getPressureOptions(userProfile?.userType, selfEmployedType)
 
   const [step, setStep] = useState(1)
 
@@ -325,8 +397,29 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
                 value={energy}
                 onChange={(e) => handleEnergyChange(Number(e.target.value))}
               />
-              <div className="flex justify-between mt-1 text-xs select-none" style={{ color: 'var(--color-border-dark)' }}>
-                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+              <div className="flex justify-between mt-0.5">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => handleEnergyChange(n)}
+                    className="active:scale-110 transition-transform duration-100"
+                    style={{
+                      fontFamily: 'var(--font-sans)',
+                      fontSize: '13px',
+                      fontWeight: energy === n ? 500 : 400,
+                      color: energy === n ? 'var(--color-ink)' : 'var(--color-muted)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '4px 6px',
+                      minWidth: '28px',
+                      textAlign: 'center',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
               </div>
             </div>
 

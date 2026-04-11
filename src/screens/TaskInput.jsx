@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getStateLevel } from '../utils/stateDetection'
 
 const IC_CHIPS = {
@@ -29,10 +29,51 @@ const MANAGER_CHIPS = {
   other: ['Team meetings', '1:1s', 'Strategy work', 'Stakeholder update', 'Planning', 'Admin'],
 }
 
-const SELF_EMPLOYED_CHIPS = [
-  'Client outreach', 'Revenue work', 'Client delivery', 'Admin & invoicing',
-  'Strategy', 'Marketing / visibility', 'Team management', 'Product / service work',
-]
+const SE_CHIPS_UNIVERSAL = ['Chase or send an invoice', 'Admin and bookkeeping']
+
+const SE_CHIPS_BY_TYPE = {
+  'freelance-creative': [
+    'Work on a client brief', 'Send a revision', 'Client feedback call',
+    'New project pitch', 'Update portfolio', 'Plan next project',
+    'Creative development time',
+    ...SE_CHIPS_UNIVERSAL,
+  ],
+  'consultant': [
+    'Write a proposal', 'Prepare a client workshop', 'Research and analysis',
+    'Stakeholder call', 'New business outreach', 'Work on a deliverable',
+    'Review a contract',
+    ...SE_CHIPS_UNIVERSAL,
+  ],
+  'coach-trainer': [
+    'Prepare a session', 'Follow up with a client', 'Create programme content',
+    'Run a discovery call', 'Write a newsletter', 'Build or update a course',
+    'Community engagement',
+    ...SE_CHIPS_UNIVERSAL,
+  ],
+  'content-creator': [
+    'Film or record content', 'Edit content', 'Write a caption or script',
+    "Plan next week's content", 'Reply to comments and DMs',
+    'Pitch a brand deal', 'Post something today', 'Batch create content',
+    ...SE_CHIPS_UNIVERSAL,
+  ],
+  'product-saas': [
+    'Build a feature', 'Fix a bug or issue', 'Talk to a user',
+    'Write a spec or doc', 'Work on marketing', 'Investor or partner outreach',
+    'Review metrics and data',
+    ...SE_CHIPS_UNIVERSAL,
+  ],
+  'agency-owner': [
+    'Client review or approval', 'Team check-in or 1:1', 'New business call',
+    'Write a proposal', 'Financial review', 'Hiring or interviews',
+    'Process improvement',
+    ...SE_CHIPS_UNIVERSAL,
+  ],
+  'trades-service': [
+    'Complete a job', 'Quote a new job', 'Order materials or supplies',
+    'Reply to enquiries', 'Schedule upcoming work', 'Get or respond to a review',
+    ...SE_CHIPS_UNIVERSAL,
+  ],
+}
 
 const STUDENT_CHIPS = [
   'Study / revision', 'Assignment work', 'Research', 'Lectures / classes', 'Group work', 'Admin',
@@ -48,10 +89,15 @@ const FIGURING_IT_OUT_CHIPS = [
   'Learn something new', 'Take one small step', 'Admin and life tasks',
 ]
 
-function getChips(userType, jobFunctions, seniority) {
+function getChips(userType, jobFunctions, seniority, selfEmployedType) {
   if (userType === 'student') return STUDENT_CHIPS
   if (userType === 'figuring-it-out') return FIGURING_IT_OUT_CHIPS
-  if (userType === 'self-employed') return SELF_EMPLOYED_CHIPS
+  if (userType === 'self-employed') {
+    if (selfEmployedType && selfEmployedType !== 'other') {
+      return SE_CHIPS_BY_TYPE[selfEmployedType] || SE_CHIPS_UNIVERSAL
+    }
+    return SE_CHIPS_UNIVERSAL
+  }
 
   const isManager = seniority === 'manager' || seniority === 'director-plus'
   const chipSet = isManager ? MANAGER_CHIPS : IC_CHIPS
@@ -128,15 +174,19 @@ Example: ["Finish the board deck", "1:1 with manager", "Clear email backlog"]`,
   return JSON.parse(match[0])
 }
 
-export default function TaskInput({ user, userProfile, checkInData, initialTasks, onSubmit, onBack }) {
+export default function TaskInput({ user, userProfile, checkInData, initialTasks, onSubmit, onBack, onTasksChange }) {
   const stateLevel = checkInData
     ? getStateLevel({ energy: checkInData.energy, sleep: checkInData.sleep, mood: checkInData.mood })
     : 'neutral'
+
+  const selfEmployedType = userProfile?.selfEmployedType || userProfile?.workType || null
+  const isOtherSE = userProfile?.userType === 'self-employed' && (!selfEmployedType || selfEmployedType === 'other')
 
   const allChips = getChips(
     userProfile?.userType,
     userProfile?.jobFunctions,
     userProfile?.seniority,
+    selfEmployedType,
   )
   const chips =
     stateLevel === 'low'
@@ -152,6 +202,10 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
   const [freeText, setFreeText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  useEffect(() => {
+    onTasksChange?.(selected)
+  }, [selected]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleChip = (label) => {
     setSelected((prev) =>
@@ -262,6 +316,8 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
             onChange={(e) => setFreeText(e.target.value)}
             placeholder={stateLevel === 'low'
               ? "What is the one thing that really needs to happen today?"
+              : isOtherSE
+              ? "What are you working on today?"
               : "Or describe your day in your own words..."}
             rows={4}
             className="input-field resize-none"

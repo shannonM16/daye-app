@@ -10,7 +10,7 @@ const GOAL_LABELS = {
   'lead-better': 'becoming a better leader',
   'earn-more': 'increasing your income',
   'stay-on-top': 'staying on top of your work',
-  // Self-employed
+  // Self-employed (legacy generic)
   'hit-revenue-target': 'hitting your revenue target',
   'land-big-client': 'landing that big client',
   'launch-something': 'launching something new',
@@ -18,6 +18,55 @@ const GOAL_LABELS = {
   'build-a-team': 'building your team',
   'go-full-time': 'going full-time',
   'scale-up': 'scaling up',
+  // Freelance creative
+  'raise-rates': 'raising your rates',
+  'better-quality-clients': 'landing better quality clients',
+  'more-referrals': 'getting more referrals',
+  'stronger-portfolio': 'building a stronger portfolio',
+  'new-niche': 'moving into a new niche',
+  'consistent-work': 'getting more consistent work',
+  // Consultant
+  'grow-retainer': 'growing retainer income',
+  'thought-leadership': 'building thought leadership',
+  'raise-day-rate': 'raising your day rate',
+  'flagship-client': 'landing a flagship client',
+  'launch-service': 'launching a new service',
+  'build-team-consult': 'building a team',
+  // Coach / trainer
+  'fill-programme': 'filling your coaching programme',
+  'launch-course': 'launching a new course',
+  'get-testimonials': 'getting more testimonials',
+  'grow-audience-coach': 'growing your audience',
+  'raise-prices-coach': 'raising your prices',
+  'passive-income': 'creating passive income',
+  // Content creator
+  'grow-audience-content': 'growing your audience significantly',
+  'first-brand-deal': 'landing your first brand deal',
+  'launch-product-content': 'launching a product or service',
+  'be-consistent': 'being more consistent',
+  'monetise-content': 'monetising your content better',
+  'build-community': 'building a community',
+  // Product / SaaS
+  'first-paying-users': 'getting first paying users',
+  'monthly-revenue': 'hitting a monthly revenue target',
+  'ship-mvp': 'shipping the MVP',
+  'raise-funding': 'raising funding',
+  'grow-users': 'growing your user base',
+  'improve-retention': 'improving retention',
+  // Agency owner
+  'win-new-client': 'winning a significant new client',
+  'stronger-team': 'building a stronger team',
+  'improve-margins': 'improving profit margins',
+  'better-systems': 'creating better systems',
+  'reduce-delivery': 'reducing involvement in delivery',
+  'scale-revenue': 'scaling revenue',
+  // Trades / service
+  'fill-diary': 'filling your diary consistently',
+  'raise-prices-trades': 'raising your prices',
+  'get-reviews': 'getting more online reviews',
+  'hire-first': 'hiring your first person',
+  'expand-service-area': 'expanding your service area',
+  'professional-brand': 'building a more professional brand',
   // Student
   'pass-exams': 'passing your exams',
   'get-top-grade': 'getting a top grade',
@@ -336,6 +385,21 @@ export function decisionEngine({
         ...base.priorities,
       ].slice(0, 3)
     }
+
+    // Invoicing rule: if any invoice/cash/money pressure OR moderate energy with no critical deadline
+    const hasInvoicePressure = pressure.some((p) => {
+      const s = (typeof p === 'string' ? p : '').toLowerCase()
+      return s.includes('invoice') || s.includes('cash') || s.includes('payment') ||
+        s.includes('money') || s.includes('unpaid') || s.includes('revenue') ||
+        ['invoice-overdue', 'invoice-unpaid', 'cash-running-low', 'cash-pressure',
+          'cash-flow', 'pipeline-quiet', 'diary-quiet', 'no-new-signups'].includes(p)
+    })
+    const alreadyHasInvoiceTask = base.priorities.some((p) =>
+      p.toLowerCase().includes('invoice') || p.toLowerCase().includes('payment') || p.toLowerCase().includes('chase')
+    )
+    if (!alreadyHasInvoiceTask && (hasInvoicePressure || (energy >= 3 && !hasDeadline))) {
+      base.priorities = [...base.priorities, 'Chase or send an invoice'].slice(0, 3)
+    }
   }
 
   // ─── STUDENT ─────────────────────────────────────────────────────────────────
@@ -460,9 +524,17 @@ export function decisionEngine({
   // Append blocker-aware avoids
   base.avoid = [...base.avoid, ...ba]
 
+  // Day name fallback based on state
+  let dayName = "Today's Plan"
+  if (isLowEnergy) dayName = 'Gentle Progress'
+  else if (isDeepWork) dayName = 'Deep Focus'
+  else if (dayType === 'lots-of-meetings') dayName = 'Full Throttle'
+  else if (dayType === 'reactive-firefighting') dayName = 'Steady Hands'
+
   return {
     ...base,
     timeBlocks,
     goalAlignment,
+    dayName,
   }
 }
