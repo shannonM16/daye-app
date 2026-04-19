@@ -7,7 +7,9 @@
       "Bash(curl:*)",
       "Bash(npx tsc:*)",
       "Bash(npx vite:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npm install *)",
+      "Bash(pkill -f \"vite --port 5199\")"
     ]
   }
 }

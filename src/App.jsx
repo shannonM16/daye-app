@@ -1,8 +1,11 @@
 import { useState, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useStorage } from './hooks/useStorage'
 import { buildPlan } from './engine/buildPlan'
 import { calculateStreak } from './utils/patternEngine'
 import Landing from './screens/Landing'
+import BlogIndex from './blog/BlogIndex'
+import ArticlePage from './blog/ArticlePage'
 import SignUp from './screens/SignUp'
 import Onboarding from './screens/Onboarding'
 import CheckIn from './screens/CheckIn'
@@ -158,6 +161,7 @@ function RightPanel({ screen, user, userProfile, checkInData, liveSelectedTasks 
 // ── Main app ───────────────────────────────────────────────────────
 
 export default function App() {
+  const location = useLocation()
   const [user, setUser] = useStorage('df_user', null)
   const [userProfile, setUserProfile] = useStorage('df_userProfile', null)
   const [userTasks, setUserTasks] = useStorage('df_userTasks', [])
@@ -236,6 +240,13 @@ export default function App() {
   const currentBest = parseInt(localStorage.getItem('daye_best_streak') || '0')
   if (streakCount > currentBest) {
     localStorage.setItem('daye_best_streak', String(streakCount))
+  }
+
+  // ── Blog routes ─────────────────────────────────────────────────
+  if (location.pathname === '/blog') return <BlogIndex />
+  if (location.pathname.startsWith('/blog/')) {
+    const slug = location.pathname.slice(6)
+    return <ArticlePage slug={slug} />
   }
 
   // ── Landing (pre-signup) ─────────────────────────────────────────

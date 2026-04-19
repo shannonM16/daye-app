@@ -455,6 +455,12 @@ export default function Landing({ onStartDay, onSignIn }) {
         <div className="landing-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
           <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '20px', color: 'var(--color-ink)', fontWeight: 300 }}>daye</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <a
+              href="/blog"
+              style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', textDecoration: 'none' }}
+            >
+              Blog
+            </a>
             <button
               onClick={onSignIn}
               style={{ background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', cursor: 'pointer', padding: 0 }}
