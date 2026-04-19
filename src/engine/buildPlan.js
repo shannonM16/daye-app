@@ -46,6 +46,38 @@ function getTimePeriodLabel(hhmm) {
   return 'evening'
 }
 
+function buildStudentInstructions(studyLevel, subjectArea) {
+  const toneMap = {
+    'secondary-school': 'Warm, encouraging, structured. Break things into very clear small steps. Acknowledge exam pressure with empathy not intensity. Never make them feel behind.',
+    'undergraduate': 'Peer-level, practical, balanced. Acknowledge that university is more than just studying. Reference the reality of lectures, deadlines and social life.',
+    'masters': "More autonomous, intellectually engaged. Reference the specific challenges of dissertation work — the isolation, the non-linear progress, the perfectionism.",
+    'phd': 'Deeply empathetic to the unique pressures of doctoral work. Acknowledge the long-game nature of research. Reference the emotional weight of work that does not always go to plan.',
+    'professional-qualification': 'Time-pressured and pragmatic. These people are usually working full time too. Every minute of study time counts. Be direct and efficient.',
+    'online-self-study': 'Self-directed and momentum-focused. The biggest risk is losing motivation. Keep the plan energising and action-oriented.',
+    'apprenticeship': 'Dual identity — part student, part professional. Acknowledge both worlds and the unique challenge of navigating them simultaneously.',
+  }
+  const timeSplitMap = {
+    'secondary-school': 'Use shorter focused blocks (max 45 minutes), schedule regular breaks, label homework blocks clearly, acknowledge evening study is normal for secondary students.',
+    'undergraduate': 'Mix lecture time if relevant, study blocks, and realistic acknowledgement of social time — do not plan every hour of the day.',
+    'masters': 'Use longer deep work blocks (2–3 hours), include unstructured thinking time, clearly differentiate writing sessions from reading sessions.',
+    'phd': 'Use longer deep work blocks (2–3 hours), include unstructured thinking time, clearly differentiate writing sessions from reading sessions.',
+    'professional-qualification': 'Use tight efficient blocks — acknowledge early morning, lunch, and evening study around work hours. Every block must count.',
+    'online-self-study': 'Use project-based blocks. Clearly split learning time (following the course) from building time (applying it).',
+    'apprenticeship': 'Balance work time and study time. Acknowledge the apprentice has obligations in both worlds.',
+  }
+  const tone = toneMap[studyLevel] || 'Warm, practical and direct.'
+  const timeSplit = timeSplitMap[studyLevel] || ''
+  const subject = subjectArea ? ` studying ${subjectArea}` : ''
+
+  return `
+STUDENT INSTRUCTIONS:
+- This person is a ${studyLevel || 'student'}${subject}. Adapt your language and tone completely.
+- Tone: ${tone}
+- Time split guidance: ${timeSplit}
+- Always reference their subject area naturally — a law student has different tasks and pressures to a medicine student. A PhD student in humanities has different challenges to one in sciences.
+- Do not use corporate or workplace language. Use academic language appropriate to their level.`
+}
+
 function buildPrompt(userProfile, checkInData, tasks) {
   const {
     firstName,
@@ -59,6 +91,8 @@ function buildPrompt(userProfile, checkInData, tasks) {
     aiSummary,
     selfEmployedType: seType,
     workType,
+    studyLevel,
+    subjectArea,
   } = userProfile || {}
 
   const selfEmployedType = seType || workType || null
@@ -77,7 +111,7 @@ function buildPrompt(userProfile, checkInData, tasks) {
   const allBlockers = [...profileBlockers, ...customStoredBlockers.filter(b => !profileBlockers.includes(b))]
   const blockersStr = allBlockers.length > 0 ? allBlockers.join(', ') : 'none mentioned'
 
-  const { energy, mood, sleep, dayType, pressure, planningStartTime } = checkInData || {}
+  const { energy, mood, sleep, dayType, pressure, planningStartTime, eveningMode } = checkInData || {}
   const pressureStr = Array.isArray(pressure) && pressure.length > 0
     ? pressure.join(', ')
     : 'none'
@@ -107,6 +141,16 @@ TIME CONTEXT:
 - Hours remaining in working day (to 6pm): approximately ${hoursRemaining} hours
 - IMPORTANT: Build ALL time blocks starting from ${startTime12h}, not from 9am. Round to the nearest 15 minutes. For example, if current time is 2:15pm: "2:15–3:30pm: Deep work", "3:30–4pm: Clear emails", "4–5pm: Admin and review", "5–6pm: Close out". Never start time blocks before ${startTime12h}.` : ''
 
+  const studentInstructions = userType === 'student'
+    ? buildStudentInstructions(studyLevel, subjectArea)
+    : ''
+
+  const eveningInstructions = eveningMode === 'plan-tomorrow'
+    ? `\n\nPLANNING CONTEXT: This person is planning AHEAD for tomorrow, not for today. Frame all advice as preparation for the next day. Use future tense ("tomorrow" not "today"). The time split should reflect a normal working day tomorrow, not the current evening time.`
+    : eveningMode === 'late-session'
+    ? `\n\nPLANNING CONTEXT: This user is planning a late working session tonight. Adjust the time split to reflect evening hours — suggest blocks like 9pm–10:30pm rather than morning times. Keep the plan focused and short — late sessions should have a maximum of 2 priorities, not 3.`
+    : ''
+
   const selfEmployedInstructions = userType === 'self-employed' ? `
 SELF-EMPLOYED INSTRUCTIONS:
 - This person is self-employed as a ${selfEmployedType || 'independent worker'}. Adapt your language and tone to their specific work type. For content creators: use language about audience, consistency, creativity and brand. For consultants: use language about clients, deliverables, positioning and revenue. For coaches: use language about clients, transformation, programmes and impact. For product builders: use language about users, shipping, growth and metrics. For trades: use language about jobs, bookings, quotes and reputation. Never use generic productivity language that could apply to anyone.
@@ -120,6 +164,7 @@ THEIR PROFILE:
 - Job function: ${jobFunction || 'not specified'}
 - Seniority: ${seniority || 'not specified'}
 - Industry: ${industry || 'not specified'}
+${studyLevel ? `- Study level: ${studyLevel}` : ''}${subjectArea ? `\n- Subject area: ${subjectArea}` : ''}
 - Main goal: ${primaryGoal}
 - Current blockers: ${blockersStr}${situationExtra}${selfEmployedExtra}
 
@@ -152,7 +197,7 @@ Rules:
 - Avoid items must reference their actual blockers not generic advice
 - Time split must reflect their actual energy level — low energy gets shorter blocks with breaks
 - Time split MUST start from the current time if provided — never use 9am as the start if a different time was given
-- dayName must feel like a chapter title — poetic, warm, and personal to their actual situation. Examples for inspiration (do not use these exactly): 'The Big Push', 'Steady Hands', 'The Long Game', 'Deep Focus Morning', 'The Comeback', 'Small Steps Forward', 'Clearing the Decks', 'The Pitch Day', 'One Thing Only', 'Gentle Progress'. If they have a big deadline it might be 'The Final Push'. If low energy it might be 'Slow and Steady'. Never generic, always specific to their day.${selfEmployedInstructions}`
+- dayName must feel like a chapter title — poetic, warm, and personal to their actual situation. Examples for inspiration (do not use these exactly): 'The Big Push', 'Steady Hands', 'The Long Game', 'Deep Focus Morning', 'The Comeback', 'Small Steps Forward', 'Clearing the Decks', 'The Pitch Day', 'One Thing Only', 'Gentle Progress'. If they have a big deadline it might be 'The Final Push'. If low energy it might be 'Slow and Steady'. Never generic, always specific to their day.${selfEmployedInstructions}${studentInstructions}${eveningInstructions}`
 }
 
 /**

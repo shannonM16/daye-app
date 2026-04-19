@@ -95,7 +95,120 @@ const SE_PRESSURE_BY_TYPE = {
   ],
 }
 
-function getPressureOptions(userType, selfEmployedType) {
+const CORPORATE_PRESSURE_BY_FUNCTION = {
+  marketing: [
+    { id: 'campaign-deadline', label: 'Campaign deadline' },
+    { id: 'stakeholder-pres', label: 'Stakeholder presentation today' },
+    { id: 'budget-sign-off', label: 'Budget sign-off needed' },
+    { id: 'agency-issue', label: 'Agency issue' },
+    { id: 'team-conflict', label: 'Team conflict' },
+    { id: 'performance-review', label: 'Performance review coming' },
+    { id: 'none', label: 'None right now' },
+  ],
+  sales: [
+    { id: 'end-of-period', label: 'End of month or quarter pressure' },
+    { id: 'key-deal-at-risk', label: 'Key deal at risk' },
+    { id: 'pipeline-below', label: 'Pipeline below target' },
+    { id: 'important-pitch', label: 'Important pitch today' },
+    { id: 'client-escalation', label: 'Client escalation' },
+    { id: 'team-performance', label: 'Team performance issue' },
+    { id: 'none', label: 'None right now' },
+  ],
+  operations: [
+    { id: 'critical-deadline', label: 'Critical project deadline' },
+    { id: 'system-failure', label: 'System or process failure' },
+    { id: 'stakeholder-unhappy', label: 'Key stakeholder unhappy' },
+    { id: 'resource-shortage', label: 'Resource shortage' },
+    { id: 'budget-pressure', label: 'Budget pressure' },
+    { id: 'compliance-deadline', label: 'Compliance deadline' },
+    { id: 'none', label: 'None right now' },
+  ],
+  finance: [
+    { id: 'month-end', label: 'Month end or year end close' },
+    { id: 'audit-pressure', label: 'Audit pressure' },
+    { id: 'board-reporting', label: 'Board reporting deadline' },
+    { id: 'budget-cycle', label: 'Budget cycle' },
+    { id: 'regulatory-deadline', label: 'Regulatory deadline' },
+    { id: 'cash-flow', label: 'Cash flow concern' },
+    { id: 'none', label: 'None right now' },
+  ],
+  product: [
+    { id: 'sprint-deadline', label: 'Sprint deadline' },
+    { id: 'launch-pressure', label: 'Launch pressure' },
+    { id: 'stakeholder-conflict', label: 'Stakeholder conflict on priorities' },
+    { id: 'research-deadline', label: 'User research deadline' },
+    { id: 'board-review', label: 'Board product review' },
+    { id: 'tech-debt-crisis', label: 'Tech debt crisis' },
+    { id: 'none', label: 'None right now' },
+  ],
+  engineering: [
+    { id: 'release-deadline', label: 'Release deadline' },
+    { id: 'production-incident', label: 'Production incident' },
+    { id: 'tech-debt-pressure', label: 'Technical debt pressure' },
+    { id: 'hiring-urgency', label: 'Hiring urgency' },
+    { id: 'architecture-decision', label: 'Architecture decision needed' },
+    { id: 'performance-issue', label: 'Performance issue' },
+    { id: 'none', label: 'None right now' },
+  ],
+  design: [
+    { id: 'design-deadline', label: 'Design deadline' },
+    { id: 'creative-feedback', label: 'Creative feedback pressure' },
+    { id: 'stakeholder-misalignment', label: 'Stakeholder misalignment' },
+    { id: 'rebrand-project', label: 'Rebrand or major project' },
+    { id: 'design-review-today', label: 'Design review today' },
+    { id: 'none', label: 'None right now' },
+  ],
+  'hr-people': [
+    { id: 'urgent-hiring', label: 'Urgent hiring need' },
+    { id: 'employee-relations', label: 'Employee relations issue' },
+    { id: 'culture-crisis', label: 'Culture crisis' },
+    { id: 'perf-review-cycle', label: 'Performance review cycle' },
+    { id: 'leadership-change', label: 'Leadership change' },
+    { id: 'redundancy-process', label: 'Redundancy process' },
+    { id: 'none', label: 'None right now' },
+  ],
+  legal: [
+    { id: 'contract-deadline', label: 'Contract deadline' },
+    { id: 'regulatory-filing', label: 'Regulatory filing' },
+    { id: 'litigation-pressure', label: 'Litigation pressure' },
+    { id: 'board-legal-advisory', label: 'Board legal advisory' },
+    { id: 'compliance-audit', label: 'Compliance audit' },
+    { id: 'none', label: 'None right now' },
+  ],
+  executive: [
+    { id: 'board-meeting', label: 'Board meeting today' },
+    { id: 'investor-pressure', label: 'Investor pressure' },
+    { id: 'key-hire-decision', label: 'Key hire decision' },
+    { id: 'strategic-pivot', label: 'Strategic pivot needed' },
+    { id: 'crisis-management', label: 'Crisis management' },
+    { id: 'media-pr', label: 'Media or PR situation' },
+    { id: 'none', label: 'None right now' },
+  ],
+}
+
+const MANAGER_PRESSURE_ADDITIONS = [
+  { id: 'team-perf-concern', label: 'Team performance concern' },
+  { id: 'difficult-1-1', label: 'Difficult 1:1 today' },
+  { id: 'hiring-decision', label: 'Hiring decision needed' },
+]
+
+const DIRECTOR_PRESSURE_ADDITIONS = [
+  { id: 'board-pres-today', label: 'Board presentation today' },
+  { id: 'org-change', label: 'Organisational change' },
+  { id: 'pl-pressure', label: 'P&L pressure' },
+]
+
+const GENERIC_CORPORATE_PRESSURE = [
+  { id: 'deadline-deliverable', label: 'Deadline on a deliverable' },
+  { id: 'difficult-conversation', label: 'Difficult conversation today' },
+  { id: 'big-presentation', label: 'Big presentation' },
+  { id: 'performance-review', label: 'Performance review coming' },
+  { id: 'budget-sign-off', label: 'Budget or sign-off needed' },
+  { id: 'stakeholder-pressure', label: 'Stakeholder pressure' },
+  { id: 'none', label: 'None right now' },
+]
+
+function getPressureOptions(userType, selfEmployedType, jobFunctions, seniority, userProfile) {
   switch (userType) {
     case 'self-employed': {
       if (selfEmployedType && selfEmployedType !== 'other') {
@@ -113,17 +226,79 @@ function getPressureOptions(userType, selfEmployedType) {
         { id: 'none', label: 'None right now' },
       ]
     }
-    case 'student':
-      return [
-        { id: 'exam-coming', label: 'Exam coming up' },
-        { id: 'assignment-due', label: 'Assignment due soon' },
-        { id: 'behind-on-notes', label: 'Behind on reading or notes' },
-        { id: 'group-project-stress', label: 'Group project stress' },
-        { id: 'dissertation-deadline', label: 'Dissertation or thesis deadline' },
-        { id: 'placement-application', label: 'Placement or job application' },
-        { id: 'resit-needed', label: 'Resit or catch-up needed' },
-        { id: 'none', label: 'None right now' },
-      ]
+    case 'student': {
+      const studentPressure = {
+        'secondary-school': [
+          { id: 'exam-coming', label: 'Exam coming up' },
+          { id: 'assignment-due', label: 'Assignment due tomorrow' },
+          { id: 'behind-revision', label: 'Behind on revision' },
+          { id: 'struggling-topic', label: 'Struggling with a topic' },
+          { id: 'parent-pressure', label: 'Parents putting pressure on' },
+          { id: 'mock-exams', label: 'Mock exams soon' },
+          { id: 'falling-behind-class', label: 'Falling behind the class' },
+          { id: 'none', label: 'None right now' },
+        ],
+        'undergraduate': [
+          { id: 'deadline-this-week', label: 'Deadline this week' },
+          { id: 'exam-period', label: 'Exam period' },
+          { id: 'group-project-stress', label: 'Group project stress' },
+          { id: 'behind-reading', label: 'Behind on reading' },
+          { id: 'dissertation-pressure', label: 'Dissertation pressure' },
+          { id: 'placement-application', label: 'Placement or internship application' },
+          { id: 'resit-coming', label: 'Resit coming up' },
+          { id: 'finances-stress', label: 'Finances stressing me' },
+          { id: 'none', label: 'None right now' },
+        ],
+        'masters': [
+          { id: 'dissertation-deadline', label: 'Dissertation deadline' },
+          { id: 'chapter-submission', label: 'Chapter submission' },
+          { id: 'supervisor-meeting', label: 'Supervisor meeting' },
+          { id: 'funding-pressure', label: 'Funding pressure' },
+          { id: 'research-not-going-well', label: 'Research not going well' },
+          { id: 'viva-prep', label: 'Viva preparation' },
+          { id: 'job-market-anxiety', label: 'Job market anxiety' },
+          { id: 'none', label: 'None right now' },
+        ],
+        'phd': [
+          { id: 'thesis-deadline', label: 'Thesis deadline' },
+          { id: 'conference-paper', label: 'Conference paper due' },
+          { id: 'supervisor-relationship', label: 'Supervisor relationship' },
+          { id: 'funding-running-out', label: 'Funding running out' },
+          { id: 'publication-pressure', label: 'Publication pressure' },
+          { id: 'viva-anxiety', label: 'Viva anxiety' },
+          { id: 'imposter-syndrome', label: 'Imposter syndrome' },
+          { id: 'teaching-load', label: 'Teaching load' },
+          { id: 'none', label: 'None right now' },
+        ],
+        'professional-qualification': [
+          { id: 'exam-date-approaching', label: 'Exam date approaching' },
+          { id: 'mock-results', label: 'Mock exam results' },
+          { id: 'assignment-deadline', label: 'Assignment deadline' },
+          { id: 'study-time-hard', label: 'Study time hard to find' },
+          { id: 'work-study-balance', label: 'Work-study balance' },
+          { id: 'resit-needed', label: 'Resit needed' },
+          { id: 'none', label: 'None right now' },
+        ],
+        'online-self-study': [
+          { id: 'project-deadline', label: 'Project deadline' },
+          { id: 'losing-motivation', label: 'Losing motivation' },
+          { id: 'falling-behind-course', label: 'Falling behind on course' },
+          { id: 'job-application-pressure', label: 'Job application pressure' },
+          { id: 'portfolio-not-ready', label: 'Portfolio not ready' },
+          { id: 'none', label: 'None right now' },
+        ],
+        'apprenticeship': [
+          { id: 'assessment-deadline', label: 'Assessment deadline' },
+          { id: 'work-performance', label: 'Work performance pressure' },
+          { id: 'assignment-due', label: 'Assignment due' },
+          { id: 'skills-gap', label: 'Skills gap' },
+          { id: 'mentor-feedback', label: 'Mentor feedback' },
+          { id: 'none', label: 'None right now' },
+        ],
+      }
+      const studyLevel = userProfile?.studyLevel || 'undergraduate'
+      return studentPressure[studyLevel] || studentPressure['undergraduate']
+    }
     case 'figuring-it-out':
       return [
         { id: 'money-tight', label: 'Money is getting tight' },
@@ -135,17 +310,25 @@ function getPressureOptions(userType, selfEmployedType) {
         { id: 'unsure-today', label: 'Unsure what to do today' },
         { id: 'none', label: 'None right now' },
       ]
-    default:
-      return [
-        { id: 'deadline-deliverable', label: 'Deadline on a deliverable' },
-        { id: 'difficult-conversation', label: 'Difficult conversation today' },
-        { id: 'big-presentation', label: 'Big presentation' },
-        { id: 'performance-review', label: 'Performance review coming' },
-        { id: 'budget-sign-off', label: 'Budget or sign-off needed' },
-        { id: 'stakeholder-pressure', label: 'Stakeholder pressure' },
-        { id: 'political-situation', label: 'Political situation at work' },
-        { id: 'none', label: 'None right now' },
-      ]
+    default: {
+      const primaryFn = (Array.isArray(jobFunctions) ? jobFunctions : [jobFunctions])
+        .find((jf) => jf && jf !== 'other') || null
+      const baseOptions = primaryFn && CORPORATE_PRESSURE_BY_FUNCTION[primaryFn]
+        ? [...CORPORATE_PRESSURE_BY_FUNCTION[primaryFn]]
+        : [...GENERIC_CORPORATE_PRESSURE]
+
+      const noneIndex = baseOptions.findIndex((o) => o.id === 'none')
+      const withoutNone = noneIndex >= 0 ? baseOptions.filter((o) => o.id !== 'none') : baseOptions
+      const noneOption = noneIndex >= 0 ? [baseOptions[noneIndex]] : []
+
+      if (seniority === 'director-plus') {
+        return [...withoutNone, ...DIRECTOR_PRESSURE_ADDITIONS, ...MANAGER_PRESSURE_ADDITIONS, ...noneOption]
+      }
+      if (seniority === 'manager') {
+        return [...withoutNone, ...MANAGER_PRESSURE_ADDITIONS, ...noneOption]
+      }
+      return [...withoutNone, ...noneOption]
+    }
   }
 }
 
@@ -320,7 +503,13 @@ function CustomChipArea({ screenKey, customChips, onAddChip, onRemoveChip, editM
 
 export default function CheckIn({ user, userProfile, initialValues, history = [], streakCount = 0, onSubmit, onViewHistory, onViewSettings }) {
   const selfEmployedType = userProfile?.selfEmployedType || userProfile?.workType || null
-  const pressureOptions = getPressureOptions(userProfile?.userType, selfEmployedType)
+  const pressureOptions = getPressureOptions(
+    userProfile?.userType,
+    selfEmployedType,
+    userProfile?.jobFunctions,
+    userProfile?.seniority,
+    userProfile,
+  )
 
   const [step, setStep] = useState(1)
   const [energy, setEnergy] = useState(initialValues?.energy || 3)
@@ -329,7 +518,7 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
   const [dayType, setDayType] = useState(initialValues?.dayType || null)
   const [dayTypeAutoSet, setDayTypeAutoSet] = useState(null)
   const [pressure, setPressure] = useState(initialValues?.pressure || [])
-  const [showLateCheckin, setShowLateCheckin] = useState(false)
+  const [eveningMode, setEveningMode] = useState(null) // null | 'plan-tomorrow' | 'late-session'
 
   // Planning start time — captured once on mount
   const [planningStartTime] = useState(() => {
@@ -446,7 +635,7 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
 
   const handleSubmit = () => {
     if (!canSubmit) return
-    onSubmit({ energy, mood, sleep, dayType, pressure, planningStartTime })
+    onSubmit({ energy, mood, sleep, dayType, pressure, planningStartTime, eveningMode })
   }
 
   const rawName = user?.firstName || ''
@@ -464,23 +653,12 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
     setInstallDismissed(true)
   }
 
-  // Evening mode — show reflection view unless user opts to continue
-  if (isEvening && !showLateCheckin) {
+  // Evening mode — show reflection view unless user has chosen a path
+  if (isEvening && !eveningMode) {
     return (
       <div className="screen">
         <div className="flex-1 overflow-y-auto space-y-5">
           <div>
-            {/* Back button — lets user proceed to check-in anyway */}
-            <button
-              onClick={() => setShowLateCheckin(true)}
-              className="flex items-center gap-1.5 mb-4 transition-colors"
-              style={{ color: 'var(--color-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500 }}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Back
-            </button>
             <div className="flex items-center justify-between mb-3">
               <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)' }} className="text-[13px] font-light">
                 daye
@@ -519,6 +697,37 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
             </p>
           </div>
 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '4px' }}>
+            <button
+              onClick={() => setEveningMode('plan-tomorrow')}
+              style={{
+                fontFamily: 'var(--font-sans)', fontSize: '13px',
+                color: 'var(--color-muted)', background: 'none',
+                border: 'none', cursor: 'pointer', padding: 0,
+                textAlign: 'left', display: 'flex', alignItems: 'center', gap: '4px',
+              }}
+            >
+              Plan ahead for tomorrow
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setEveningMode('late-session')}
+              style={{
+                fontFamily: 'var(--font-sans)', fontSize: '13px',
+                color: 'var(--color-muted)', background: 'none',
+                border: 'none', cursor: 'pointer', padding: 0,
+                textAlign: 'left', display: 'flex', alignItems: 'center', gap: '4px',
+              }}
+            >
+              Planning a late session tonight
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+
           {streakCount >= 2 && (
             <div
               className="flex items-center gap-2 px-3 py-2 rounded-full self-start"
@@ -529,15 +738,7 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
           )}
         </div>
 
-        <div className="flex-shrink-0 pt-4 space-y-2">
-          <button
-            className="btn-ghost"
-            onClick={() => setShowLateCheckin(true)}
-            style={{ fontSize: '13px' }}
-          >
-            Plan a late session anyway
-          </button>
-        </div>
+        <div className="flex-shrink-0 pt-4" />
       </div>
     )
   }
@@ -603,7 +804,11 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
             </h1>
           )}
 
-          {isAfternoon ? (
+          {eveningMode === 'plan-tomorrow' ? (
+            <p className="text-sm" style={{ color: 'var(--color-muted)' }}>Planning ahead for tomorrow.</p>
+          ) : eveningMode === 'late-session' ? (
+            <p className="text-sm" style={{ color: 'var(--color-muted)' }}>Planning your late session from {currentTimeStr}.</p>
+          ) : isAfternoon ? (
             <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
               Planning your afternoon from {currentTimeStr}
             </p>

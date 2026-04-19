@@ -2,32 +2,62 @@ import { useState, useEffect } from 'react'
 import { getStateLevel } from '../utils/stateDetection'
 import { getCustomChips, saveCustomChip, removeCustomChip } from '../utils/customChips'
 
-const IC_CHIPS = {
-  marketing: ['Write a brief', 'Draft copy', 'Review analytics', 'Schedule content', 'Research competitors', 'Reply to briefs', 'Admin'],
-  sales: ['Prospect outreach', 'Follow up on leads', 'Prepare a pitch', 'Update CRM', 'Client call', 'Proposal writing', 'Admin'],
-  engineering: ['Deep coding', 'Code review', 'Bug fixes', 'Write documentation', 'Team standup', 'Learning / research', 'Admin'],
-  product: ['Write a spec', 'User research', 'Competitor analysis', 'Stakeholder update', 'Backlog grooming', 'Admin'],
-  operations: ['Process review', 'Data analysis', 'Report writing', 'Vendor management', 'Project planning', 'Admin'],
-  finance: ['Financial reporting', 'Data reconciliation', 'Budget tracking', 'Forecasting', 'Analysis', 'Admin'],
-  design: ['Design work', 'User research', 'Prototyping', 'Feedback sessions', 'Design review', 'Admin'],
-  'hr-people': ['Recruitment sourcing', 'Onboarding', 'HR admin', 'Policy updates', 'Employee comms', 'Admin'],
-  legal: ['Document review', 'Legal research', 'Contract drafting', 'Client comms', 'Compliance checks', 'Admin'],
-  executive: ['Strategy prep', 'Stakeholder meeting', 'Report review', 'Decision making', 'Team check-in', 'Admin'],
-  other: ['Deep work', 'Team meetings', 'Planning', 'Communication', 'Review', 'Admin'],
-}
-
-const MANAGER_CHIPS = {
-  marketing: ['Team check-in', 'Review campaign performance', 'Stakeholder update', 'Sign off creative', 'Strategy work', '1:1s', 'Hiring / interviews', 'Admin'],
-  sales: ['Pipeline review', 'Coach the team', 'Forecast update', 'Key account call', 'Hiring', 'Strategy', 'Admin'],
-  engineering: ['Sprint planning', 'Team 1:1s', 'Architecture review', 'Stakeholder update', 'Hiring', 'Process improvement', 'Admin'],
-  product: ['Roadmap planning', 'Prioritisation', 'Stakeholder alignment', 'Team standup', 'User interviews', 'Strategy', 'Admin'],
-  operations: ['Team standup', 'Process improvement', 'Stakeholder reporting', 'Vendor negotiations', 'Strategic planning', '1:1s', 'Admin'],
-  finance: ['Budget review', 'Board reporting', 'Finance strategy', 'Team 1:1s', 'Stakeholder presentations', 'Audit prep', 'Admin'],
-  design: ['Creative direction', 'Team feedback', 'Stakeholder sign-off', 'Design system', 'Hiring', 'Strategy', 'Admin'],
-  'hr-people': ['Culture initiatives', 'Team 1:1s', 'HR strategy', 'Hiring process', 'Executive reporting', 'Wellbeing programmes', 'Admin'],
-  legal: ['Risk oversight', 'Team management', 'Stakeholder advisory', 'Legal strategy', 'Regulatory reporting', 'Admin'],
-  executive: ['Strategy sessions', 'Stakeholder meetings', 'Board prep', 'Budget reviews', 'Team leadership', 'External meetings', 'Admin'],
-  other: ['Team meetings', '1:1s', 'Strategy work', 'Stakeholder update', 'Planning', 'Admin'],
+const CORPORATE_CHIPS = {
+  marketing: {
+    ic: ['Write a brief', 'Draft copy or content', 'Review campaign performance', 'Competitor research', 'Brief a designer or agency', 'Prepare a report', 'Social media work', 'Email marketing', 'Admin'],
+    manager: ['Review team output', 'Brief the team', 'Campaign sign-off', 'Stakeholder update', 'Budget review', 'Agency or supplier meeting', 'Strategy work', '1:1 with team member', 'Hiring or interviews', 'Admin'],
+    director: ['Board or exec presentation', 'Brand strategy', 'Agency relationship', 'Budget ownership', 'Team performance review', 'Market opportunity assessment', 'Cross-functional alignment', 'Admin'],
+  },
+  sales: {
+    ic: ['Prospect outreach', 'Follow up on leads', 'Prepare a pitch or demo', 'Update CRM', 'Client call or meeting', 'Proposal writing', 'Objection handling prep', 'Admin'],
+    manager: ['Pipeline review', 'Coach the team', 'Forecast update', 'Key account strategy', 'Team 1:1s', 'Hiring', 'Deal support', 'Revenue reporting', 'Admin'],
+    director: ['Revenue strategy', 'Board reporting', 'Key client relationships', 'Partnerships', 'Hiring senior talent', 'Sales process improvement', 'Cross-functional alignment', 'Admin'],
+  },
+  operations: {
+    ic: ['Process documentation', 'Data analysis', 'Reporting', 'Vendor management', 'Project coordination', 'System improvement', 'Team support', 'Admin'],
+    manager: ['Team standup', 'Process review', 'Vendor negotiation', 'Stakeholder reporting', 'Budget tracking', 'Project oversight', 'Hiring', '1:1s', 'Admin'],
+    director: ['Strategic planning', 'Executive reporting', 'Organisational design', 'Cost optimisation', 'Cross-functional leadership', 'Board preparation', 'Admin'],
+  },
+  finance: {
+    ic: ['Bookkeeping or reconciliation', 'Report preparation', 'Budget tracking', 'Invoice processing', 'Data analysis', 'Compliance work', 'Audit support', 'Admin'],
+    manager: ['Financial reporting', 'Budget review', 'Forecasting', 'Stakeholder update', 'Team oversight', 'Audit coordination', 'Process improvement', 'Admin'],
+    director: ['Board financial reporting', 'Strategic financial planning', 'Investor relations', 'Risk management', 'Treasury oversight', 'M&A work', 'Admin'],
+  },
+  product: {
+    ic: ['Write a spec', 'User research', 'Competitor analysis', 'Backlog grooming', 'Stakeholder update', 'Data analysis', 'Design review', 'Admin'],
+    manager: ['Roadmap planning', 'Sprint planning', 'Prioritisation decisions', 'Stakeholder alignment', 'User interviews', 'Team standup', 'Metrics review', 'Admin'],
+    director: ['Product strategy', 'Executive alignment', 'Market opportunity', 'Team structure', 'OKR setting', 'Partnership assessment', 'Board presentation', 'Admin'],
+  },
+  engineering: {
+    ic: ['Deep coding session', 'Code review', 'Bug fixing', 'Write documentation', 'Refactor work', 'Architecture thinking', 'Team standup', 'Admin'],
+    manager: ['Sprint planning', 'Team 1:1s', 'Architecture review', 'Hiring', 'Stakeholder update', 'Process improvement', 'Technical debt decisions', 'Unblocking the team', 'Admin'],
+    director: ['Technical strategy', 'Org design', 'Executive reporting', 'Hiring senior engineers', 'Build vs buy decisions', 'Cross-team alignment', 'Board technical update', 'Admin'],
+  },
+  design: {
+    ic: ['Design work', 'User research', 'Prototype or wireframe', 'Design review', 'Stakeholder presentation', 'Design system work', 'Competitor analysis', 'Admin'],
+    manager: ['Design critique', 'Team 1:1s', 'Stakeholder alignment', 'Hiring', 'Design process improvement', 'Creative direction', 'Cross-functional collaboration', 'Admin'],
+    director: ['Design strategy', 'Executive alignment', 'Team structure', 'OKR setting', 'Brand or product vision', 'Cross-functional leadership', 'Board presentation', 'Admin'],
+  },
+  'hr-people': {
+    ic: ['Recruitment screening', 'Onboarding support', 'Policy work', 'L&D coordination', 'Employee relations', 'Data reporting', 'Culture initiatives', 'Admin'],
+    manager: ['Recruitment strategy', 'Performance management', 'Employee relations', 'L&D planning', 'Culture initiatives', 'Leadership coaching', 'HR reporting', 'Hiring', 'Admin'],
+    director: ['People strategy', 'Executive coaching', 'Organisational design', 'Culture transformation', 'Board people reporting', 'Employer brand', 'Compensation strategy', 'Admin'],
+  },
+  legal: {
+    ic: ['Contract review', 'Legal research', 'Compliance work', 'Advisory support', 'Document drafting', 'Risk assessment', 'Admin'],
+    manager: ['Contract negotiation', 'Legal strategy', 'Risk management', 'Board advisory', 'External counsel management', 'Regulatory compliance', 'Admin'],
+    director: ['Contract negotiation', 'Legal strategy', 'Risk management', 'Board advisory', 'External counsel management', 'Regulatory compliance', 'Admin'],
+  },
+  executive: {
+    ic: ['Board preparation', 'Investor or stakeholder meeting', 'Strategic planning', 'Team leadership', 'Key decision making', 'External relationships', 'Market assessment', 'Admin'],
+    manager: ['Board preparation', 'Investor or stakeholder meeting', 'Strategic planning', 'Team leadership', 'Key decision making', 'External relationships', 'Market assessment', 'Admin'],
+    director: ['Board preparation', 'Investor or stakeholder meeting', 'Strategic planning', 'Team leadership', 'Key decision making', 'External relationships', 'Market assessment', 'Admin'],
+  },
+  other: {
+    ic: ['Deep work', 'Team meetings', 'Planning', 'Communication', 'Review', 'Admin'],
+    manager: ['Team meetings', '1:1s', 'Strategy work', 'Stakeholder update', 'Planning', 'Admin'],
+    director: ['Strategic planning', 'Executive meetings', 'Stakeholder management', 'Team leadership', 'Decision making', 'Admin'],
+  },
 }
 
 const SE_CHIPS_UNIVERSAL = ['Chase or send an invoice', 'Admin and bookkeeping']
@@ -98,9 +128,59 @@ function getFinanceChips(businessStage) {
   return isEarly ? SE_FINANCE_CHIPS_EARLY : SE_FINANCE_CHIPS_GROWN
 }
 
-const STUDENT_CHIPS = [
-  'Study / revision', 'Assignment work', 'Research', 'Lectures / classes', 'Group work', 'Admin',
-]
+const STUDENT_CHIPS_BY_LEVEL = {
+  'secondary-school': {
+    'science-tech': ['Past paper practice', 'Revision notes', 'Formula memorisation', 'Lab report', 'Homework', 'Revision flashcards', 'Ask teacher for help', 'Admin'],
+    'business-econ': ['Case study revision', 'Past papers', 'Essay practice', 'Data response questions', 'Homework', 'Flashcard review', 'Admin'],
+    'arts-humanities': ['Essay writing', 'Textbook reading', 'Past paper practice', 'Creative work', 'Homework', 'Annotation and close reading', 'Admin'],
+    default: ['Catch up on missed work', 'Organise revision schedule', 'Study group', 'Past paper', 'Homework', 'Break and recharge'],
+  },
+  'undergraduate': {
+    'science-tech': ['Problem set', 'Lab work or report', 'Lecture notes review', 'Past paper', 'Group project', 'Research reading', 'Assignment draft', 'Admin'],
+    'business-econ': ['Case study', 'Essay or report writing', 'Group presentation prep', 'Data analysis', 'Lecture catch-up', 'Networking or career work', 'Admin'],
+    'arts-humanities': ['Essay planning or writing', 'Close reading', 'Seminar prep', 'Research', 'Bibliography work', 'Creative or critical piece', 'Admin'],
+    'law': ['Case reading', 'Problem question practice', 'Essay writing', 'Mooting prep', 'Lecture notes', 'Revision', 'Admin'],
+    'medicine-health': ['Clinical skills practice', 'Case studies', 'Anatomy revision', 'Past papers', 'Portfolio work', 'Placement prep', 'Admin'],
+    'social-sciences': ['Research methods work', 'Essay writing', 'Data analysis', 'Reading', 'Fieldwork prep', 'Presentation prep', 'Admin'],
+    default: ['Lecture catch-up', 'Essay or assignment', 'Seminar prep', 'Research', 'Past paper', 'Group work', 'Admin'],
+  },
+  'masters': {
+    default: ['Dissertation chapter', 'Literature review', 'Research methodology', 'Data collection or analysis', 'Supervisor meeting prep', 'Seminar paper', 'Module assignment', 'Admin'],
+  },
+  'phd': {
+    default: ['Thesis writing', 'Data collection or analysis', 'Literature review', 'Conference paper', 'Supervisor meeting prep', 'Grant application', 'Teaching prep', 'Admin'],
+  },
+  'professional-qualification': {
+    'business-econ': ['Past exam questions', 'Topic revision', 'Mock exam', 'Case study practice', 'Study text reading', 'Flashcard review', 'Admin'],
+    'law': ['Problem question practice', 'Case reading', 'Mooting prep', 'Legal research', 'Past paper', 'Written exercise practice', 'Admin'],
+    'social-sciences': ['Assignment writing', 'Case study analysis', 'Reflective practice', 'Reading', 'Presentation prep', 'Admin'],
+    default: ['Timed practice questions', 'Topic consolidation', 'Mock exam', 'Study group', 'Tutor session prep', 'Admin'],
+  },
+  'online-self-study': {
+    'science-tech': ['Coding exercise', 'Project work', 'Tutorial or course module', 'Debug a problem', 'Build something', 'Document learning', 'Admin'],
+    default: ['Course module', 'Note taking', 'Practice exercise', 'Project milestone', 'Community engagement', 'Apply learning', 'Admin'],
+  },
+  'apprenticeship': {
+    default: ['Work task', 'Study session', 'Assignment', 'Mentor meeting prep', 'Portfolio evidence', 'Skills practice', 'Admin'],
+  },
+}
+
+function normalizeStudentSubject(subjectArea) {
+  const s = (subjectArea || '').toLowerCase()
+  if (s.includes('science') || s.includes('tech') || s.includes('engineering')) return 'science-tech'
+  if (s.includes('business') || s.includes('economics')) return 'business-econ'
+  if (s.includes('arts') || s.includes('humanities')) return 'arts-humanities'
+  if (s.includes('law')) return 'law'
+  if (s.includes('medicine') || s.includes('health')) return 'medicine-health'
+  if (s.includes('social')) return 'social-sciences'
+  return 'default'
+}
+
+function getStudentChips(studyLevel, subjectArea) {
+  const levelMap = STUDENT_CHIPS_BY_LEVEL[studyLevel] || STUDENT_CHIPS_BY_LEVEL['undergraduate']
+  const subjectKey = normalizeStudentSubject(subjectArea)
+  return levelMap[subjectKey] || levelMap['default'] || levelMap[Object.keys(levelMap)[0]]
+}
 
 const LOW_EFFORT_CHIPS = [
   'Admin', 'Clear emails', 'Light review', 'Team catch-up', 'Reply to messages',
@@ -112,8 +192,14 @@ const FIGURING_IT_OUT_CHIPS = [
   'Learn something new', 'Take one small step', 'Admin and life tasks',
 ]
 
-function getChips(userType, jobFunctions, seniority, selfEmployedType) {
-  if (userType === 'student') return STUDENT_CHIPS
+function getSeniorityTier(seniority) {
+  if (seniority === 'director-plus') return 'director'
+  if (seniority === 'manager') return 'manager'
+  return 'ic'
+}
+
+function getChips(userType, jobFunctions, seniority, selfEmployedType, studyLevel, subjectArea) {
+  if (userType === 'student') return getStudentChips(studyLevel, subjectArea)
   if (userType === 'figuring-it-out') return FIGURING_IT_OUT_CHIPS
   if (userType === 'self-employed') {
     if (selfEmployedType && selfEmployedType !== 'other') {
@@ -122,24 +208,28 @@ function getChips(userType, jobFunctions, seniority, selfEmployedType) {
     return SE_CHIPS_UNIVERSAL
   }
 
-  const isManager = seniority === 'manager' || seniority === 'director-plus'
-  const chipSet = isManager ? MANAGER_CHIPS : IC_CHIPS
+  const tier = getSeniorityTier(seniority)
   const primaryFn = (Array.isArray(jobFunctions) ? jobFunctions : [jobFunctions])
     .find((jf) => jf && jf !== 'other') || 'other'
-  return chipSet[primaryFn] || chipSet['other']
+  const fnChips = CORPORATE_CHIPS[primaryFn] || CORPORATE_CHIPS['other']
+  return fnChips[tier] || fnChips['ic']
 }
 
-// Determine the localStorage key for this user's task chips
 function getTaskChipKey(userProfile) {
   const ut = userProfile?.userType
   if (ut === 'self-employed') {
     const se = userProfile?.selfEmployedType || userProfile?.workType || 'se'
     return `tasks_${se}`
   }
-  if (ut === 'student') return 'tasks_student'
+  if (ut === 'student') {
+    const sl = userProfile?.studyLevel || 'student'
+    const subKey = normalizeStudentSubject(userProfile?.subjectArea)
+    return `tasks_student_${sl}_${subKey}`
+  }
   if (ut === 'figuring-it-out') return 'tasks_figuring'
   const jf = Array.isArray(userProfile?.jobFunctions) ? userProfile.jobFunctions[0] : 'other'
-  return `tasks_corporate_${jf || 'other'}`
+  const tier = getSeniorityTier(userProfile?.seniority)
+  return `tasks_corp_${jf || 'other'}_${tier}`
 }
 
 function GridChipBtn({ label, active, onClick }) {
@@ -224,6 +314,8 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
     userProfile?.jobFunctions,
     userProfile?.seniority,
     selfEmployedType,
+    userProfile?.studyLevel,
+    userProfile?.subjectArea,
   )
   const chips =
     stateLevel === 'low'

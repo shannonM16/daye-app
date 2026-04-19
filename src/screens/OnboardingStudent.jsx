@@ -6,7 +6,8 @@ const TOTAL = 5
 const STUDY_LEVELS = [
   { id: 'secondary-school', label: 'Secondary school', description: 'GCSEs, A-levels or equivalent' },
   { id: 'undergraduate', label: 'Undergraduate', description: "Bachelor's degree" },
-  { id: 'postgraduate', label: 'Postgraduate', description: "Master's or PhD" },
+  { id: 'masters', label: "Master's degree", description: "Taught or research master's" },
+  { id: 'phd', label: 'PhD / Doctorate', description: 'Research degree or doctoral programme' },
   { id: 'professional-qualification', label: 'Professional qualification', description: 'ACCA, Bar, CIMA, CIPD etc' },
   { id: 'online-self-study', label: 'Online or self-study', description: 'Course, bootcamp or self-directed' },
   { id: 'apprenticeship', label: 'Apprenticeship', description: 'Degree or professional apprenticeship' },
@@ -25,20 +26,145 @@ const TERM_POSITIONS = [
   { id: 'between-terms', label: 'Between terms', description: 'Catching up, getting ahead, or resting' },
 ]
 
-const GOALS = [
-  { id: 'pass-exams', label: 'Pass my exams', description: 'I need to get through, not necessarily top grades' },
-  { id: 'get-top-grade', label: 'Get a top grade', description: 'I want to perform at my best' },
-  { id: 'finish-dissertation', label: 'Finish my dissertation', description: 'I need to make real progress on it' },
-  { id: 'land-placement', label: 'Land a placement or job', description: 'Career move is the priority' },
-  { id: 'stay-on-top-of-workload', label: 'Stay on top of my workload', description: 'I just want to feel less behind' },
-  { id: 'build-career-skills', label: 'Build skills for my career', description: 'I want to learn beyond the syllabus' },
-]
+const GOALS_BY_LEVEL = {
+  'secondary-school': [
+    { id: 'get-grades', label: 'Get the grades I need', description: 'Hit my target grades or beat them' },
+    { id: 'get-into-uni', label: 'Get into my chosen university', description: 'Build the application I want' },
+    { id: 'improve-weakest', label: 'Improve in my weakest subject', description: 'Turn a weakness into a strength' },
+    { id: 'stop-cramming', label: 'Stop leaving things to the last minute', description: 'Build better revision habits' },
+    { id: 'reduce-exam-anxiety', label: 'Feel less anxious about exams', description: 'Manage the pressure better' },
+    { id: 'better-study-habits', label: 'Develop better study habits', description: 'Build routines that actually work' },
+  ],
+  'undergraduate': [
+    { id: 'graduate-strong', label: 'Graduate with a strong degree', description: 'Get the grade I am capable of' },
+    { id: 'land-grad-job', label: 'Land a graduate job or placement', description: 'Career move is the priority' },
+    { id: 'postgrad-entry', label: 'Get into postgraduate study', description: 'Masters or PhD is the plan' },
+    { id: 'skills-beyond-degree', label: 'Develop skills beyond my degree', description: 'Stand out from my peers' },
+    { id: 'build-network', label: 'Build my network', description: 'Make the connections that matter' },
+    { id: 'make-most-of-uni', label: 'Make the most of university life', description: 'Academic and personal growth' },
+    { id: 'manage-wellbeing', label: 'Manage my wellbeing better', description: 'Study without burning out' },
+  ],
+  'masters': [
+    { id: 'dissertation-high', label: 'Complete my dissertation to a high standard', description: 'Do the best work I am capable of' },
+    { id: 'get-distinction', label: 'Get a distinction', description: 'Top grade is the target' },
+    { id: 'move-into-academia', label: 'Move into academia', description: 'PhD or research career ahead' },
+    { id: 'career-change', label: 'Use this to change career', description: 'This degree opens a new door' },
+    { id: 'build-expertise', label: 'Build specialist expertise', description: 'Become genuinely expert in my field' },
+    { id: 'land-role', label: 'Land a role in my field', description: 'Get hired in the area I have studied' },
+  ],
+  'phd': [
+    { id: 'submit-thesis', label: 'Submit my thesis on time', description: 'Complete without running over' },
+    { id: 'publish', label: 'Publish in a good journal', description: 'Get peer-reviewed work out there' },
+    { id: 'present-conference', label: 'Present at a conference', description: 'Build my presence in the field' },
+    { id: 'postdoc-academic', label: 'Secure a postdoc or academic position', description: 'Stay in academia after completion' },
+    { id: 'research-profile', label: 'Develop my research profile', description: 'Be known for my work' },
+    { id: 'finish-well', label: 'Finish without burning out', description: 'Complete this sustainably' },
+  ],
+  'professional-qualification': [
+    { id: 'pass-first-time', label: 'Pass my exams first time', description: 'No resits — clean through' },
+    { id: 'qualify-fast', label: 'Qualify as quickly as possible', description: 'Minimum time to the letters after my name' },
+    { id: 'balance-study-work', label: 'Balance study with work effectively', description: 'Manage both without dropping either' },
+    { id: 'advance-career', label: 'Advance my career through qualifying', description: 'This qualification opens the next door' },
+    { id: 'employer-support', label: 'Get employer support for study', description: 'Study time, funding or both' },
+  ],
+  'online-self-study': [
+    { id: 'complete-course', label: 'Complete the course', description: 'Finish what I started' },
+    { id: 'build-portfolio', label: 'Build a portfolio', description: 'Create proof of what I can do' },
+    { id: 'first-job', label: 'Get my first job in the field', description: 'Break into the industry' },
+    { id: 'career-change-online', label: 'Change career successfully', description: 'Move into something new' },
+    { id: 'apply-immediately', label: 'Apply what I learn immediately', description: 'Make it practical and real' },
+  ],
+  'apprenticeship': [
+    { id: 'complete-apprenticeship', label: 'Complete my apprenticeship successfully', description: 'Pass everything and qualify' },
+    { id: 'permanent-role', label: 'Get a permanent role', description: 'Convert to full employment' },
+    { id: 'real-skills', label: 'Develop real skills', description: 'Learn things that actually matter at work' },
+    { id: 'best-grade', label: 'Get the best grade I can', description: 'Academic performance matters to me' },
+    { id: 'professional-network', label: 'Build my professional network', description: 'Make connections that last' },
+  ],
+}
 
-const STUDENT_BLOCKERS = [
-  'Procrastination', 'Hard to concentrate', 'No quiet space', 'Too many distractions',
-  "Don't know where to start", 'Falling behind on work', 'Exam anxiety', 'Poor note-taking',
-  'Low motivation', 'Comparing myself to others',
-]
+const BLOCKERS_BY_LEVEL = {
+  'secondary-school': [
+    'Procrastination',
+    'Hard to concentrate at home',
+    'Phone and social media distraction',
+    'Exam anxiety',
+    "Don't understand the material",
+    'Falling behind feels overwhelming',
+    'No quiet space to study',
+  ],
+  'undergraduate': [
+    'Procrastination',
+    'Social life vs study balance',
+    'Mental health and wellbeing',
+    'Financial stress affecting focus',
+    'Group work frustrations',
+    'Unclear on career direction',
+    'Comparison to other students',
+    'Lecture content not engaging',
+  ],
+  'masters': [
+    'Isolation',
+    'Imposter syndrome',
+    "Writer's block",
+    'Supervisor relationship',
+    'Perfectionism slowing progress',
+    'Work-life-study balance',
+    'Financial pressure',
+    'Unclear research direction',
+  ],
+  'phd': [
+    'Isolation',
+    'Imposter syndrome',
+    "Writer's block",
+    'Supervisor relationship',
+    'Perfectionism slowing progress',
+    'Work-life-study balance',
+    'Financial pressure',
+    'Unclear research direction',
+  ],
+  'professional-qualification': [
+    'Finding study time around work',
+    'Exam anxiety',
+    'Dry or difficult material',
+    'Losing motivation between sittings',
+    'Work not supporting study',
+    'Isolation from other students',
+  ],
+  'online-self-study': [
+    'Self-discipline without structure',
+    'Losing momentum',
+    'No accountability',
+    'Technical difficulties',
+    'Unclear on what to build',
+    'Comparison to others in the cohort',
+  ],
+  'apprenticeship': [
+    'Study-work balance',
+    'Not enough support from employer',
+    'Assessment anxiety',
+    'Imposter syndrome at work',
+    'Hard to find study time',
+    'Unclear on what is expected',
+  ],
+}
+
+function getGoals(studyLevel) {
+  return GOALS_BY_LEVEL[studyLevel] || GOALS_BY_LEVEL['undergraduate']
+}
+
+function getBlockers(studyLevel) {
+  return BLOCKERS_BY_LEVEL[studyLevel] || BLOCKERS_BY_LEVEL['undergraduate']
+}
+
+function getBlockerIntro(studyLevel) {
+  if (studyLevel === 'phd') return "PhD can be isolating and non-linear — what gets in your way?"
+  if (studyLevel === 'masters') return "What's making it harder to do your best work right now?"
+  if (studyLevel === 'professional-qualification') return "Studying alongside work is hard — what gets in the way?"
+  if (studyLevel === 'secondary-school') return "What makes it harder to sit down and study?"
+  if (studyLevel === 'online-self-study') return "Self-directed study has its own challenges — what are yours?"
+  return "Select all that apply, or skip if none fit."
+}
 
 export default function OnboardingStudent({ onComplete, onBack }) {
   const [step, setStep] = useState(0)
@@ -56,7 +182,7 @@ export default function OnboardingStudent({ onComplete, onBack }) {
     subjectArea !== null,
     termPosition !== null,
     goals.length > 0,
-    true, // blockers optional
+    true,
   ][step]
 
   const handleContinue = () => {
@@ -152,7 +278,7 @@ export default function OnboardingStudent({ onComplete, onBack }) {
             <h1 className="text-[22px] font-bold text-stone-900 mb-1">What's your main goal right now?</h1>
             <p className="text-[13px] text-stone-400 mb-4">Select all that apply.</p>
             <div className="space-y-1.5">
-              {GOALS.map((opt) => (
+              {getGoals(studyLevel).map((opt) => (
                 <SelectCard
                   key={opt.id}
                   label={opt.label}
@@ -168,9 +294,9 @@ export default function OnboardingStudent({ onComplete, onBack }) {
         {step === 4 && (
           <>
             <h1 className="text-[22px] font-bold text-stone-900 mb-1">What gets in the way of your best work?</h1>
-            <p className="text-[13px] text-stone-400 mb-4">Students often find these things hold them back:</p>
+            <p className="text-[13px] text-stone-400 mb-4">{getBlockerIntro(studyLevel)}</p>
             <div className="grid grid-cols-2 gap-1.5 mb-4">
-              {STUDENT_BLOCKERS.map((label) => (
+              {getBlockers(studyLevel).map((label) => (
                 <GridChip
                   key={label}
                   label={label}
