@@ -1,15 +1,49 @@
 import { decisionEngine } from './decisionEngine'
+import { getCustomChips } from '../utils/customChips'
 
 function getDayNameFallback(checkInData) {
   const dayType = checkInData?.dayType || ''
   const energy = checkInData?.energy ?? 3
   const mood = (checkInData?.mood || '').toLowerCase()
-  const isLow = energy <= 2 || ['overwhelmed', 'anxious', 'tired', 'flat'].includes(mood)
+  const isLow = energy <= 2 || ['overwhelmed', 'anxious', 'tired', 'flat', 'burned-out', 'scattered'].includes(mood)
   if (isLow) return 'Gentle Progress'
   if (dayType === 'deep-work') return 'Deep Focus'
   if (dayType === 'lots-of-meetings' || dayType === 'reactive-firefighting') return 'Full Throttle'
   if (dayType === 'reactive-firefighting') return 'Steady Hands'
   return "Today's Plan"
+}
+
+function formatTime12hFromHHMM(hhmm) {
+  if (!hhmm) return null
+  const [h, m] = hhmm.split(':').map(Number)
+  const ampm = h >= 12 ? 'pm' : 'am'
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
+  return `${h12}:${String(m).padStart(2, '0')}${ampm}`
+}
+
+function roundToNearest15(hhmm) {
+  if (!hhmm) return null
+  const [h, m] = hhmm.split(':').map(Number)
+  const rounded = Math.round(m / 15) * 15
+  if (rounded === 60) {
+    return `${String(h + 1).padStart(2, '0')}:00`
+  }
+  return `${String(h).padStart(2, '0')}:${String(rounded).padStart(2, '0')}`
+}
+
+function getHoursRemaining(hhmm, endHour = 18) {
+  if (!hhmm) return null
+  const [h, m] = hhmm.split(':').map(Number)
+  const remaining = endHour - h - m / 60
+  return Math.max(0, Math.round(remaining * 10) / 10)
+}
+
+function getTimePeriodLabel(hhmm) {
+  if (!hhmm) return 'morning'
+  const h = parseInt(hhmm.split(':')[0], 10)
+  if (h < 12) return 'morning'
+  if (h < 17) return 'afternoon'
+  return 'evening'
 }
 
 function buildPrompt(userProfile, checkInData, tasks) {
@@ -29,14 +63,21 @@ function buildPrompt(userProfile, checkInData, tasks) {
 
   const selfEmployedType = seType || workType || null
 
+  // Merge profile goals with any custom goals from storage
+  const customStoredGoals = getCustomChips('goals')
   const goalsArray = goals?.length > 0 ? goals : (goalLegacy ? [goalLegacy] : [])
-  const primaryGoal = goalsArray[0] || 'general productivity'
-  const jobFunction = Array.isArray(jobFunctions) ? jobFunctions[0] : (jobFunctions || null)
-  const blockersStr = Array.isArray(blockers) && blockers.length > 0
-    ? blockers.join(', ')
-    : 'none mentioned'
+  const allGoals = [...goalsArray, ...customStoredGoals.filter(g => !goalsArray.includes(g))]
+  const primaryGoal = allGoals[0] || 'general productivity'
 
-  const { energy, mood, sleep, dayType, pressure } = checkInData || {}
+  const jobFunction = Array.isArray(jobFunctions) ? jobFunctions[0] : (jobFunctions || null)
+
+  // Merge profile blockers with custom blockers from storage
+  const customStoredBlockers = getCustomChips('blockers')
+  const profileBlockers = Array.isArray(blockers) ? blockers : []
+  const allBlockers = [...profileBlockers, ...customStoredBlockers.filter(b => !profileBlockers.includes(b))]
+  const blockersStr = allBlockers.length > 0 ? allBlockers.join(', ') : 'none mentioned'
+
+  const { energy, mood, sleep, dayType, pressure, planningStartTime } = checkInData || {}
   const pressureStr = Array.isArray(pressure) && pressure.length > 0
     ? pressure.join(', ')
     : 'none'
@@ -51,6 +92,20 @@ function buildPrompt(userProfile, checkInData, tasks) {
   const selfEmployedExtra = userType === 'self-employed' && selfEmployedType
     ? `\n- Self-employed type: ${selfEmployedType}`
     : ''
+
+  // Time-aware planning context
+  const roundedStartTime = planningStartTime ? roundToNearest15(planningStartTime) : null
+  const startTime12h = roundedStartTime ? formatTime12hFromHHMM(roundedStartTime) : null
+  const hoursRemaining = planningStartTime ? getHoursRemaining(planningStartTime) : null
+  const timePeriod = getTimePeriodLabel(planningStartTime)
+
+  const timeContext = startTime12h ? `
+
+TIME CONTEXT:
+- Current time: ${startTime12h}
+- Time of day: ${timePeriod}
+- Hours remaining in working day (to 6pm): approximately ${hoursRemaining} hours
+- IMPORTANT: Build ALL time blocks starting from ${startTime12h}, not from 9am. Round to the nearest 15 minutes. For example, if current time is 2:15pm: "2:15–3:30pm: Deep work", "3:30–4pm: Clear emails", "4–5pm: Admin and review", "5–6pm: Close out". Never start time blocks before ${startTime12h}.` : ''
 
   const selfEmployedInstructions = userType === 'self-employed' ? `
 SELF-EMPLOYED INSTRUCTIONS:
@@ -74,7 +129,7 @@ TODAY:
 - Sleep: ${sleep || 'not specified'}
 - Type of day: ${dayType || 'standard'}
 - Main pressure: ${pressureStr}
-- Tasks they have mentioned: ${tasksStr}
+- Tasks they have mentioned: ${tasksStr}${timeContext}
 
 Generate a daily focus plan. Be warm, direct and personal. Use their name. Reference their actual goal and blockers. Do not be generic.
 
@@ -82,7 +137,7 @@ Respond with a JSON object containing exactly these fields:
 {
   "priorities": [{"task": "string", "subtitle": "string explaining why this matters today"}],
   "avoid": ["string"],
-  "timeSplit": [{"time": "string like 9-10am", "task": "string"}],
+  "timeSplit": [{"time": "string like 2:15–3:30pm", "task": "string"}],
   "why": "string of 2-3 sentences explaining the reasoning behind this plan referencing their goal and current state",
   "dayLabel": "one of: Focus day, Recovery day, Busy day, Exploration day",
   "goalAlignment": "short string like Today moves you toward getting promoted",
@@ -90,12 +145,13 @@ Respond with a JSON object containing exactly these fields:
 }
 
 Rules:
-- If energy is 1 or 2 or mood is Overwhelmed or Anxious: only 2 priorities, shorter time blocks, warmer tone
+- If energy is 1 or 2 or mood is Overwhelmed or Anxious or Burned out: only 2 priorities, shorter time blocks, warmer tone
 - If energy is 4 or 5 and day type is deep work: 3 priorities, longer blocks, ambitious tone
 - Always reference at least one of their actual tasks in the priorities
 - The why must mention their goal specifically
 - Avoid items must reference their actual blockers not generic advice
 - Time split must reflect their actual energy level — low energy gets shorter blocks with breaks
+- Time split MUST start from the current time if provided — never use 9am as the start if a different time was given
 - dayName must feel like a chapter title — poetic, warm, and personal to their actual situation. Examples for inspiration (do not use these exactly): 'The Big Push', 'Steady Hands', 'The Long Game', 'Deep Focus Morning', 'The Comeback', 'Small Steps Forward', 'Clearing the Decks', 'The Pitch Day', 'One Thing Only', 'Gentle Progress'. If they have a big deadline it might be 'The Final Push'. If low energy it might be 'Slow and Steady'. Never generic, always specific to their day.${selfEmployedInstructions}`
 }
 

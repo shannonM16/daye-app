@@ -149,7 +149,7 @@ export default function OnboardingFiguringItOut({ onComplete, onBack }) {
             </p>
             <textarea
               value={userText}
-              onChange={(e) => setUserText(e.target.value)}
+              onChange={(e) => { const v = e.target.value; setUserText(v.length === 1 ? v.toUpperCase() : v) }}
               placeholder="e.g. I've just left my job and I'm not sure what to do next. I'm thinking about going freelance but also considering going back to study..."
               rows={5}
               className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder:text-stone-300 outline-none focus:border-stone-400 transition-colors bg-white resize-none leading-relaxed"

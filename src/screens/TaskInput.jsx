@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getStateLevel } from '../utils/stateDetection'
+import { getCustomChips, saveCustomChip, removeCustomChip } from '../utils/customChips'
 
 const IC_CHIPS = {
   marketing: ['Write a brief', 'Draft copy', 'Review analytics', 'Schedule content', 'Research competitors', 'Reply to briefs', 'Admin'],
@@ -75,6 +76,28 @@ const SE_CHIPS_BY_TYPE = {
   ],
 }
 
+// Finance chips for SE users — ordered by business stage relevance
+const SE_FINANCE_CHIPS_EARLY = [
+  'Find or brief an accountant',
+  'Sort my accounts',
+  'Tax admin',
+  'Review my finances',
+  'Update my bookkeeping',
+]
+
+const SE_FINANCE_CHIPS_GROWN = [
+  'Review my finances',
+  'Update my bookkeeping',
+  'Tax admin',
+  'Sort my accounts',
+  'Find or brief an accountant',
+]
+
+function getFinanceChips(businessStage) {
+  const isEarly = ['just-launched', 'early-stage'].includes(businessStage)
+  return isEarly ? SE_FINANCE_CHIPS_EARLY : SE_FINANCE_CHIPS_GROWN
+}
+
 const STUDENT_CHIPS = [
   'Study / revision', 'Assignment work', 'Research', 'Lectures / classes', 'Group work', 'Admin',
 ]
@@ -104,6 +127,19 @@ function getChips(userType, jobFunctions, seniority, selfEmployedType) {
   const primaryFn = (Array.isArray(jobFunctions) ? jobFunctions : [jobFunctions])
     .find((jf) => jf && jf !== 'other') || 'other'
   return chipSet[primaryFn] || chipSet['other']
+}
+
+// Determine the localStorage key for this user's task chips
+function getTaskChipKey(userProfile) {
+  const ut = userProfile?.userType
+  if (ut === 'self-employed') {
+    const se = userProfile?.selfEmployedType || userProfile?.workType || 'se'
+    return `tasks_${se}`
+  }
+  if (ut === 'student') return 'tasks_student'
+  if (ut === 'figuring-it-out') return 'tasks_figuring'
+  const jf = Array.isArray(userProfile?.jobFunctions) ? userProfile.jobFunctions[0] : 'other'
+  return `tasks_corporate_${jf || 'other'}`
 }
 
 function GridChipBtn({ label, active, onClick }) {
@@ -181,6 +217,7 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
 
   const selfEmployedType = userProfile?.selfEmployedType || userProfile?.workType || null
   const isOtherSE = userProfile?.userType === 'self-employed' && (!selfEmployedType || selfEmployedType === 'other')
+  const isSelfEmployed = userProfile?.userType === 'self-employed'
 
   const allChips = getChips(
     userProfile?.userType,
@@ -195,10 +232,26 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
       ? allChips
       : allChips.slice(0, 7)
 
-  const [selected, setSelected] = useState(() => {
-    const prev = initialTasks || []
-    return prev.filter((t) => chips.includes(t))
-  })
+  const taskChipKey = getTaskChipKey(userProfile)
+
+  // Custom task chips for this screen (persisted)
+  const [customTaskChips, setCustomTaskChips] = useState(() => getCustomChips(taskChipKey))
+  const [taskEditMode, setTaskEditMode] = useState(false)
+  const [customTaskInput, setCustomTaskInput] = useState('')
+
+  // Finance chips for SE users
+  const financeChips = isSelfEmployed ? getFinanceChips(userProfile?.businessStage) : []
+  const financeChipKey = `tasks_finance_${selfEmployedType || 'se'}`
+  const [customFinanceChips, setCustomFinanceChips] = useState(() => getCustomChips(financeChipKey))
+  const [financeEditMode, setFinanceEditMode] = useState(false)
+  const [financeCustomInput, setFinanceCustomInput] = useState('')
+
+  // All standard chips (for identifying custom vs standard on removal)
+  const allStandardChips = [...allChips, ...financeChips]
+
+  // Unified selected tasks array
+  const [selected, setSelected] = useState(() => initialTasks || [])
+
   const [freeText, setFreeText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -211,6 +264,58 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
     setSelected((prev) =>
       prev.includes(label) ? prev.filter((t) => t !== label) : [...prev, label]
     )
+  }
+
+  const removeTask = (task) => {
+    setSelected(prev => prev.filter(t => t !== task))
+    // If custom task (not in standard chips), also remove from storage
+    if (!allStandardChips.includes(task)) {
+      if (customTaskChips.includes(task)) {
+        removeCustomChip(taskChipKey, task)
+        setCustomTaskChips(prev => prev.filter(c => c !== task))
+      }
+      if (customFinanceChips.includes(task)) {
+        removeCustomChip(financeChipKey, task)
+        setCustomFinanceChips(prev => prev.filter(c => c !== task))
+      }
+    }
+  }
+
+  // Add a custom task chip
+  const addCustomTaskChip = () => {
+    const trimmed = customTaskInput.trim()
+    if (!trimmed) return
+    if (!customTaskChips.includes(trimmed)) {
+      saveCustomChip(taskChipKey, trimmed)
+      setCustomTaskChips(prev => [...prev, trimmed])
+    }
+    // Auto-select it
+    setSelected(prev => prev.includes(trimmed) ? prev : [...prev, trimmed])
+    setCustomTaskInput('')
+  }
+
+  const deleteCustomTaskChip = (chip) => {
+    removeCustomChip(taskChipKey, chip)
+    setCustomTaskChips(prev => prev.filter(c => c !== chip))
+    setSelected(prev => prev.filter(t => t !== chip))
+  }
+
+  // Add custom finance chip
+  const addCustomFinanceChip = () => {
+    const trimmed = financeCustomInput.trim()
+    if (!trimmed) return
+    if (!customFinanceChips.includes(trimmed)) {
+      saveCustomChip(financeChipKey, trimmed)
+      setCustomFinanceChips(prev => [...prev, trimmed])
+    }
+    setSelected(prev => prev.includes(trimmed) ? prev : [...prev, trimmed])
+    setFinanceCustomInput('')
+  }
+
+  const deleteCustomFinanceChip = (chip) => {
+    removeCustomChip(financeChipKey, chip)
+    setCustomFinanceChips(prev => prev.filter(c => c !== chip))
+    setSelected(prev => prev.filter(t => t !== chip))
   }
 
   const canSubmit = selected.length > 0 || freeText.trim().length > 0
@@ -242,7 +347,16 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
     onSubmit(combined.length > 0 ? combined : selected)
   }
 
-  const firstName = user?.firstName || ''
+  const handleCustomTaskKey = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addCustomTaskChip() }
+  }
+
+  const handleFinanceCustomKey = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addCustomFinanceChip() }
+  }
+
+  const rawName = user?.firstName || ''
+  const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : ''
 
   return (
     <div className="screen">
@@ -285,7 +399,7 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
           </div>
         )}
 
-        {/* Role chips in 2-col grid */}
+        {/* Main task chips */}
         <div>
           <label className="text-[11px] font-medium uppercase tracking-widest block mb-3" style={{ color: 'var(--color-muted)' }}>
             {stateLevel === 'low' ? 'Keep it simple today' : stateLevel === 'high' ? 'What are you working on today?' : 'Quick select'}
@@ -299,13 +413,240 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
                 onClick={() => toggleChip(label)}
               />
             ))}
+            {/* Custom task chips */}
+            {customTaskChips.map((chip) => (
+              <div key={chip} className="relative">
+                <GridChipBtn
+                  label={chip}
+                  active={selected.includes(chip)}
+                  onClick={() => !taskEditMode && toggleChip(chip)}
+                />
+                {taskEditMode && (
+                  <button
+                    onClick={() => deleteCustomTaskChip(chip)}
+                    style={{
+                      position: 'absolute', top: '-4px', right: '-4px',
+                      width: '18px', height: '18px', borderRadius: '50%',
+                      background: 'var(--color-ink)', color: 'var(--color-white)',
+                      border: 'none', cursor: 'pointer', fontSize: '11px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                    aria-label={`Remove ${chip}`}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
+
+          {/* Something else? input */}
+          <div className="flex items-center gap-1.5 mt-3">
+            <input
+              type="text"
+              value={customTaskInput}
+              onChange={(e) => {
+                const v = e.target.value
+                setCustomTaskInput(v.length === 1 ? v.toUpperCase() : v)
+              }}
+              onKeyDown={handleCustomTaskKey}
+              placeholder="Add your own..."
+              style={{
+                flex: 1,
+                fontFamily: 'var(--font-sans)',
+                fontSize: '13px',
+                padding: '6px 12px',
+                borderRadius: '10px',
+                border: '0.5px solid var(--color-border)',
+                background: 'var(--color-white)',
+                color: 'var(--color-ink)',
+                outline: 'none',
+              }}
+            />
+            <button
+              onClick={addCustomTaskChip}
+              disabled={!customTaskInput.trim()}
+              style={{
+                width: '28px', height: '28px', borderRadius: '50%',
+                background: customTaskInput.trim() ? 'var(--color-ink)' : 'var(--color-border)',
+                color: 'var(--color-white)', border: 'none',
+                cursor: customTaskInput.trim() ? 'pointer' : 'default',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '18px', lineHeight: 1, flexShrink: 0,
+                transition: 'background 0.15s',
+              }}
+              aria-label="Add task"
+            >
+              +
+            </button>
+          </div>
+          {customTaskChips.length > 0 && (
+            <button
+              onClick={() => setTaskEditMode(e => !e)}
+              style={{
+                fontFamily: 'var(--font-sans)', fontSize: '11px',
+                color: 'var(--color-muted)', textDecoration: 'underline',
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '4px 0 0 0', display: 'block',
+              }}
+            >
+              {taskEditMode ? 'Done editing' : 'Edit my options'}
+            </button>
+          )}
         </div>
+
+        {/* SE Finance chips — "Money and admin" section */}
+        {isSelfEmployed && (
+          <div>
+            <label className="text-[11px] font-medium uppercase tracking-widest block mb-3" style={{ color: 'var(--color-muted)' }}>
+              Money and admin
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {financeChips.map((label) => (
+                <GridChipBtn
+                  key={label}
+                  label={label}
+                  active={selected.includes(label)}
+                  onClick={() => toggleChip(label)}
+                />
+              ))}
+              {/* Custom finance chips */}
+              {customFinanceChips.map((chip) => (
+                <div key={chip} className="relative">
+                  <GridChipBtn
+                    label={chip}
+                    active={selected.includes(chip)}
+                    onClick={() => !financeEditMode && toggleChip(chip)}
+                  />
+                  {financeEditMode && (
+                    <button
+                      onClick={() => deleteCustomFinanceChip(chip)}
+                      style={{
+                        position: 'absolute', top: '-4px', right: '-4px',
+                        width: '18px', height: '18px', borderRadius: '50%',
+                        background: 'var(--color-ink)', color: 'var(--color-white)',
+                        border: 'none', cursor: 'pointer', fontSize: '11px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                      aria-label={`Remove ${chip}`}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5 mt-3">
+              <input
+                type="text"
+                value={financeCustomInput}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setFinanceCustomInput(v.length === 1 ? v.toUpperCase() : v)
+                }}
+                onKeyDown={handleFinanceCustomKey}
+                placeholder="Add your own..."
+                style={{
+                  flex: 1, fontFamily: 'var(--font-sans)', fontSize: '13px',
+                  padding: '6px 12px', borderRadius: '10px',
+                  border: '0.5px solid var(--color-border)',
+                  background: 'var(--color-white)', color: 'var(--color-ink)', outline: 'none',
+                }}
+              />
+              <button
+                onClick={addCustomFinanceChip}
+                disabled={!financeCustomInput.trim()}
+                style={{
+                  width: '28px', height: '28px', borderRadius: '50%',
+                  background: financeCustomInput.trim() ? 'var(--color-ink)' : 'var(--color-border)',
+                  color: 'var(--color-white)', border: 'none',
+                  cursor: financeCustomInput.trim() ? 'pointer' : 'default',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '18px', lineHeight: 1, flexShrink: 0, transition: 'background 0.15s',
+                }}
+                aria-label="Add finance task"
+              >
+                +
+              </button>
+            </div>
+            {customFinanceChips.length > 0 && (
+              <button
+                onClick={() => setFinanceEditMode(e => !e)}
+                style={{
+                  fontFamily: 'var(--font-sans)', fontSize: '11px',
+                  color: 'var(--color-muted)', textDecoration: 'underline',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  padding: '4px 0 0 0', display: 'block',
+                }}
+              >
+                {financeEditMode ? 'Done editing' : 'Edit my options'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Unified task list — "Today's tasks" */}
+        {selected.length > 0 && (
+          <div>
+            <div className="flex items-baseline justify-between mb-2">
+              <label className="text-[11px] font-medium uppercase tracking-widest" style={{ color: 'var(--color-muted)' }}>
+                Today's tasks
+              </label>
+              <span className="text-[11px]" style={{ color: 'var(--color-muted)' }}>
+                {selected.length} {selected.length === 1 ? 'task' : 'tasks'}
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {selected.map((task) => (
+                <div
+                  key={task}
+                  className="flex items-center justify-between"
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    background: 'var(--color-white)',
+                    border: '0.5px solid var(--color-border)',
+                  }}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div
+                      style={{
+                        width: '7px', height: '7px', borderRadius: '50%',
+                        background: 'var(--color-lavender)', flexShrink: 0,
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-sans)', fontSize: '13px',
+                        color: 'var(--color-ink)', lineHeight: 1.4,
+                      }}
+                      className="truncate"
+                    >
+                      {task}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => removeTask(task)}
+                    style={{
+                      flexShrink: 0, marginLeft: '8px',
+                      color: 'var(--color-muted)', background: 'none',
+                      border: 'none', cursor: 'pointer', padding: '2px',
+                      fontSize: '16px', lineHeight: 1,
+                    }}
+                    aria-label={`Remove ${task}`}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Divider */}
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px" style={{ background: 'var(--color-border)' }} />
-          <span className="text-[11px] uppercase tracking-widest" style={{ color: 'var(--color-muted)', opacity: 0.5 }}>or</span>
+          <span className="text-[11px] uppercase tracking-widest" style={{ color: 'var(--color-muted)', opacity: 0.5 }}>or describe your day</span>
           <div className="flex-1 h-px" style={{ background: 'var(--color-border)' }} />
         </div>
 
@@ -318,7 +659,7 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
               ? "What is the one thing that really needs to happen today?"
               : isOtherSE
               ? "What are you working on today?"
-              : "Or describe your day in your own words..."}
+              : "Describe your day in your own words..."}
             rows={4}
             className="input-field resize-none"
             style={{ borderRadius: '14px' }}

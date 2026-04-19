@@ -44,7 +44,8 @@ const USER_TYPE_LABELS = {
 }
 
 function RightPanel({ screen, user, userProfile, checkInData, liveSelectedTasks }) {
-  const name = user?.firstName || userProfile?.name || 'you'
+  const rawName = user?.firstName || userProfile?.name || 'you'
+  const name = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : 'you'
 
   if (screen === SCREENS.CHECKIN) {
     return (
@@ -225,7 +226,7 @@ export default function App() {
     setPlan(null)
     setCheckInData(null)
     setLiveSelectedTasks([])
-    ;['daye_member_since', 'daye_best_streak', 'daye_reminder_time', 'daye_install_dismissed'].forEach(
+    ;['daye_member_since', 'daye_best_streak', 'daye_reminder_time', 'daye_install_dismissed', 'daye_custom_chips'].forEach(
       (k) => localStorage.removeItem(k)
     )
     setScreen(SCREENS.LANDING)

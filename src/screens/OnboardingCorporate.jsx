@@ -144,7 +144,10 @@ export default function OnboardingCorporate({ onComplete, onBack }) {
               <input
                 type="text"
                 value={jobFunctionOther}
-                onChange={(e) => setJobFunctionOther(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setJobFunctionOther(v.length === 1 ? v.toUpperCase() : v)
+                }}
                 placeholder="Tell us more..."
                 className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder:text-stone-300 outline-none focus:border-stone-400 transition-colors bg-white mt-3"
                 autoFocus
@@ -178,7 +181,10 @@ export default function OnboardingCorporate({ onComplete, onBack }) {
               <input
                 type="text"
                 value={industryOther}
-                onChange={(e) => setIndustryOther(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setIndustryOther(v.length === 1 ? v.toUpperCase() : v)
+                }}
                 placeholder="Tell us more..."
                 className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder:text-stone-300 outline-none focus:border-stone-400 transition-colors bg-white mt-3"
                 autoFocus
@@ -232,7 +238,10 @@ export default function OnboardingCorporate({ onComplete, onBack }) {
               <input
                 type="text"
                 value={customBlocker}
-                onChange={(e) => setCustomBlocker(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setCustomBlocker(v.length === 1 ? v.toUpperCase() : v)
+                }}
                 placeholder="Add your own..."
                 className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder:text-stone-300 outline-none focus:border-stone-400 transition-colors bg-white"
               />

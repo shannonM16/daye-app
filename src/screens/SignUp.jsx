@@ -160,7 +160,10 @@ export default function SignUp({ onComplete }) {
             <input
               type="text"
               value={socialName}
-              onChange={(e) => setSocialName(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value
+                setSocialName(v.length === 1 ? v.toUpperCase() : v)
+              }}
               onKeyDown={handleSocialKey}
               placeholder="Your first name"
               className="input-field"
@@ -297,7 +300,10 @@ export default function SignUp({ onComplete }) {
             <input
               type="text"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value
+                setFirstName(v.length === 1 ? v.toUpperCase() : v)
+              }}
               onKeyDown={handleKey}
               placeholder="Your first name"
               className="input-field"

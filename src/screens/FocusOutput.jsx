@@ -447,7 +447,8 @@ export default function FocusOutput({
   onStartAction, onReset, onBack,
 }) {
   const { priorities, prioritySubtitles, avoid, timing, why, timeBlocks, goalAlignment, dayLabel, dayName } = plan
-  const firstName = user?.firstName || ''
+  const rawName = user?.firstName || ''
+  const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : ''
 
   const stateLevel = checkInData
     ? getStateLevel({ energy: checkInData.energy, sleep: checkInData.sleep, mood: checkInData.mood })

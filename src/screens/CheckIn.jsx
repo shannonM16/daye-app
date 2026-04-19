@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getInsight } from '../utils/patternEngine'
+import { getCustomChips, saveCustomChip, removeCustomChip } from '../utils/customChips'
 
 const MOOD_OPTIONS = [
   { id: 'focused', label: 'Focused' },
@@ -156,10 +157,49 @@ function SectionLabel({ children }) {
   )
 }
 
-function getGreeting(firstName) {
+// Get time period and formatted strings
+function getTimePeriod() {
   const hour = new Date().getHours()
-  const time = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening'
-  return { time: `Good ${time}`, name: firstName }
+  if (hour < 12) return 'morning'
+  if (hour < 17) return 'afternoon'
+  return 'evening'
+}
+
+function formatCurrentTime12h() {
+  const now = new Date()
+  const h = now.getHours()
+  const m = now.getMinutes()
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
+  const ampm = h >= 12 ? 'pm' : 'am'
+  return `${h12}:${String(m).padStart(2, '0')}${ampm}`
+}
+
+function getGreeting(firstName) {
+  const period = getTimePeriod()
+  return { time: `Good ${period}`, name: firstName, period }
+}
+
+// Compact chip button for mood grid (fits 15 options)
+function MoodBtn({ label, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left transition-all duration-150 active:scale-95"
+      style={{
+        padding: '5px 10px',
+        borderRadius: '20px',
+        border: '0.5px solid',
+        borderColor: active ? 'var(--color-ink)' : 'var(--color-border)',
+        background: active ? 'var(--color-ink)' : 'var(--color-white)',
+        color: active ? 'var(--color-white)' : 'var(--color-ink)',
+        fontFamily: 'var(--font-sans)',
+        fontSize: '12px',
+        fontWeight: active ? 500 : 400,
+      }}
+    >
+      {label}
+    </button>
+  )
 }
 
 function GridBtn({ label, active, onClick, amber }) {
@@ -182,24 +222,98 @@ function GridBtn({ label, active, onClick, amber }) {
 function StepDots({ step }) {
   return (
     <div className="flex items-center justify-center gap-2">
-      <div
-        style={{
-          width: '6px',
-          height: '6px',
-          borderRadius: '50%',
-          background: step === 1 ? 'var(--color-ink)' : 'var(--color-border)',
-          transition: 'background 0.2s',
-        }}
-      />
-      <div
-        style={{
-          width: '6px',
-          height: '6px',
-          borderRadius: '50%',
-          background: step === 2 ? 'var(--color-ink)' : 'var(--color-border)',
-          transition: 'background 0.2s',
-        }}
-      />
+      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: step === 1 ? 'var(--color-ink)' : 'var(--color-border)', transition: 'background 0.2s' }} />
+      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: step === 2 ? 'var(--color-ink)' : 'var(--color-border)', transition: 'background 0.2s' }} />
+    </div>
+  )
+}
+
+// Custom chip input + edit mode for a single chip section
+function CustomChipArea({ screenKey, customChips, onAddChip, onRemoveChip, editMode, onToggleEditMode, compact = false }) {
+  const [inputVal, setInputVal] = useState('')
+
+  const handleAdd = () => {
+    const trimmed = inputVal.trim()
+    if (!trimmed) return
+    onAddChip(trimmed)
+    setInputVal('')
+  }
+
+  const handleKey = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); handleAdd() }
+  }
+
+  return (
+    <div className="mt-2">
+      {/* Custom chips rendered inline — shown after standard chips in parent */}
+
+      {/* "Something else?" input */}
+      <div className="flex items-center gap-1.5 mt-2">
+        <input
+          type="text"
+          value={inputVal}
+          onChange={(e) => {
+            const v = e.target.value
+            setInputVal(v.length === 1 ? v.toUpperCase() : v)
+          }}
+          onKeyDown={handleKey}
+          placeholder="Add your own..."
+          style={{
+            flex: 1,
+            fontFamily: 'var(--font-sans)',
+            fontSize: '13px',
+            padding: '5px 10px',
+            borderRadius: '20px',
+            border: '0.5px solid var(--color-border)',
+            background: 'var(--color-white)',
+            color: 'var(--color-ink)',
+            outline: 'none',
+          }}
+        />
+        <button
+          onClick={handleAdd}
+          disabled={!inputVal.trim()}
+          style={{
+            width: '24px',
+            height: '24px',
+            borderRadius: '50%',
+            background: inputVal.trim() ? 'var(--color-ink)' : 'var(--color-border)',
+            color: 'var(--color-white)',
+            border: 'none',
+            cursor: inputVal.trim() ? 'pointer' : 'default',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '16px',
+            lineHeight: 1,
+            flexShrink: 0,
+            transition: 'background 0.15s',
+          }}
+          aria-label="Add"
+        >
+          +
+        </button>
+      </div>
+
+      {/* Edit my options link */}
+      {customChips.length > 0 && (
+        <button
+          onClick={onToggleEditMode}
+          style={{
+            fontFamily: 'var(--font-sans)',
+            fontSize: '11px',
+            color: 'var(--color-muted)',
+            textDecoration: 'underline',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px 0 0 0',
+            display: 'block',
+          }}
+        >
+          {editMode ? 'Done editing' : 'Edit my options'}
+        </button>
+      )}
     </div>
   )
 }
@@ -209,13 +323,42 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
   const pressureOptions = getPressureOptions(userProfile?.userType, selfEmployedType)
 
   const [step, setStep] = useState(1)
-
   const [energy, setEnergy] = useState(initialValues?.energy || 3)
   const [mood, setMood] = useState(initialValues?.mood || null)
   const [sleep, setSleep] = useState(initialValues?.sleep || null)
   const [dayType, setDayType] = useState(initialValues?.dayType || null)
   const [dayTypeAutoSet, setDayTypeAutoSet] = useState(null)
   const [pressure, setPressure] = useState(initialValues?.pressure || [])
+  const [showLateCheckin, setShowLateCheckin] = useState(false)
+
+  // Planning start time — captured once on mount
+  const [planningStartTime] = useState(() => {
+    const now = new Date()
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  })
+
+  // Clock display — updates every minute
+  const [currentTimeStr, setCurrentTimeStr] = useState(() => formatCurrentTime12h())
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTimeStr(formatCurrentTime12h()), 60000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Custom chips state — mood
+  const [customMoods, setCustomMoods] = useState(() => getCustomChips('mood'))
+  const [moodEditMode, setMoodEditMode] = useState(false)
+
+  // Custom chips state — day type
+  const [customDayTypes, setCustomDayTypes] = useState(() => getCustomChips('day-type'))
+  const [dayTypeEditMode, setDayTypeEditMode] = useState(false)
+
+  // Custom chips state — pressure
+  const [customPressures, setCustomPressures] = useState(() => getCustomChips('pressure'))
+  const [pressureEditMode, setPressureEditMode] = useState(false)
+
+  const timePeriod = getTimePeriod()
+  const isEvening = timePeriod === 'evening'
+  const isAfternoon = timePeriod === 'afternoon'
 
   const handleEnergyChange = (val) => {
     setEnergy(val)
@@ -249,14 +392,53 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
   }
 
   const togglePressure = (id) => {
-    if (id === 'none') {
-      setPressure(['none'])
-      return
-    }
+    if (id === 'none') { setPressure(['none']); return }
     setPressure((prev) => {
       const without = prev.filter((p) => p !== 'none')
       return without.includes(id) ? without.filter((p) => p !== id) : [...without, id]
     })
+  }
+
+  // Custom mood handlers
+  const addCustomMood = (text) => {
+    if (customMoods.includes(text)) { setMood(text); return }
+    saveCustomChip('mood', text)
+    setCustomMoods(prev => [...prev, text])
+    handleMoodChange(text)
+  }
+  const deleteCustomMood = (chip) => {
+    removeCustomChip('mood', chip)
+    setCustomMoods(prev => prev.filter(c => c !== chip))
+    if (mood === chip) setMood(null)
+  }
+
+  // Custom day type handlers
+  const addCustomDayType = (text) => {
+    if (customDayTypes.includes(text)) { handleDayTypeClick(text); return }
+    saveCustomChip('day-type', text)
+    setCustomDayTypes(prev => [...prev, text])
+    handleDayTypeClick(text)
+  }
+  const deleteCustomDayType = (chip) => {
+    removeCustomChip('day-type', chip)
+    setCustomDayTypes(prev => prev.filter(c => c !== chip))
+    if (dayType === chip) setDayType(null)
+  }
+
+  // Custom pressure handlers
+  const addCustomPressure = (text) => {
+    if (customPressures.includes(text)) {
+      setPressure(prev => [...prev.filter(p => p !== 'none'), text])
+      return
+    }
+    saveCustomChip('pressure', text)
+    setCustomPressures(prev => [...prev, text])
+    setPressure(prev => [...prev.filter(p => p !== 'none'), text])
+  }
+  const deleteCustomPressure = (chip) => {
+    removeCustomChip('pressure', chip)
+    setCustomPressures(prev => prev.filter(c => c !== chip))
+    setPressure(prev => prev.filter(p => p !== chip))
   }
 
   const canAdvance = mood && sleep
@@ -264,16 +446,15 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
 
   const handleSubmit = () => {
     if (!canSubmit) return
-    onSubmit({ energy, mood, sleep, dayType, pressure })
+    onSubmit({ energy, mood, sleep, dayType, pressure, planningStartTime })
   }
 
-  const firstName = user?.firstName || ''
-  const greeting = firstName ? getGreeting(firstName) : null
+  const rawName = user?.firstName || ''
+  const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : ''
+  const greeting = firstName ? getGreeting(firstName) : { time: `Good ${timePeriod}`, name: '', period: timePeriod }
 
-  // Insight — guard: only compute if history is long enough
   const insight = history.length >= 3 ? getInsight(history) : ''
 
-  // Install banner — show after 2+ plans, unless dismissed
   const [installDismissed, setInstallDismissed] = useState(
     () => localStorage.getItem('daye_install_dismissed') === '1'
   )
@@ -283,20 +464,98 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
     setInstallDismissed(true)
   }
 
+  // Evening mode — show reflection view unless user opts to continue
+  if (isEvening && !showLateCheckin) {
+    return (
+      <div className="screen">
+        <div className="flex-1 overflow-y-auto space-y-5">
+          <div>
+            {/* Back button — lets user proceed to check-in anyway */}
+            <button
+              onClick={() => setShowLateCheckin(true)}
+              className="flex items-center gap-1.5 mb-4 transition-colors"
+              style={{ color: 'var(--color-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500 }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Back
+            </button>
+            <div className="flex items-center justify-between mb-3">
+              <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)' }} className="text-[13px] font-light">
+                daye
+              </span>
+              <div className="flex items-center" style={{ marginRight: '-8px' }}>
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)' }} className="mr-1">
+                  {currentTimeStr}
+                </span>
+                {onViewSettings && (
+                  <div onClick={onViewSettings} role="button" className="flex items-center justify-center cursor-pointer" style={{ width: '40px', height: '40px' }}>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ color: 'var(--color-muted)' }}>
+                      <circle cx="10" cy="7.5" r="3" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M3.5 17.5c0-3.59 2.91-6.5 6.5-6.5s6.5 2.91 6.5 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </div>
+            <p className="text-[24px] leading-tight font-light" style={{ color: 'var(--color-ink)' }}>
+              Good evening{firstName ? ',' : '.'}
+            </p>
+            {firstName && (
+              <p className="text-[24px] leading-tight font-medium mb-1" style={{ color: 'var(--color-ink)' }}>
+                {firstName}.
+              </p>
+            )}
+            <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>
+              Your working day is wrapping up.
+            </p>
+          </div>
+
+          <div className="rounded-2xl px-5 py-4 space-y-3" style={{ background: 'var(--color-white)', border: '1px solid var(--color-border)' }}>
+            <p className="text-[11px] font-medium uppercase tracking-widest" style={{ color: 'var(--color-muted)' }}>End of day</p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink)' }}>
+              Tomorrow is a fresh start. Come back in the morning to build your plan for the day.
+            </p>
+          </div>
+
+          {streakCount >= 2 && (
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-full self-start"
+              style={{ background: 'var(--color-linen)', border: '0.5px solid var(--color-border)', display: 'inline-flex' }}
+            >
+              <span className="text-sm" style={{ color: 'var(--color-ink)' }}>{streakCount} day streak</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-shrink-0 pt-4 space-y-2">
+          <button
+            className="btn-ghost"
+            onClick={() => setShowLateCheckin(true)}
+            style={{ fontSize: '13px' }}
+          >
+            Plan a late session anyway
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="screen">
       <div className="flex-1 overflow-y-auto space-y-4">
         {/* Header */}
         <div>
-          {/* Wordmark row with icon buttons */}
           <div className="flex items-center justify-between mb-3">
-            <span
-              style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)' }}
-              className="text-[13px] font-light"
-            >
+            <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)' }} className="text-[13px] font-light">
               daye
             </span>
-            <div className="flex items-center" style={{ marginRight: '-8px' }}>
+            <div className="flex items-center gap-2" style={{ marginRight: '-8px' }}>
+              {/* Current time display */}
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)' }}>
+                {currentTimeStr}
+              </span>
               {onViewSettings && (
                 <div
                   onClick={onViewSettings}
@@ -329,7 +588,7 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
             </div>
           </div>
 
-          {greeting ? (
+          {greeting.name ? (
             <>
               <p className="text-[24px] leading-tight font-light" style={{ color: 'var(--color-ink)' }}>
                 {greeting.time},
@@ -337,12 +596,19 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
               <p className="text-[24px] leading-tight font-medium mb-1" style={{ color: 'var(--color-ink)' }}>
                 {greeting.name}.
               </p>
-              <p className="text-sm" style={{ color: 'var(--color-muted)' }}>How's today looking?</p>
             </>
           ) : (
             <h1 className="text-[24px] font-medium leading-tight" style={{ color: 'var(--color-ink)' }}>
-              How's today looking?
+              {greeting.time}.
             </h1>
+          )}
+
+          {isAfternoon ? (
+            <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+              Planning your afternoon from {currentTimeStr}
+            </p>
+          ) : (
+            <p className="text-sm" style={{ color: 'var(--color-muted)' }}>How's today looking?</p>
           )}
         </div>
 
@@ -351,35 +617,21 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
 
         {step === 1 && (
           <>
-            {/* Streak — only renders if 2 or more consecutive days */}
             {streakCount >= 2 && (
               <div
                 className="flex items-center gap-2 px-3 py-2 rounded-full self-start"
-                style={{
-                  background: 'var(--color-linen)',
-                  border: '0.5px solid var(--color-border)',
-                  display: 'inline-flex',
-                }}
+                style={{ background: 'var(--color-linen)', border: '0.5px solid var(--color-border)', display: 'inline-flex' }}
               >
-                <span className="text-sm" style={{ color: 'var(--color-ink)' }}>
-                  {streakCount} day streak
-                </span>
+                <span className="text-sm" style={{ color: 'var(--color-ink)' }}>{streakCount} day streak</span>
               </div>
             )}
 
-            {/* Insight card — only renders if history >= 3 days AND insight is non-empty */}
             {history.length >= 3 && insight ? (
               <div
                 className="rounded-2xl px-4 py-3"
-                style={{
-                  background: 'var(--color-white)',
-                  border: '1px solid var(--color-border)',
-                  borderLeft: '3px solid var(--color-lavender)',
-                }}
+                style={{ background: 'var(--color-white)', border: '1px solid var(--color-border)', borderLeft: '3px solid var(--color-lavender)' }}
               >
-                <p className="text-[11px] font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-muted)' }}>
-                  Pattern
-                </p>
+                <p className="text-[11px] font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-muted)' }}>Pattern</p>
                 <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink)' }}>{insight}</p>
               </div>
             ) : null}
@@ -390,13 +642,7 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
                 <SectionLabel>Energy</SectionLabel>
                 <span className="text-xs -mt-2" style={{ color: 'var(--color-muted)' }}>{ENERGY_LABELS[energy]}</span>
               </div>
-              <input
-                type="range"
-                min={1}
-                max={5}
-                value={energy}
-                onChange={(e) => handleEnergyChange(Number(e.target.value))}
-              />
+              <input type="range" min={1} max={5} value={energy} onChange={(e) => handleEnergyChange(Number(e.target.value))} />
               <div className="flex justify-between mt-0.5">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
@@ -404,17 +650,11 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
                     onClick={() => handleEnergyChange(n)}
                     className="active:scale-110 transition-transform duration-100"
                     style={{
-                      fontFamily: 'var(--font-sans)',
-                      fontSize: '13px',
+                      fontFamily: 'var(--font-sans)', fontSize: '13px',
                       fontWeight: energy === n ? 500 : 400,
                       color: energy === n ? 'var(--color-ink)' : 'var(--color-muted)',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '4px 6px',
-                      minWidth: '28px',
-                      textAlign: 'center',
-                      lineHeight: 1,
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      padding: '4px 6px', minWidth: '28px', textAlign: 'center', lineHeight: 1,
                     }}
                   >
                     {n}
@@ -423,14 +663,44 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
               </div>
             </div>
 
-            {/* Mood */}
+            {/* Mood — compact 2-col grid, 15 options */}
             <div>
               <SectionLabel>Mood</SectionLabel>
               <div className="grid grid-cols-2 gap-1.5">
                 {MOOD_OPTIONS.map((m) => (
-                  <GridBtn key={m.id} label={m.label} active={mood === m.id} onClick={() => handleMoodChange(m.id)} />
+                  <MoodBtn key={m.id} label={m.label} active={mood === m.id} onClick={() => handleMoodChange(m.id)} />
+                ))}
+                {/* Custom mood chips */}
+                {customMoods.map((chip) => (
+                  <div key={chip} className="relative">
+                    <MoodBtn label={chip} active={mood === chip} onClick={() => !moodEditMode && handleMoodChange(chip)} />
+                    {moodEditMode && (
+                      <button
+                        onClick={() => deleteCustomMood(chip)}
+                        style={{
+                          position: 'absolute', top: '-4px', right: '-4px',
+                          width: '16px', height: '16px', borderRadius: '50%',
+                          background: 'var(--color-ink)', color: 'var(--color-white)',
+                          border: 'none', cursor: 'pointer', fontSize: '10px',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          lineHeight: 1,
+                        }}
+                        aria-label={`Remove ${chip}`}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
+              <CustomChipArea
+                screenKey="mood"
+                customChips={customMoods}
+                onAddChip={addCustomMood}
+                onRemoveChip={deleteCustomMood}
+                editMode={moodEditMode}
+                onToggleEditMode={() => setMoodEditMode(e => !e)}
+              />
             </div>
 
             {/* Sleep */}
@@ -460,12 +730,41 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
                     onClick={() => handleDayTypeClick(dt.id)}
                   />
                 ))}
+                {/* Custom day types */}
+                {customDayTypes.map((chip) => (
+                  <div key={chip} className="relative">
+                    <GridBtn label={chip} active={dayType === chip} onClick={() => !dayTypeEditMode && handleDayTypeClick(chip)} />
+                    {dayTypeEditMode && (
+                      <button
+                        onClick={() => deleteCustomDayType(chip)}
+                        style={{
+                          position: 'absolute', top: '-4px', right: '-4px',
+                          width: '16px', height: '16px', borderRadius: '50%',
+                          background: 'var(--color-ink)', color: 'var(--color-white)',
+                          border: 'none', cursor: 'pointer', fontSize: '10px',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}
+                        aria-label={`Remove ${chip}`}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
               {dayTypeAutoSet && (
                 <p className="text-xs mt-1.5" style={{ color: '#92400e' }}>
                   {dayTypeAutoSet === 'energy' ? 'Pre-selected based on your energy' : 'Pre-selected based on your mood'}
                 </p>
               )}
+              <CustomChipArea
+                screenKey="day-type"
+                customChips={customDayTypes}
+                onAddChip={addCustomDayType}
+                onRemoveChip={deleteCustomDayType}
+                editMode={dayTypeEditMode}
+                onToggleEditMode={() => setDayTypeEditMode(e => !e)}
+              />
             </div>
 
             {/* Pressure */}
@@ -480,27 +779,51 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
                     onClick={() => togglePressure(po.id)}
                   />
                 ))}
+                {/* Custom pressure chips */}
+                {customPressures.map((chip) => (
+                  <div key={chip} className="relative">
+                    <GridBtn
+                      label={chip}
+                      active={pressure.includes(chip)}
+                      onClick={() => !pressureEditMode && togglePressure(chip)}
+                    />
+                    {pressureEditMode && (
+                      <button
+                        onClick={() => deleteCustomPressure(chip)}
+                        style={{
+                          position: 'absolute', top: '-4px', right: '-4px',
+                          width: '16px', height: '16px', borderRadius: '50%',
+                          background: 'var(--color-ink)', color: 'var(--color-white)',
+                          border: 'none', cursor: 'pointer', fontSize: '10px',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}
+                        aria-label={`Remove ${chip}`}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
+              <CustomChipArea
+                screenKey="pressure"
+                customChips={customPressures}
+                onAddChip={addCustomPressure}
+                onRemoveChip={deleteCustomPressure}
+                editMode={pressureEditMode}
+                onToggleEditMode={() => setPressureEditMode(e => !e)}
+              />
             </div>
 
-            {/* PWA install banner — shown after 2+ plans, dismissable, never blocking */}
+            {/* PWA install banner */}
             {showInstallBanner && (
               <div
                 className="flex items-start justify-between gap-3"
-                style={{
-                  background: 'var(--color-white)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '12px',
-                  padding: '14px 16px',
-                }}
+                style={{ background: 'var(--color-white)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '14px 16px' }}
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
-                    Add Daye to your home screen
-                  </p>
-                  <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: 'var(--color-muted)' }}>
-                    Open your browser menu and tap Add to Home Screen.
-                  </p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>Add Daye to your home screen</p>
+                  <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: 'var(--color-muted)' }}>Open your browser menu and tap Add to Home Screen.</p>
                 </div>
                 <button
                   onClick={handleDismissInstall}
@@ -520,21 +843,16 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
 
       <div className="flex-shrink-0 pt-4 space-y-2">
         {step === 1 && (
-          <button className="btn-primary" onClick={() => setStep(2)}>
+          <button className="btn-primary" onClick={() => setStep(2)} disabled={!canAdvance}>
             Next
           </button>
         )}
         {step === 2 && (
           <>
-            <button className="btn-primary" onClick={handleSubmit}>
+            <button className="btn-primary" onClick={handleSubmit} disabled={!canSubmit}>
               Build my plan
             </button>
-            <button
-              className="btn-ghost"
-              onClick={() => setStep(1)}
-            >
-              Back
-            </button>
+            <button className="btn-ghost" onClick={() => setStep(1)}>Back</button>
           </>
         )}
       </div>

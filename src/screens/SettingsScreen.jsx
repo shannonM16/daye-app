@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getCustomChips, getAllCustomChips, removeCustomChip, saveCustomChip } from '../utils/customChips'
 
 // ─── Option data (mirrored from onboarding files) ─────────────────────────────
 
@@ -167,6 +168,48 @@ function formatMemberSince(isoString) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+// Human-readable screen key labels
+const SCREEN_KEY_LABELS = {
+  mood: 'Mood',
+  pressure: 'Daily pressure',
+  'day-type': 'Day type',
+  goals: 'Goals',
+  blockers: 'Blockers',
+  tasks_student: 'Tasks (student)',
+  tasks_figuring: 'Tasks (figuring it out)',
+  tasks_corporate_marketing: 'Tasks (marketing)',
+  tasks_corporate_sales: 'Tasks (sales)',
+  tasks_corporate_engineering: 'Tasks (engineering)',
+  tasks_corporate_product: 'Tasks (product)',
+  tasks_corporate_operations: 'Tasks (operations)',
+  tasks_corporate_finance: 'Tasks (finance)',
+  tasks_corporate_design: 'Tasks (design)',
+  'tasks_corporate_hr-people': 'Tasks (HR / People)',
+  tasks_corporate_legal: 'Tasks (legal)',
+  tasks_corporate_executive: 'Tasks (executive)',
+  tasks_corporate_other: 'Tasks',
+  'tasks_freelance-creative': 'Tasks (freelance creative)',
+  tasks_consultant: 'Tasks (consultant)',
+  'tasks_coach-trainer': 'Tasks (coach / trainer)',
+  'tasks_content-creator': 'Tasks (content creator)',
+  'tasks_product-saas': 'Tasks (product / SaaS)',
+  'tasks_agency-owner': 'Tasks (agency owner)',
+  'tasks_trades-service': 'Tasks (trades / service)',
+  tasks_se: 'Tasks (self-employed)',
+  'tasks_finance_freelance-creative': 'Finance tasks (freelance creative)',
+  tasks_finance_consultant: 'Finance tasks (consultant)',
+  'tasks_finance_coach-trainer': 'Finance tasks (coach / trainer)',
+  'tasks_finance_content-creator': 'Finance tasks (content creator)',
+  'tasks_finance_product-saas': 'Finance tasks (product / SaaS)',
+  'tasks_finance_agency-owner': 'Finance tasks (agency owner)',
+  'tasks_finance_trades-service': 'Finance tasks (trades / service)',
+  tasks_finance_se: 'Finance tasks',
+}
+
+function getScreenLabel(key) {
+  return SCREEN_KEY_LABELS[key] || key.replace(/_/g, ' ').replace(/-/g, ' ')
+}
+
 function getModalConfig(field, userProfile) {
   const p = userProfile || {}
   switch (field) {
@@ -201,10 +244,7 @@ function getModalConfig(field, userProfile) {
 
 function SLabel({ children }) {
   return (
-    <p
-      className="text-[11px] font-medium uppercase tracking-widest mb-3"
-      style={{ color: 'var(--color-muted)' }}
-    >
+    <p className="text-[11px] font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-muted)' }}>
       {children}
     </p>
   )
@@ -240,6 +280,11 @@ function SettingsRow({ label, value, onEdit }) {
 
 function BottomSheet({ config, onSave, onClose }) {
   const [localValue, setLocalValue] = useState(config.current)
+  // Custom chips for chip-type modals (goals, blockers, industry, job functions)
+  const [customChips, setCustomChips] = useState(() =>
+    config.optionType === 'chips' ? getCustomChips(config.field) : []
+  )
+  const [customInput, setCustomInput] = useState('')
 
   const handleToggle = (id) => {
     if (config.multi) {
@@ -250,6 +295,38 @@ function BottomSheet({ config, onSave, onClose }) {
     } else {
       setLocalValue(id)
     }
+  }
+
+  const handleAddCustom = () => {
+    const trimmed = customInput.trim()
+    if (!trimmed) return
+    // Save to storage
+    saveCustomChip(config.field, trimmed)
+    setCustomChips(prev => [...prev, trimmed])
+    // Also select it in localValue
+    if (config.multi) {
+      setLocalValue(prev => {
+        const arr = Array.isArray(prev) ? prev : []
+        return arr.includes(trimmed) ? arr : [...arr, trimmed]
+      })
+    } else {
+      setLocalValue(trimmed)
+    }
+    setCustomInput('')
+  }
+
+  const handleRemoveCustom = (chip) => {
+    removeCustomChip(config.field, chip)
+    setCustomChips(prev => prev.filter(c => c !== chip))
+    if (config.multi) {
+      setLocalValue(prev => Array.isArray(prev) ? prev.filter(v => v !== chip) : prev)
+    } else if (localValue === chip) {
+      setLocalValue(null)
+    }
+  }
+
+  const handleCustomKey = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); handleAddCustom() }
   }
 
   const handleSave = () => {
@@ -264,10 +341,7 @@ function BottomSheet({ config, onSave, onClose }) {
 
   return (
     <>
-      <div
-        onClick={onClose}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40 }}
-      />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40 }} />
       <div
         style={{
           position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
@@ -284,13 +358,8 @@ function BottomSheet({ config, onSave, onClose }) {
         </div>
 
         {/* Header */}
-        <div
-          className="flex items-center justify-between px-5 pb-4 pt-2"
-          style={{ borderBottom: '1px solid var(--color-border)' }}
-        >
-          <h3 className="text-base font-medium" style={{ color: 'var(--color-ink)' }}>
-            {config.title}
-          </h3>
+        <div className="flex items-center justify-between px-5 pb-4 pt-2" style={{ borderBottom: '1px solid var(--color-border)' }}>
+          <h3 className="text-base font-medium" style={{ color: 'var(--color-ink)' }}>{config.title}</h3>
           <button
             onClick={onClose}
             className="flex items-center justify-center"
@@ -305,21 +374,82 @@ function BottomSheet({ config, onSave, onClose }) {
         {/* Options */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {config.optionType === 'chips' && (
-            <div className="grid grid-cols-2 gap-1.5">
-              {config.options.map((opt) => {
-                const id = typeof opt === 'string' ? opt : opt.id
-                const label = typeof opt === 'string' ? opt : opt.label
-                return (
-                  <button
-                    key={id}
-                    onClick={() => handleToggle(id)}
-                    className={`grid-chip ${isActive(id) ? 'grid-chip-active' : ''}`}
-                  >
-                    {label}
-                  </button>
-                )
-              })}
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-1.5">
+                {config.options.map((opt) => {
+                  const id = typeof opt === 'string' ? opt : opt.id
+                  const label = typeof opt === 'string' ? opt : opt.label
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => handleToggle(id)}
+                      className={`grid-chip ${isActive(id) ? 'grid-chip-active' : ''}`}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+                {/* Custom chips for this field */}
+                {customChips.map((chip) => (
+                  <div key={chip} className="relative">
+                    <button
+                      onClick={() => handleToggle(chip)}
+                      className={`grid-chip w-full ${isActive(chip) ? 'grid-chip-active' : ''}`}
+                    >
+                      {chip}
+                    </button>
+                    <button
+                      onClick={() => handleRemoveCustom(chip)}
+                      style={{
+                        position: 'absolute', top: '-4px', right: '-4px',
+                        width: '16px', height: '16px', borderRadius: '50%',
+                        background: 'var(--color-ink)', color: 'var(--color-white)',
+                        border: 'none', cursor: 'pointer', fontSize: '10px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                      aria-label={`Remove ${chip}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Something else? input */}
+              <div className="flex items-center gap-1.5 mt-3">
+                <input
+                  type="text"
+                  value={customInput}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setCustomInput(v.length === 1 ? v.toUpperCase() : v)
+                  }}
+                  onKeyDown={handleCustomKey}
+                  placeholder="Add your own..."
+                  style={{
+                    flex: 1, fontFamily: 'var(--font-sans)', fontSize: '13px',
+                    padding: '6px 12px', borderRadius: '10px',
+                    border: '0.5px solid var(--color-border)',
+                    background: 'var(--color-white)', color: 'var(--color-ink)', outline: 'none',
+                  }}
+                />
+                <button
+                  onClick={handleAddCustom}
+                  disabled={!customInput.trim()}
+                  style={{
+                    width: '28px', height: '28px', borderRadius: '50%',
+                    background: customInput.trim() ? 'var(--color-ink)' : 'var(--color-border)',
+                    color: 'var(--color-white)', border: 'none',
+                    cursor: customInput.trim() ? 'pointer' : 'default',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '18px', lineHeight: 1, flexShrink: 0, transition: 'background 0.15s',
+                  }}
+                  aria-label="Add"
+                >
+                  +
+                </button>
+              </div>
+            </>
           )}
 
           {config.optionType === 'cards' && (
@@ -334,14 +464,8 @@ function BottomSheet({ config, onSave, onClose }) {
                     onClick={() => handleToggle(id)}
                     className={`select-card w-full text-left ${isActive(id) ? 'select-card-active' : ''}`}
                   >
-                    <div className="font-medium text-sm" style={{ color: 'var(--color-ink)' }}>
-                      {label}
-                    </div>
-                    {desc && (
-                      <div className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
-                        {desc}
-                      </div>
-                    )}
+                    <div className="font-medium text-sm" style={{ color: 'var(--color-ink)' }}>{label}</div>
+                    {desc && <div className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>{desc}</div>}
                   </button>
                 )
               })}
@@ -351,9 +475,7 @@ function BottomSheet({ config, onSave, onClose }) {
 
         {/* Save */}
         <div className="px-5 pt-3 pb-8" style={{ borderTop: '1px solid var(--color-border)' }}>
-          <button className="btn-primary" onClick={handleSave}>
-            Save
-          </button>
+          <button className="btn-primary" onClick={handleSave}>Save</button>
         </div>
       </div>
     </>
@@ -367,22 +489,19 @@ export default function SettingsScreen({
 }) {
   const profile = userProfile || {}
 
-  // Section 1 state
   const [firstName, setFirstName] = useState(user?.firstName || '')
   const [email, setEmail] = useState(user?.email || '')
-
-  // Modal state
   const [activeModal, setActiveModal] = useState(null)
 
-  // Preferences state
   const [reminderTime, setReminderTime] = useState(
     () => localStorage.getItem('daye_reminder_time') || '08:00'
   )
 
-  // Reset confirm state
   const [showClearConfirm, setShowClearConfirm] = useState(false)
 
-  // Stats
+  // Force re-render when custom chips are deleted from the settings section
+  const [customChipsVersion, setCustomChipsVersion] = useState(0)
+
   const memberSince = formatMemberSince(localStorage.getItem('daye_member_since'))
   const plansCompleted = (history || []).length
 
@@ -405,6 +524,11 @@ export default function SettingsScreen({
     if (config) setActiveModal(config)
   }
 
+  const handleDeleteCustomChip = (screenKey, chip) => {
+    removeCustomChip(screenKey, chip)
+    setCustomChipsVersion(v => v + 1)
+  }
+
   // Display values
   const situationLabel = optionLabel(SITUATIONS, profile.userType)
   const jfLabel = multiLabel(JOB_FUNCTIONS, profile.jobFunctions)
@@ -417,6 +541,10 @@ export default function SettingsScreen({
   const termLabel = optionLabel(STUDENT_TERM_POSITIONS, profile.termPosition)
   const goalsLabel = multiLabel(getGoalOptions(profile.userType), profile.goals)
   const blockersLabel = (profile.blockers || []).join(', ') || '—'
+
+  // Get current custom chips (reactive to version changes)
+  const allCustomChips = getAllCustomChips()
+  const customChipEntries = Object.entries(allCustomChips).filter(([, chips]) => chips.length > 0)
 
   return (
     <div className="screen">
@@ -452,22 +580,20 @@ export default function SettingsScreen({
                 First name
               </label>
               <input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="input-field"
-              />
+              type="text"
+              value={firstName}
+              onChange={(e) => {
+                const v = e.target.value
+                setFirstName(v.length === 1 ? v.toUpperCase() : v)
+              }}
+              className="input-field"
+            />
             </div>
             <div>
               <label className="text-[11px] font-medium uppercase tracking-widest block mb-1.5" style={{ color: 'var(--color-muted)' }}>
                 Email
               </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input-field"
-              />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-field" />
             </div>
           </div>
           <div className="flex justify-end mt-3">
@@ -514,7 +640,57 @@ export default function SettingsScreen({
           <SettingsRow label="Blockers" value={blockersLabel} onEdit={() => openModal('blockers')} />
         </div>
 
-        {/* ── Section 3: YOUR STATS ── */}
+        {/* ── Section 3: MY CUSTOM OPTIONS ── */}
+        <div className="mb-6">
+          <SLabel>My custom options</SLabel>
+          {customChipEntries.length === 0 ? (
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-muted)' }}>
+              None added yet. Use the "Add your own..." field on any chip screen to save options here.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {customChipEntries.map(([screenKey, chips]) => (
+                <div key={screenKey}>
+                  <p className="text-[11px] font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-muted)' }}>
+                    {getScreenLabel(screenKey)}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {chips.map((chip) => (
+                      <span
+                        key={chip}
+                        className="flex items-center gap-1"
+                        style={{
+                          padding: '5px 10px',
+                          borderRadius: '20px',
+                          background: 'var(--color-linen)',
+                          border: '0.5px solid var(--color-border)',
+                          fontFamily: 'var(--font-sans)',
+                          fontSize: '12px',
+                          color: 'var(--color-ink)',
+                        }}
+                      >
+                        {chip}
+                        <button
+                          onClick={() => handleDeleteCustomChip(screenKey, chip)}
+                          style={{
+                            marginLeft: '2px', color: 'var(--color-muted)',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            fontSize: '14px', lineHeight: 1, padding: 0,
+                          }}
+                          aria-label={`Remove ${chip}`}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Section 4: YOUR STATS ── */}
         <div className="mb-6">
           <SLabel>Your stats</SLabel>
           <div className="grid grid-cols-2 gap-2.5">
@@ -547,7 +723,7 @@ export default function SettingsScreen({
           </div>
         </div>
 
-        {/* ── Section 4: PREFERENCES ── */}
+        {/* ── Section 5: PREFERENCES ── */}
         <div className="mb-6">
           <SLabel>Preferences</SLabel>
 
@@ -562,26 +738,15 @@ export default function SettingsScreen({
               className="input-field"
               style={{ maxWidth: '160px' }}
             />
-            <p className="text-xs mt-1.5" style={{ color: 'var(--color-muted)' }}>
-              In-app reminder only for now.
-            </p>
+            <p className="text-xs mt-1.5" style={{ color: 'var(--color-muted)' }}>In-app reminder only for now.</p>
           </div>
 
           <div>
             {showClearConfirm ? (
-              <div
-                className="rounded-2xl p-4"
-                style={{ border: '1px solid var(--color-border-dark)', background: 'var(--color-white)' }}
-              >
-                <p className="text-sm mb-3" style={{ color: 'var(--color-ink)' }}>
-                  Are you sure? This cannot be undone.
-                </p>
+              <div className="rounded-2xl p-4" style={{ border: '1px solid var(--color-border-dark)', background: 'var(--color-white)' }}>
+                <p className="text-sm mb-3" style={{ color: 'var(--color-ink)' }}>Are you sure? This cannot be undone.</p>
                 <div className="flex gap-2">
-                  <button
-                    className="btn-ghost flex-1 py-2.5"
-                    style={{ fontSize: '13px' }}
-                    onClick={() => setShowClearConfirm(false)}
-                  >
+                  <button className="btn-ghost flex-1 py-2.5" style={{ fontSize: '13px' }} onClick={() => setShowClearConfirm(false)}>
                     Cancel
                   </button>
                   <button
@@ -605,17 +770,12 @@ export default function SettingsScreen({
           </div>
         </div>
 
-        {/* ── Section 5: ABOUT ── */}
+        {/* ── Section 6: ABOUT ── */}
         <div className="mb-8">
           <SLabel>About</SLabel>
-          <div
-            className="rounded-2xl px-5 py-4 text-center space-y-2"
-            style={{ background: 'var(--color-white)', border: '1px solid var(--color-border)' }}
-          >
+          <div className="rounded-2xl px-5 py-4 text-center space-y-2" style={{ background: 'var(--color-white)', border: '1px solid var(--color-border)' }}>
             <p className="text-sm font-medium" style={{ color: 'var(--color-muted)' }}>Daye v1.0</p>
-            <p
-              style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '14px', color: 'var(--color-ink)' }}
-            >
+            <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '14px', color: 'var(--color-ink)' }}>
               Your day, decided.
             </p>
             <p className="text-xs leading-relaxed" style={{ color: 'var(--color-muted)' }}>
