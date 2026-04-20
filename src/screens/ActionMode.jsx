@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { deduplicateTasks } from '../engine/deduplicateTasks'
+import { saveCompletionsForDate, taskMatchesGoal, incrementGoalCompletionCount, getGoalToastContent } from '../utils/completions'
 
 const TIMER_SAVE_KEY = 'df_timerState'
 const REST_DURATION = 5 * 60
@@ -192,6 +193,11 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
 
   const [checked, setChecked] = useState([])
   const [extraChecked, setExtraChecked] = useState([])
+  const [goalToast, setGoalToast] = useState(null) // { line1, line2 }
+  const [goalToastVisible, setGoalToastVisible] = useState(false)
+  const goalToastRef = useRef(null)
+  const completionsSinceLastToastRef = useRef(2) // start at 2 so first match can fire
+  const toastsThisSessionRef = useRef(0)
 
   const microCopyArr = getMicroCopy(mood, energy)
   const [microIdx, setMicroIdx] = useState(0)
@@ -289,11 +295,45 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
   }
 
   const toggleChecked = (task) => {
-    setChecked((prev) => prev.includes(task) ? prev.filter((t) => t !== task) : [...prev, task])
+    setChecked((prev) => {
+      const isNowChecked = !prev.includes(task)
+      const next = isNowChecked ? [...prev, task] : prev.filter((t) => t !== task)
+      const today = new Date().toISOString().split('T')[0]
+      saveCompletionsForDate(today, [...next, ...extraChecked])
+      if (isNowChecked) {
+        const goals = userProfile?.goals?.length ? userProfile.goals : (userProfile?.goal ? [userProfile.goal] : [])
+        const primaryGoal = goals[0]
+        completionsSinceLastToastRef.current += 1
+        if (
+          primaryGoal &&
+          taskMatchesGoal(task, primaryGoal) &&
+          completionsSinceLastToastRef.current >= 2 &&
+          toastsThisSessionRef.current < 2
+        ) {
+          incrementGoalCompletionCount()
+          completionsSinceLastToastRef.current = 0
+          toastsThisSessionRef.current += 1
+          const content = getGoalToastContent(primaryGoal)
+          clearTimeout(goalToastRef.current)
+          setGoalToast(content)
+          setGoalToastVisible(true)
+          goalToastRef.current = setTimeout(() => {
+            setGoalToastVisible(false)
+            setTimeout(() => setGoalToast(null), 200)
+          }, 3000)
+        }
+      }
+      return next
+    })
   }
 
   const toggleExtraChecked = (task) => {
-    setExtraChecked((prev) => prev.includes(task) ? prev.filter((t) => t !== task) : [...prev, task])
+    setExtraChecked((prev) => {
+      const next = prev.includes(task) ? prev.filter((t) => t !== task) : [...prev, task]
+      const today = new Date().toISOString().split('T')[0]
+      saveCompletionsForDate(today, [...checked, ...next])
+      return next
+    })
   }
 
   const startNextBlock = () => {
@@ -349,6 +389,37 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
 
   return (
     <div className="screen action-screen-wide">
+      {/* Feature 3: Goal progress toast */}
+      {goalToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 'calc(100% - 64px)',
+          maxWidth: '480px',
+          background: 'var(--color-linen)',
+          border: '0.5px solid var(--color-border)',
+          borderLeft: '3px solid var(--color-lavender)',
+          borderRadius: '0 12px 12px 0',
+          padding: '14px 20px',
+          zIndex: 500,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
+          animation: goalToastVisible
+            ? 'goalToastIn 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards'
+            : 'goalToastOut 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
+        }}>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, color: 'var(--color-ink)', margin: goalToast.line2 ? '0 0 2px 0' : 0, lineHeight: 1.4 }}>
+            {goalToast.line1}
+          </p>
+          {goalToast.line2 && (
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', margin: 0 }}>
+              {goalToast.line2}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto">
 
         {/* Resume prompt */}

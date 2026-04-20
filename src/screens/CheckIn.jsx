@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { getInsight } from '../utils/patternEngine'
+import { getInsight, getWeeklyMomentumData } from '../utils/patternEngine'
 import { getCustomChips, saveCustomChip, removeCustomChip } from '../utils/customChips'
+import { getGoalCompletionCount, getMondayOfWeek, saveWeeklyWin } from '../utils/completions'
 
 const MOOD_OPTIONS = [
   { id: 'focused', label: 'Focused' },
@@ -512,7 +513,7 @@ function CustomChipArea({ screenKey, customChips, onAddChip, onRemoveChip, editM
   )
 }
 
-export default function CheckIn({ user, userProfile, initialValues, history = [], streakCount = 0, onSubmit, onViewHistory, onViewSettings, onHome, onRetakeReflection }) {
+export default function CheckIn({ user, userProfile, initialValues, history = [], streakCount = 0, carryOverTask, onCarryOverAccept, onCarryOverDismiss, onActivateTestMode, onSubmit, onViewHistory, onViewSettings, onHome, onRetakeReflection }) {
   const isFiguringItOut = userProfile?.userType === 'figuring-it-out'
   const selfEmployedType = userProfile?.selfEmployedType || userProfile?.workType || null
   const pressureOptions = getPressureOptions(
@@ -560,6 +561,29 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
   const timePeriod = getTimePeriod()
   const isEvening = timePeriod === 'evening'
   const isAfternoon = timePeriod === 'afternoon'
+
+  // Feature 4: Weekly momentum narrative (Monday morning)
+  const weeklyMomentumData = getWeeklyMomentumData(history)
+  const [momentumDismissed, setMomentumDismissed] = useState(false)
+
+  // Feature 5: Friday end-of-week win question
+  const isFridayAfternoon = (() => {
+    const now = new Date()
+    return now.getDay() === 5 && now.getHours() >= 16
+  })()
+  const mondayKey = getMondayOfWeek(new Date().toISOString().split('T')[0])
+  const fridayWinAlreadySaved = !!localStorage.getItem('daye_weekly_win_' + mondayKey)
+  const showFridayWinStep = isFridayAfternoon && !fridayWinAlreadySaved
+  const [fridayWin, setFridayWin] = useState('')
+  const [carryOverDismissedLocal, setCarryOverDismissedLocal] = useState(false)
+
+  // Dev test mode trigger — remove before launch
+  const [testModeToast, setTestModeToast] = useState(false)
+  const handleDevTap = () => {
+    onActivateTestMode?.()
+    setTestModeToast(true)
+    setTimeout(() => setTestModeToast(false), 2500)
+  }
 
   const handleEnergyChange = (val) => {
     setEnergy(val)
@@ -647,6 +671,17 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
 
   const handleSubmit = () => {
     if (!canSubmit) return
+    if (showFridayWinStep && step === 2) {
+      setStep(3)
+      return
+    }
+    onSubmit({ energy, mood, sleep, dayType, pressure, planningStartTime, eveningMode })
+  }
+
+  const handleFridayWinSubmit = () => {
+    if (fridayWin.trim()) {
+      saveWeeklyWin(mondayKey, fridayWin.trim())
+    }
     onSubmit({ energy, mood, sleep, dayType, pressure, planningStartTime, eveningMode })
   }
 
@@ -772,8 +807,119 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
     )
   }
 
+  // Feature 4: Weekly momentum narrative — Monday morning early return
+  if (weeklyMomentumData && !momentumDismissed) {
+    const { days, avgEnergy } = weeklyMomentumData
+    const goalCompletions = getGoalCompletionCount()
+    const rawName = user?.firstName || ''
+    const name = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : ''
+
+    let narrative
+    if (avgEnergy >= 3.5 && streakCount >= 5) {
+      narrative = `You had a strong week, ${name ? name + '.' : 'this week.'} ${days} days checked in, averaging ${avgEnergy}/5 energy. That kind of consistency compounds.`
+    } else if (avgEnergy >= 3.5) {
+      narrative = `Solid week. ${days} days logged, ${avgEnergy}/5 average energy. You showed up — that is what matters.`
+    } else if (streakCount >= 3) {
+      narrative = `It was a mixed week, but you showed up ${days} days. That matters more than the energy numbers suggest.`
+    } else {
+      narrative = `You logged ${days} days last week. Here is what that looked like.`
+    }
+
+    return (
+      <div className="screen">
+        <div className="flex-1 overflow-y-auto space-y-5">
+          <div>
+            <span
+              onClick={onHome}
+              role="button"
+              tabIndex={0}
+              style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)', cursor: 'pointer' }}
+              className="text-[13px] font-light block mb-4 hover:opacity-70 transition-opacity"
+            >
+              daye
+            </span>
+            <p className="text-[11px] font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-muted)' }}>
+              Last week
+            </p>
+            <h1 className="text-[22px] font-bold mb-1" style={{ color: 'var(--color-ink)' }}>
+              Your week in review.
+            </h1>
+          </div>
+
+          <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '18px', color: 'var(--color-ink)', lineHeight: 1.6, margin: 0 }}>
+            {narrative}
+          </p>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ background: 'var(--color-linen)', borderRadius: '20px', padding: '5px 12px', fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-ink)' }}>
+              {days} day{days !== 1 ? 's' : ''} logged
+            </span>
+            <span style={{ background: 'var(--color-linen)', borderRadius: '20px', padding: '5px 12px', fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-ink)' }}>
+              {avgEnergy}/5 avg energy
+            </span>
+            {streakCount >= 2 && (
+              <span style={{ background: 'var(--color-linen)', borderRadius: '20px', padding: '5px 12px', fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-ink)' }}>
+                {streakCount} day streak
+              </span>
+            )}
+          </div>
+
+          {goalCompletions > 0 && (
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', lineHeight: 1.5 }}>
+              You completed {goalCompletions} goal-aligned task{goalCompletions !== 1 ? 's' : ''} this week. That adds up.
+            </p>
+          )}
+        </div>
+
+        <div className="flex-shrink-0 pt-4">
+          <button
+            className="btn-primary"
+            onClick={() => {
+              localStorage.setItem('daye_weekly_shown_date', weeklyMomentumData.todayStr)
+              localStorage.setItem('daye_goal_completions', '0')
+              setMomentumDismissed(true)
+            }}
+          >
+            Start today's plan →
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="screen">
+      {/* Dev test mode button — remove before launch */}
+      <button
+        onClick={handleDevTap}
+        style={{ position: 'fixed', bottom: 12, left: 12, fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)', background: 'var(--color-linen-dark)', border: '0.5px solid var(--color-border)', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer', zIndex: 300 }}
+      >
+        Dev
+      </button>
+
+      {/* Test mode toast */}
+      {testModeToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--color-ink)',
+          color: 'var(--color-white)',
+          borderRadius: '10px',
+          padding: '10px 18px',
+          fontFamily: 'var(--font-sans)',
+          fontSize: '12px',
+          fontWeight: 500,
+          zIndex: 200,
+          whiteSpace: 'nowrap',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          animation: 'slideUpToast 0.25s ease',
+        }}>
+          Test mode active — history populated
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto space-y-4">
         {/* Header */}
         <div>
@@ -868,6 +1014,36 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
 
         {step === 1 && (
           <>
+            {/* Feature 1: Carry-over card */}
+            {carryOverTask && !carryOverDismissedLocal && (
+              <div style={{
+                background: 'var(--color-blush)',
+                borderRadius: '12px',
+                padding: '12px 14px',
+              }}>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-muted)', fontWeight: 500, margin: '0 0 6px 0' }}>
+                  From yesterday
+                </p>
+                <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '15px', color: 'var(--color-ink)', margin: '0 0 10px 0', lineHeight: 1.4 }}>
+                  {carryOverTask}
+                </p>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => { onCarryOverAccept?.(); setCarryOverDismissedLocal(true) }}
+                    style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', fontWeight: 500, background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '20px', padding: '5px 14px', cursor: 'pointer' }}
+                  >
+                    Add to today
+                  </button>
+                  <button
+                    onClick={() => { onCarryOverDismiss?.(); setCarryOverDismissedLocal(true) }}
+                    style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', background: 'none', border: '0.5px solid var(--color-border)', borderRadius: '20px', padding: '5px 14px', cursor: 'pointer' }}
+                  >
+                    Not today
+                  </button>
+                </div>
+              </div>
+            )}
+
             {streakCount >= 2 && (
               <div
                 className="flex items-center gap-2 px-3 py-2 rounded-full self-start"
@@ -1112,6 +1288,25 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
             )}
           </>
         )}
+
+        {/* Feature 5: Friday end-of-week win question */}
+        {step === 3 && (
+          <>
+            <h1 className="text-[22px] font-bold mb-1" style={{ color: 'var(--color-ink)' }}>
+              One last thing.
+            </h1>
+            <p className="text-sm mb-5" style={{ color: 'var(--color-muted)' }}>
+              What was your biggest win this week?
+            </p>
+            <textarea
+              value={fridayWin}
+              onChange={(e) => { const v = e.target.value; setFridayWin(v.length === 1 ? v.toUpperCase() : v) }}
+              placeholder="e.g. Finally shipped the feature I'd been putting off..."
+              rows={4}
+              className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder:text-stone-300 outline-none focus:border-stone-400 transition-colors bg-white resize-none leading-relaxed"
+            />
+          </>
+        )}
       </div>
 
       <div className="flex-shrink-0 pt-4 space-y-2">
@@ -1126,6 +1321,13 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
               Build my plan
             </button>
             <button className="btn-ghost" onClick={() => setStep(1)}>Back</button>
+          </>
+        )}
+        {step === 3 && (
+          <>
+            <button className="btn-primary" onClick={handleFridayWinSubmit}>
+              {fridayWin.trim() ? 'Save and build my plan' : 'Skip — build my plan'}
+            </button>
           </>
         )}
       </div>

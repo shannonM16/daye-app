@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useStorage } from './hooks/useStorage'
 import { buildPlan } from './engine/buildPlan'
 import { calculateStreak } from './utils/patternEngine'
+import { getCompletionsForDate, saveCompletionsForDate } from './utils/completions'
 import Landing from './screens/Landing'
 import BlogIndex from './blog/BlogIndex'
 import ArticlePage from './blog/ArticlePage'
@@ -211,8 +212,13 @@ export default function App() {
       tasks
     )
     setPlan(result)
+    // Save plannedTasks to today's history entry so carry-over can read them tomorrow
+    const today = new Date().toISOString().split('T')[0]
+    setCheckInHistory((prev) =>
+      (prev || []).map((h) => h.date === today ? { ...h, plannedTasks: tasks } : h)
+    )
     setScreen(SCREENS.OUTPUT)
-  }, [userProfile, checkInData, user, setUserTasks, setExtraTasks])
+  }, [userProfile, checkInData, user, setUserTasks, setExtraTasks, setCheckInHistory])
 
   const handleReset = useCallback(() => {
     setPlan(null)
@@ -243,6 +249,73 @@ export default function App() {
   if (streakCount > currentBest) {
     localStorage.setItem('daye_best_streak', String(streakCount))
   }
+
+  const carryOverTask = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
+    const dismissed = localStorage.getItem('daye_carryover_dismissed')
+    if (dismissed === today) return null
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yStr = yesterday.toISOString().split('T')[0]
+    const entry = (checkInHistory || []).find((h) => h.date === yStr)
+    if (!entry || !entry.plannedTasks?.length) return null
+    const done = getCompletionsForDate(yStr)
+    const uncompleted = entry.plannedTasks.filter((t) => !done.includes(t))
+    return uncompleted[0] || null
+  }, [checkInHistory])
+
+  const handleCarryOverAccept = useCallback(() => {
+    if (!carryOverTask) return
+    setUserTasks((prev) => prev.includes(carryOverTask) ? prev : [carryOverTask, ...prev])
+    localStorage.setItem('daye_carryover_dismissed', new Date().toISOString().split('T')[0])
+  }, [carryOverTask, setUserTasks])
+
+  const handleCarryOverDismiss = useCallback(() => {
+    localStorage.setItem('daye_carryover_dismissed', new Date().toISOString().split('T')[0])
+  }, [])
+
+  const handleActivateTestMode = useCallback(() => {
+    const getDate = (daysAgo) => {
+      const d = new Date()
+      d.setDate(d.getDate() - daysAgo)
+      return d.toISOString().split('T')[0]
+    }
+
+    const fakeHistory = [
+      { date: getDate(0), energy: 3, mood: 'focused', sleep: 'ok', dayType: 'deep-work', pressure: ['none'], planningStartTime: '09:00', plannedTasks: [] },
+      { date: getDate(1), energy: 3, mood: 'anxious', sleep: 'ok', dayType: 'lots-of-meetings', pressure: ['brand-deal-deadline'], plannedTasks: ['Write the campaign brief', 'Schedule posts for the week'] },
+      { date: getDate(2), energy: 2, mood: 'flat', sleep: 'poor', dayType: 'low-energy-day', pressure: ['consistency-pressure'], plannedTasks: ['Film short-form video', 'Reply to comments'] },
+      { date: getDate(3), energy: 2, mood: 'tired', sleep: 'poor', dayType: 'low-energy-day', pressure: ['none'], plannedTasks: ['Edit podcast episode', 'Community engagement'] },
+      // Gap at day -4 keeps streak at 4
+      { date: getDate(5), energy: 2, mood: 'overwhelmed', sleep: 'terrible', dayType: 'reactive-firefighting', pressure: ['engagement-dropping'], plannedTasks: ['Respond to sponsor outreach', 'Script next video'] },
+      { date: getDate(6), energy: 2, mood: 'flat', sleep: 'poor', dayType: 'low-energy-day', pressure: ['none'], plannedTasks: ['Upload scheduled post', 'Check analytics'] },
+      { date: getDate(7), energy: 2, mood: 'flat', sleep: 'ok', dayType: 'low-energy-day', pressure: ['none'], plannedTasks: ['Review brand deal proposal', 'Draft content calendar'] },
+    ]
+
+    setCheckInHistory(fakeHistory)
+
+    // Save per-day completions — yesterday's 'Write the campaign brief' left uncompleted for carry-over
+    saveCompletionsForDate(getDate(1), ['Schedule posts for the week'])
+    saveCompletionsForDate(getDate(2), ['Reply to comments'])
+    saveCompletionsForDate(getDate(3), ['Edit podcast episode', 'Community engagement'])
+    saveCompletionsForDate(getDate(5), ['Respond to sponsor outreach'])
+    saveCompletionsForDate(getDate(6), ['Upload scheduled post', 'Check analytics'])
+    saveCompletionsForDate(getDate(7), ['Review brand deal proposal', 'Draft content calendar'])
+
+    localStorage.setItem('daye_goal_completions', '6')
+    localStorage.removeItem('daye_carryover_dismissed')
+    localStorage.removeItem('daye_weekly_shown_date')
+
+    setUserProfile((prev) => ({
+      ...(prev || {}),
+      userType: 'self-employed',
+      selfEmployedType: 'content-creator',
+      workType: 'content-creator',
+      goals: ['Grow my audience'],
+      goal: 'Grow my audience',
+      blockers: ['Consistency pressure', 'Algorithm changes'],
+    }))
+  }, [setCheckInHistory, setUserProfile])
 
   // ── Blog routes ─────────────────────────────────────────────────
   if (location.pathname === '/blog') return <BlogIndex />
@@ -300,6 +373,8 @@ export default function App() {
         user={user}
         userProfile={userProfile}
         checkInData={checkInData}
+        history={checkInHistory || []}
+        streakCount={streakCount}
         extraTasks={extraTasks}
         onExtraTasksChange={setExtraTasks}
         onStartAction={() => setScreen(SCREENS.ACTION)}
@@ -336,6 +411,10 @@ export default function App() {
           initialValues={checkInData}
           history={checkInHistory || []}
           streakCount={streakCount}
+          carryOverTask={carryOverTask}
+          onCarryOverAccept={handleCarryOverAccept}
+          onCarryOverDismiss={handleCarryOverDismiss}
+          onActivateTestMode={handleActivateTestMode}
           onSubmit={handleCheckIn}
           onViewHistory={() => setScreen(SCREENS.HISTORY)}
           onViewSettings={() => setScreen(SCREENS.SETTINGS)}
@@ -364,6 +443,7 @@ export default function App() {
       return (
         <HistoryScreen
           history={checkInHistory || []}
+          userProfile={userProfile}
           onBack={() => setScreen(SCREENS.CHECKIN)}
           onHome={() => setScreen(SCREENS.CHECKIN)}
         />
@@ -396,6 +476,9 @@ export default function App() {
         initialValues={checkInData}
         history={checkInHistory || []}
         streakCount={streakCount}
+        carryOverTask={carryOverTask}
+        onCarryOverAccept={handleCarryOverAccept}
+        onCarryOverDismiss={handleCarryOverDismiss}
         onSubmit={handleCheckIn}
         onViewHistory={() => setScreen(SCREENS.HISTORY)}
         onViewSettings={() => setScreen(SCREENS.SETTINGS)}

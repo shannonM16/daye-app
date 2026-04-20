@@ -1,5 +1,6 @@
 import { decisionEngine } from './decisionEngine'
 import { getCustomChips } from '../utils/customChips'
+import { getRevenueActivityLast7Days } from '../utils/completions'
 
 function getDayNameFallback(checkInData) {
   const dayType = checkInData?.dayType || ''
@@ -162,10 +163,15 @@ FIGURING IT OUT INSTRUCTIONS:
 - Always end the why with a single sentence of genuine encouragement. Not motivational poster language — something real and specific to their situation.
 - The dayName must feel gentle and meaningful — eg 'One Small Step', 'The Exploration', 'Quiet Progress', 'Moving Forward', 'The First Move', 'A Day of Possibility', 'Gentle Momentum'. Never intense or pressured. Never words like 'Push', 'Grind', 'Attack'.` : ''
 
+  const revenueDaysLast7 = userType === 'self-employed' ? getRevenueActivityLast7Days() : 0
+  const revenueUrgency = userType === 'self-employed' && revenueDaysLast7 < 3
+    ? `\n- REVENUE ALERT: This person has only had ${revenueDaysLast7} revenue-activity day${revenueDaysLast7 !== 1 ? 's' : ''} in the last 7 days. You MUST include at least one revenue-generating or revenue-admin task in the priorities today (e.g. chase an invoice, send a proposal, follow up with a prospect, reach out to a past client). Frame it as: cashflow depends on consistent revenue activity, not bursts.`
+    : ''
+
   const selfEmployedInstructions = userType === 'self-employed' ? `
 SELF-EMPLOYED INSTRUCTIONS:
 - This person is self-employed as a ${selfEmployedType || 'independent worker'}. Adapt your language and tone to their specific work type. For content creators: use language about audience, consistency, creativity and brand. For consultants: use language about clients, deliverables, positioning and revenue. For coaches: use language about clients, transformation, programmes and impact. For product builders: use language about users, shipping, growth and metrics. For trades: use language about jobs, bookings, quotes and reputation. Never use generic productivity language that could apply to anyone.
-- Invoicing and money admin is always relevant for self-employed people. If there is any sign of cash or invoice pressure, or if it is a moderate energy day with no critical deadline, include "Chase or send an invoice" or a similar revenue admin task in the priorities. Frame the reasoning as: revenue admin is easy to defer but it directly affects cashflow — keeping on top of it weekly matters.` : ''
+- Invoicing and money admin is always relevant for self-employed people. If there is any sign of cash or invoice pressure, or if it is a moderate energy day with no critical deadline, include "Chase or send an invoice" or a similar revenue admin task in the priorities. Frame the reasoning as: revenue admin is easy to defer but it directly affects cashflow — keeping on top of it weekly matters.${revenueUrgency}` : ''
 
   return `You are Daye, a personal productivity coach. Generate a daily focus plan for this person.
 
@@ -195,7 +201,7 @@ Respond with a JSON object containing exactly these fields:
 {
   "priorities": [{"task": "string", "subtitle": "string explaining why this matters today"}],
   "avoid": ["string"],
-  "timeSplit": [{"time": "string like 2:15–3:30pm", "task": "string"}],
+  "timeSplit": [{"time": "string like 2:15-3:30pm", "task": "string"}],
   "why": "string of 2-3 sentences explaining the reasoning behind this plan referencing their goal and current state",
   "dayLabel": "one of: Focus day, Recovery day, Busy day, Exploration day",
   "goalAlignment": "short string like Today moves you toward getting promoted",
@@ -210,6 +216,8 @@ Rules:
 - Avoid items must reference their actual blockers not generic advice
 - Time split must reflect their actual energy level — low energy gets shorter blocks with breaks
 - Time split MUST start from the current time if provided — never use 9am as the start if a different time was given
+- Time split must show consecutive blocks with no gaps. Each block ends exactly when the next begins. Include short breaks as explicit blocks eg "11:30-12pm: Break and lunch" rather than leaving unexplained gaps. Every hour of the working day must be accounted for
+- Use this exact time format throughout: start time hyphen end time, no spaces around the hyphen, use am/pm only on the last time in each block eg "9-11am" not "9am-11am", "2:15-3:30pm" not "2:15pm-3:30pm"
 - dayName must feel like a chapter title — poetic, warm, and personal to their actual situation. Examples for inspiration (do not use these exactly): 'The Big Push', 'Steady Hands', 'The Long Game', 'Deep Focus Morning', 'The Comeback', 'Small Steps Forward', 'Clearing the Decks', 'The Pitch Day', 'One Thing Only', 'Gentle Progress'. If they have a big deadline it might be 'The Final Push'. If low energy it might be 'Slow and Steady'. Never generic, always specific to their day.${figuringItOutInstructions}${selfEmployedInstructions}${studentInstructions}${eveningInstructions}`
 }
 

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { getStateLevel, isOverwhelmedOrAnxious } from '../utils/stateDetection'
 import { areSimilar } from '../engine/deduplicateTasks'
+import { getPlanInsight } from '../utils/patternEngine'
 
 function formatDate() {
   const now = new Date()
@@ -443,6 +444,7 @@ function ShareSheet({ open, onClose, cardBlobUrl, cardFilename, cardGenerating }
 
 export default function FocusOutput({
   plan, userTasks, user, userProfile, checkInData,
+  history, streakCount,
   extraTasks, onExtraTasksChange,
   onStartAction, onReset, onBack, onHome,
 }) {
@@ -589,6 +591,21 @@ export default function FocusOutput({
           <p className="text-[11px] font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-muted)' }}>
             {formatDate()}
           </p>
+          {(() => {
+            const insight = getPlanInsight(history || [], streakCount || 0)
+            return insight ? (
+              <p style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: '12px',
+                fontStyle: 'italic',
+                color: 'var(--color-muted)',
+                margin: '0 0 8px 0',
+                lineHeight: 1.5,
+              }}>
+                {insight}
+              </p>
+            ) : null
+          })()}
           {dayName && (
             <p style={{
               fontFamily: 'var(--font-serif)',
