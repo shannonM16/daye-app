@@ -8,6 +8,7 @@ import BlogIndex from './blog/BlogIndex'
 import ArticlePage from './blog/ArticlePage'
 import SignUp from './screens/SignUp'
 import Onboarding from './screens/Onboarding'
+import OnboardingFiguringItOut from './screens/OnboardingFiguringItOut'
 import CheckIn from './screens/CheckIn'
 import TaskInput from './screens/TaskInput'
 import FocusOutput from './screens/FocusOutput'
@@ -21,6 +22,7 @@ const SCREENS = {
   LANDING: 'landing',
   SIGNUP: 'signup',
   ONBOARDING: 'onboarding',
+  FIO_REFLECTION: 'fio_reflection',
   CHECKIN: 'checkin',
   TASK_INPUT: 'task_input',
   LOADING: 'loading',
@@ -273,6 +275,18 @@ export default function App() {
     )
   }
 
+  if (screen === SCREENS.FIO_REFLECTION) {
+    return (
+      <OnboardingFiguringItOut
+        onComplete={(data) => {
+          setUserProfile((prev) => ({ ...(prev || {}), ...data }))
+          setScreen(SCREENS.CHECKIN)
+        }}
+        onBack={() => setScreen(SCREENS.CHECKIN)}
+      />
+    )
+  }
+
   // ── Focus output & action: full width ────────────────────────────
   if (screen === SCREENS.LOADING) {
     return <LoadingScreen />
@@ -326,6 +340,7 @@ export default function App() {
           onViewHistory={() => setScreen(SCREENS.HISTORY)}
           onViewSettings={() => setScreen(SCREENS.SETTINGS)}
           onHome={() => setScreen(SCREENS.CHECKIN)}
+          onRetakeReflection={() => setScreen(SCREENS.FIO_REFLECTION)}
         />
       )
     }
@@ -385,6 +400,7 @@ export default function App() {
         onViewHistory={() => setScreen(SCREENS.HISTORY)}
         onViewSettings={() => setScreen(SCREENS.SETTINGS)}
         onHome={() => setScreen(SCREENS.CHECKIN)}
+        onRetakeReflection={() => setScreen(SCREENS.FIO_REFLECTION)}
       />
     )
   }

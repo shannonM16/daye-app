@@ -151,6 +151,17 @@ TIME CONTEXT:
     ? `\n\nPLANNING CONTEXT: This user is planning a late working session tonight. Adjust the time split to reflect evening hours — suggest blocks like 9pm–10:30pm rather than morning times. Keep the plan focused and short — late sessions should have a maximum of 2 priorities, not 3.`
     : ''
 
+  const figuringItOutInstructions = userType === 'figuring-it-out' ? `
+
+FIGURING IT OUT INSTRUCTIONS:
+- This person is figuring out their next step. They may be between jobs, considering a career change, or simply feeling uncertain about their direction.
+- Your tone must be: warm and encouraging without being patronising; realistic without being discouraging; focused on small meaningful actions not big overwhelming goals.
+- Never use corporate productivity language. Words like "optimise", "leverage", "deliverable", "KPI" are completely wrong for this person.
+- Never suggest more than 2 priorities — one meaningful action is enough for this group on most days.
+- The why copy should feel like a supportive friend wrote it, not a productivity coach. It should acknowledge where they are emotionally, not just what they should do.
+- Always end the why with a single sentence of genuine encouragement. Not motivational poster language — something real and specific to their situation.
+- The dayName must feel gentle and meaningful — eg 'One Small Step', 'The Exploration', 'Quiet Progress', 'Moving Forward', 'The First Move', 'A Day of Possibility', 'Gentle Momentum'. Never intense or pressured. Never words like 'Push', 'Grind', 'Attack'.` : ''
+
   const selfEmployedInstructions = userType === 'self-employed' ? `
 SELF-EMPLOYED INSTRUCTIONS:
 - This person is self-employed as a ${selfEmployedType || 'independent worker'}. Adapt your language and tone to their specific work type. For content creators: use language about audience, consistency, creativity and brand. For consultants: use language about clients, deliverables, positioning and revenue. For coaches: use language about clients, transformation, programmes and impact. For product builders: use language about users, shipping, growth and metrics. For trades: use language about jobs, bookings, quotes and reputation. Never use generic productivity language that could apply to anyone.
@@ -197,7 +208,7 @@ Rules:
 - Avoid items must reference their actual blockers not generic advice
 - Time split must reflect their actual energy level — low energy gets shorter blocks with breaks
 - Time split MUST start from the current time if provided — never use 9am as the start if a different time was given
-- dayName must feel like a chapter title — poetic, warm, and personal to their actual situation. Examples for inspiration (do not use these exactly): 'The Big Push', 'Steady Hands', 'The Long Game', 'Deep Focus Morning', 'The Comeback', 'Small Steps Forward', 'Clearing the Decks', 'The Pitch Day', 'One Thing Only', 'Gentle Progress'. If they have a big deadline it might be 'The Final Push'. If low energy it might be 'Slow and Steady'. Never generic, always specific to their day.${selfEmployedInstructions}${studentInstructions}${eveningInstructions}`
+- dayName must feel like a chapter title — poetic, warm, and personal to their actual situation. Examples for inspiration (do not use these exactly): 'The Big Push', 'Steady Hands', 'The Long Game', 'Deep Focus Morning', 'The Comeback', 'Small Steps Forward', 'Clearing the Decks', 'The Pitch Day', 'One Thing Only', 'Gentle Progress'. If they have a big deadline it might be 'The Final Push'. If low energy it might be 'Slow and Steady'. Never generic, always specific to their day.${figuringItOutInstructions}${selfEmployedInstructions}${studentInstructions}${eveningInstructions}`
 }
 
 /**

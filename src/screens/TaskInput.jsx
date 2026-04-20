@@ -186,11 +186,71 @@ const LOW_EFFORT_CHIPS = [
   'Admin', 'Clear emails', 'Light review', 'Team catch-up', 'Reply to messages',
 ]
 
-const FIGURING_IT_OUT_CHIPS = [
-  'Explore options', 'Research a topic', 'Reach out to someone', 'Work on a CV or portfolio',
-  'Apply for something', 'Have a useful conversation', 'Rest and reflect',
-  'Learn something new', 'Take one small step', 'Admin and life tasks',
-]
+const FIO_CHIPS_BY_DIRECTION = {
+  explore: [
+    'Research a field or role', 'Watch or listen to something inspiring',
+    'Read about someone\'s career path', 'Make a list of what energises me',
+    'Reach out to someone doing interesting work', 'Attend an event or webinar',
+    'Admin and life tasks',
+  ],
+  build: [
+    'Work on my project or idea', 'Write or create something',
+    'Learn a tool or skill needed', 'Share something I made',
+    'Plan the next step of the project', 'Get feedback from someone',
+    'Admin and life tasks',
+  ],
+  'invest-skill': [
+    'Complete a course module', 'Practice the skill',
+    'Build something to apply the learning', 'Research courses or programmes',
+    'Update my CV or portfolio', 'Connect with others learning the same thing',
+    'Admin and life tasks',
+  ],
+  'get-stable': [
+    'Job search or applications', 'Update CV or LinkedIn',
+    'Reach out to a recruiter or contact', 'Research options',
+    'Financial admin', 'Self care and rest',
+    'Admin and life tasks',
+  ],
+  'one-small-step': [
+    'One thing I have been putting off', 'Reach out to one person',
+    'Apply for one thing', 'Read one article or resource',
+    'Write down what I am thinking', 'Do one small productive thing',
+    'Admin and life tasks',
+  ],
+}
+
+function getFiguringItOutChips(directions) {
+  if (!directions || directions.length === 0) {
+    const seen = new Set()
+    const mix = []
+    for (const chips of Object.values(FIO_CHIPS_BY_DIRECTION)) {
+      for (const chip of chips) {
+        if (chip !== 'Admin and life tasks' && !seen.has(chip)) {
+          seen.add(chip)
+          mix.push(chip)
+          if (mix.length >= 8) break
+        }
+      }
+      if (mix.length >= 8) break
+    }
+    return [...mix, 'Admin and life tasks']
+  }
+  if (directions.length === 1) {
+    return FIO_CHIPS_BY_DIRECTION[directions[0]] || FIO_CHIPS_BY_DIRECTION['one-small-step']
+  }
+  const seen = new Set()
+  const merged = []
+  for (const dir of directions) {
+    const chips = FIO_CHIPS_BY_DIRECTION[dir] || []
+    for (const chip of chips) {
+      if (chip !== 'Admin and life tasks' && !seen.has(chip)) {
+        seen.add(chip)
+        merged.push(chip)
+      }
+    }
+  }
+  return [...merged, 'Admin and life tasks']
+}
 
 function getSeniorityTier(seniority) {
   if (seniority === 'director-plus') return 'director'
@@ -198,9 +258,9 @@ function getSeniorityTier(seniority) {
   return 'ic'
 }
 
-function getChips(userType, jobFunctions, seniority, selfEmployedType, studyLevel, subjectArea) {
+function getChips(userType, jobFunctions, seniority, selfEmployedType, studyLevel, subjectArea, figuringOutDirections) {
   if (userType === 'student') return getStudentChips(studyLevel, subjectArea)
-  if (userType === 'figuring-it-out') return FIGURING_IT_OUT_CHIPS
+  if (userType === 'figuring-it-out') return getFiguringItOutChips(figuringOutDirections)
   if (userType === 'self-employed') {
     if (selfEmployedType && selfEmployedType !== 'other') {
       return SE_CHIPS_BY_TYPE[selfEmployedType] || SE_CHIPS_UNIVERSAL
@@ -316,6 +376,7 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
     selfEmployedType,
     userProfile?.studyLevel,
     userProfile?.subjectArea,
+    userProfile?.figuringOutDirections,
   )
   const chips =
     stateLevel === 'low'

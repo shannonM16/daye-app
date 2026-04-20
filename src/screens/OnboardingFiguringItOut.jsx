@@ -4,11 +4,11 @@ import { ProgressBar, BackButton } from '../components/OnboardingUI'
 const TOTAL = 2
 
 const DIRECTIONS = [
-  { id: 'explore-career', label: 'Explore a new career direction', description: 'I want to understand my options better' },
-  { id: 'start-build', label: 'Start or build something', description: 'A project, business or side hustle' },
-  { id: 'develop-skill', label: 'Develop a skill', description: 'Learn something that opens new doors' },
-  { id: 'get-stable', label: 'Get my finances and life stable', description: 'Before I make any big moves' },
-  { id: 'get-through', label: 'Just get through each day well', description: 'Small steps, one at a time' },
+  { id: 'explore', label: 'Explore what\'s out there', description: 'You don\'t need to decide yet. Just start learning what exists, what excites you, and what doesn\'t. Clarity comes from exposure, not thinking.' },
+  { id: 'build', label: 'Build or create something', description: 'A project, a side hustle, something small. Not for money necessarily — just to prove to yourself you can start and finish something you care about.' },
+  { id: 'invest-skill', label: 'Invest in a skill', description: 'Pick one thing that opens doors regardless of which direction you go. Learning compounds — even a small commitment adds up fast.' },
+  { id: 'get-stable', label: 'Get stable first', description: 'Sometimes the most strategic thing is to reduce financial or emotional pressure before making big decisions. Stability creates space to think clearly.' },
+  { id: 'one-small-step', label: 'Take one small step today', description: 'You don\'t need a plan. You just need the next step. One conversation, one application, one thing read. Movement creates clarity.' },
 ]
 
 async function callClaudeForReflection(text) {
@@ -25,20 +25,21 @@ async function callClaudeForReflection(text) {
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 500,
+      max_tokens: 600,
       messages: [
         {
           role: 'user',
-          content: `Someone is using a daily focus app and has described their situation. Generate a warm, empathetic profile to help them.
+          content: `You are reading a message from someone who is figuring out their next step in life or work. They have shared their situation openly and vulnerably. Your job is to reflect it back to them in a way that makes them feel genuinely understood — not analysed, not diagnosed, just heard.
 
 Their situation: "${text}"
 
-Return ONLY a JSON object — no markdown, no code blocks, just raw JSON:
+Respond with a JSON object — no markdown, no code blocks, just raw JSON:
 {
-  "summary": "A 2-sentence warm empathetic reflection in second person. Must start with 'It sounds like'.",
-  "goal": "a short phrase (5 words max) describing their most likely main goal",
-  "blockers": ["up to 3 short phrases describing what seems to be holding them back"],
-  "suggested_focus": "a short phrase describing what kind of daily focus would help them most"
+  "summary": "2-3 sentences in second person that reflect their situation back warmly. Start with 'It sounds like...' Do not use clinical language. Do not list their problems back at them. Find the human truth in what they wrote — the tension they are holding, the hope underneath the uncertainty. Make them feel seen not assessed.",
+  "goal": "a short warm string describing what they seem to be working toward. Not a business objective — a human one. eg 'Finding work that actually feels like you' or 'Building the confidence to make a move' or 'Getting some clarity after a period of uncertainty'",
+  "blockers": ["2-3 short strings describing what seems to be in their way. Written with compassion not judgement. eg 'Fear of getting it wrong', 'Financial pressure making it hard to take risks', 'Not knowing where to start'"],
+  "suggested_focus": "a warm one-sentence description of what kind of daily focus would help them most. eg 'Small exploratory actions that build momentum without pressure' or 'Gentle progress on one thing at a time, without needing to have it all figured out'",
+  "encouragement": "a single short sentence of genuine encouragement — not motivational poster language, something real. eg 'You do not need to have it figured out to start moving.' or 'The fact that you are asking these questions means you are already further along than you think.'"
 }`,
         },
       ],
@@ -110,6 +111,7 @@ export default function OnboardingFiguringItOut({ onComplete, onBack }) {
       onComplete({
         userText,
         aiSummary: aiProfile.summary,
+        aiEncouragement: aiProfile.encouragement,
         goals: directions.length > 0 ? directions : [aiProfile.goal],
         goal: aiProfile.goal,
         blockers: aiProfile.blockers || [],
@@ -165,30 +167,154 @@ export default function OnboardingFiguringItOut({ onComplete, onBack }) {
 
         {step === 1 && !loading && aiProfile && (
           <>
-            <h1 className="text-[22px] font-bold text-stone-900 mb-4">We've read your situation.</h1>
-            <div className="bg-stone-50 rounded-2xl p-4 border border-stone-100 mb-5">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-stone-400 mb-2">It sounds like…</p>
-              <p className="text-stone-700 text-sm leading-relaxed">
-                {aiProfile.summary.replace(/^It sounds like\s*/i, '')}
+            <h1 className="text-[22px] font-bold text-stone-900 mb-5">We've read your situation.</h1>
+
+            {/* AI summary reflection */}
+            <div style={{ marginBottom: '20px' }}>
+              <p style={{
+                fontFamily: 'var(--font-serif)',
+                fontStyle: 'italic',
+                fontSize: '18px',
+                color: 'var(--color-ink)',
+                lineHeight: 1.7,
+                margin: '0 0 10px 0',
+              }}>
+                {aiProfile.summary}
               </p>
+              {aiProfile.encouragement && (
+                <p style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '13px',
+                  color: 'var(--color-muted)',
+                  fontStyle: 'italic',
+                  margin: 0,
+                }}>
+                  {aiProfile.encouragement}
+                </p>
+              )}
             </div>
 
-            <h2 className="text-[13px] font-semibold text-stone-700 mb-1">What feels most like where you want to head?</h2>
-            <p className="text-xs text-stone-400 mb-3">Pick up to 2.</p>
-            <div className="space-y-1.5">
-              {DIRECTIONS.map((d) => (
-                <button
-                  key={d.id}
-                  onClick={() => toggleDirection(d.id)}
-                  style={directions.includes(d.id) ? { borderLeftWidth: '3px', borderLeftColor: '#1c1917' } : {}}
-                  className={`w-full text-left px-3.5 py-3 rounded-2xl border transition-all duration-150 active:scale-[0.99] ${
-                    directions.includes(d.id) ? 'bg-stone-50 border-stone-200' : 'bg-white border-stone-100'
-                  }`}
-                >
-                  <div className="font-semibold text-sm text-stone-900">{d.label}</div>
-                  <div className="text-stone-400 text-xs mt-0.5">{d.description}</div>
-                </button>
-              ))}
+            {/* Goal card */}
+            {aiProfile.goal && (
+              <div style={{
+                border: '0.5px solid var(--color-border)',
+                borderLeft: '3px solid var(--color-lavender)',
+                borderRadius: '10px',
+                padding: '14px 16px',
+                marginBottom: '16px',
+                background: 'var(--color-white)',
+              }}>
+                <p style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '10px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  color: 'var(--color-muted)',
+                  fontWeight: 500,
+                  margin: '0 0 6px 0',
+                }}>
+                  It looks like you're working toward:
+                </p>
+                <p style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontStyle: 'italic',
+                  fontSize: '16px',
+                  color: 'var(--color-ink)',
+                  margin: 0,
+                  lineHeight: 1.4,
+                }}>
+                  {aiProfile.goal}
+                </p>
+              </div>
+            )}
+
+            {/* Blockers as soft blush chips */}
+            {aiProfile.blockers?.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                {aiProfile.blockers.map((b, i) => (
+                  <span key={i} style={{
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '12px',
+                    color: 'var(--color-ink)',
+                    background: 'var(--color-blush)',
+                    borderRadius: '20px',
+                    padding: '5px 12px',
+                  }}>
+                    {b}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Suggested focus */}
+            {aiProfile.suggested_focus && (
+              <p style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: '13px',
+                color: 'var(--color-muted)',
+                marginBottom: '28px',
+                lineHeight: 1.5,
+              }}>
+                {aiProfile.suggested_focus}
+              </p>
+            )}
+
+            {/* Direction cards */}
+            <h2 style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '13px',
+              fontWeight: 600,
+              color: 'var(--color-ink)',
+              marginBottom: '4px',
+            }}>
+              What feels most like where you want to head?
+            </h2>
+            <p style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '12px',
+              color: 'var(--color-muted)',
+              marginBottom: '12px',
+            }}>
+              Pick up to 2.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {DIRECTIONS.map((d) => {
+                const selected = directions.includes(d.id)
+                return (
+                  <button
+                    key={d.id}
+                    onClick={() => toggleDirection(d.id)}
+                    style={{
+                      textAlign: 'left',
+                      background: selected ? '#f5f3f0' : 'white',
+                      border: '0.5px solid var(--color-border)',
+                      borderLeft: selected ? '3px solid var(--color-ink)' : '0.5px solid var(--color-border)',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{
+                      fontFamily: 'var(--font-sans)',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: 'var(--color-ink)',
+                      marginBottom: '4px',
+                    }}>
+                      {d.label}
+                    </div>
+                    <div style={{
+                      fontFamily: 'var(--font-sans)',
+                      fontSize: '13px',
+                      color: 'var(--color-muted)',
+                      lineHeight: 1.5,
+                    }}>
+                      {d.description}
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </>
         )}

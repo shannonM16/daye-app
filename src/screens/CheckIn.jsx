@@ -27,6 +27,16 @@ const DAY_TYPES = [
   { id: 'reactive-firefighting', label: 'Reactive / firefighting' },
 ]
 
+const FIO_DAY_TYPES = [
+  { id: 'exploring', label: 'Exploring and researching' },
+  { id: 'applying', label: 'Applying or reaching out' },
+  { id: 'reflecting', label: 'Reflecting and planning' },
+  { id: 'taking-a-break', label: 'Taking a break' },
+  { id: 'life-admin', label: 'Doing life admin' },
+  { id: 'creative', label: 'Working on something creative' },
+  { id: 'learning', label: 'Learning something new' },
+]
+
 const ENERGY_LABELS = ['', 'Depleted', 'Low', 'Okay', 'Good', 'Charged']
 
 const SE_PRESSURE_BY_TYPE = {
@@ -307,6 +317,7 @@ function getPressureOptions(userType, selfEmployedType, jobFunctions, seniority,
         { id: 'comparison-spiral', label: 'Comparison spiral or self-doubt' },
         { id: 'pressure-from-others', label: 'Pressure from family or friends' },
         { id: 'opportunity-deadline', label: 'Application or opportunity deadline' },
+        { id: 'should-have-it-figured', label: 'Feeling like I should have it figured out by now' },
         { id: 'unsure-today', label: 'Unsure what to do today' },
         { id: 'none', label: 'None right now' },
       ]
@@ -501,7 +512,8 @@ function CustomChipArea({ screenKey, customChips, onAddChip, onRemoveChip, editM
   )
 }
 
-export default function CheckIn({ user, userProfile, initialValues, history = [], streakCount = 0, onSubmit, onViewHistory, onViewSettings, onHome }) {
+export default function CheckIn({ user, userProfile, initialValues, history = [], streakCount = 0, onSubmit, onViewHistory, onViewSettings, onHome, onRetakeReflection }) {
+  const isFiguringItOut = userProfile?.userType === 'figuring-it-out'
   const selfEmployedType = userProfile?.selfEmployedType || userProfile?.workType || null
   const pressureOptions = getPressureOptions(
     userProfile?.userType,
@@ -847,7 +859,7 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
               Planning your afternoon from {currentTimeStr}
             </p>
           ) : (
-            <p className="text-sm" style={{ color: 'var(--color-muted)' }}>How's today looking?</p>
+            <p className="text-sm" style={{ color: 'var(--color-muted)' }}>{isFiguringItOut ? 'How are you feeling today?' : 'How\'s today looking?'}</p>
           )}
         </div>
 
@@ -875,10 +887,27 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
               </div>
             ) : null}
 
+            {/* FIO empty state — reflection not yet completed */}
+            {isFiguringItOut && !userProfile?.aiSummary && onRetakeReflection && (
+              <button
+                onClick={onRetakeReflection}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  background: 'var(--color-blush)', border: 'none',
+                  borderRadius: '10px', padding: '12px 14px',
+                  fontFamily: 'var(--font-sans)', fontSize: '13px',
+                  color: 'var(--color-ink)', cursor: 'pointer',
+                  lineHeight: 1.5,
+                }}
+              >
+                Tell us a bit about your situation to get a more personalised plan →
+              </button>
+            )}
+
             {/* Energy */}
             <div>
               <div className="flex items-baseline justify-between mb-2">
-                <SectionLabel>Energy</SectionLabel>
+                <SectionLabel>{isFiguringItOut ? 'Your energy today' : 'Energy'}</SectionLabel>
                 <span className="text-xs -mt-2" style={{ color: 'var(--color-muted)' }}>{ENERGY_LABELS[energy]}</span>
               </div>
               <input type="range" min={1} max={5} value={energy} onChange={(e) => handleEnergyChange(Number(e.target.value))} />
@@ -932,6 +961,11 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
                   </div>
                 ))}
               </div>
+              {isFiguringItOut && (
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)', fontStyle: 'italic', marginTop: '8px' }}>
+                  There is no wrong answer here.
+                </p>
+              )}
               <CustomChipArea
                 screenKey="mood"
                 customChips={customMoods}
@@ -960,7 +994,7 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
             <div>
               <SectionLabel>Day type</SectionLabel>
               <div className="grid grid-cols-2 gap-1.5">
-                {DAY_TYPES.map((dt) => (
+                {(isFiguringItOut ? FIO_DAY_TYPES : DAY_TYPES).map((dt) => (
                   <GridBtn
                     key={dt.id}
                     label={dt.label}
