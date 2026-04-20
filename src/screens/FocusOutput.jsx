@@ -444,7 +444,7 @@ function ShareSheet({ open, onClose, cardBlobUrl, cardFilename, cardGenerating }
 export default function FocusOutput({
   plan, userTasks, user, userProfile, checkInData,
   extraTasks, onExtraTasksChange,
-  onStartAction, onReset, onBack,
+  onStartAction, onReset, onBack, onHome,
 }) {
   const { priorities, prioritySubtitles, avoid, timing, why, timeBlocks, goalAlignment, dayLabel, dayName } = plan
   const rawName = user?.firstName || ''
@@ -565,6 +565,15 @@ export default function FocusOutput({
       <div className="flex-1 overflow-y-auto">
         {/* ── Header ─────────────────────────────────────────── */}
         <div style={{ marginBottom: '16px' }}>
+          <span
+            onClick={onHome}
+            role="button"
+            tabIndex={0}
+            style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)', cursor: 'pointer' }}
+            className="text-[13px] font-light block mb-3 hover:opacity-70 transition-opacity"
+          >
+            daye
+          </span>
           {onBack && (
             <button
               onClick={onBack}

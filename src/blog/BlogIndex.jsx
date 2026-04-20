@@ -16,7 +16,7 @@ export default function BlogIndex() {
         {/* Wordmark */}
         <div style={{ marginBottom: '48px' }}>
           <a
-            href="https://withdaye.com"
+            href="/"
             style={{
               fontFamily: 'var(--font-serif)',
               fontStyle: 'italic',
@@ -24,7 +24,10 @@ export default function BlogIndex() {
               fontWeight: 300,
               color: 'var(--color-ink)',
               textDecoration: 'none',
+              cursor: 'pointer',
+              transition: 'opacity 0.15s',
             }}
+            className="hover:opacity-70"
           >
             daye
           </a>

@@ -165,7 +165,7 @@ function CheckItem({ label, checked, onToggle }) {
   )
 }
 
-export default function ActionMode({ priorities, prioritySubtitles, userTasks, extraTasks, checkInData, userProfile, dayName, onBack }) {
+export default function ActionMode({ priorities, prioritySubtitles, userTasks, extraTasks, checkInData, userProfile, dayName, onBack, onHome }) {
   const mood = checkInData?.mood || ''
   const energy = checkInData?.energy || 3
 
@@ -378,6 +378,15 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
 
         {/* Header */}
         <div style={{ marginBottom: '16px' }}>
+          <span
+            onClick={onHome}
+            role="button"
+            tabIndex={0}
+            style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)', cursor: 'pointer' }}
+            className="text-[13px] font-light block mb-3 hover:opacity-70 transition-opacity"
+          >
+            daye
+          </span>
           {onBack && (
             <button
               onClick={onBack}

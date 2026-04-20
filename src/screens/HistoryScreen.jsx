@@ -23,7 +23,7 @@ const ENERGY_DOT_COLOR = (e) => {
   return 'var(--color-lavender)'
 }
 
-export default function HistoryScreen({ history = [], onBack }) {
+export default function HistoryScreen({ history = [], onBack, onHome }) {
   const sorted = [...history].sort((a, b) => b.date.localeCompare(a.date))
 
   return (
@@ -44,8 +44,11 @@ export default function HistoryScreen({ history = [], onBack }) {
           )}
 
           <span
-            style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)' }}
-            className="text-[13px] font-light block mb-3"
+            onClick={onHome}
+            role="button"
+            tabIndex={0}
+            style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)', cursor: 'pointer' }}
+            className="text-[13px] font-light block mb-3 hover:opacity-70 transition-opacity"
           >
             daye
           </span>

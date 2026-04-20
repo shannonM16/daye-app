@@ -501,7 +501,7 @@ function CustomChipArea({ screenKey, customChips, onAddChip, onRemoveChip, editM
   )
 }
 
-export default function CheckIn({ user, userProfile, initialValues, history = [], streakCount = 0, onSubmit, onViewHistory, onViewSettings }) {
+export default function CheckIn({ user, userProfile, initialValues, history = [], streakCount = 0, onSubmit, onViewHistory, onViewSettings, onHome }) {
   const selfEmployedType = userProfile?.selfEmployedType || userProfile?.workType || null
   const pressureOptions = getPressureOptions(
     userProfile?.userType,
@@ -660,7 +660,13 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
         <div className="flex-1 overflow-y-auto space-y-5">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)' }} className="text-[13px] font-light">
+              <span
+                onClick={onHome}
+                role="button"
+                tabIndex={0}
+                style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)', cursor: 'pointer' }}
+                className="text-[13px] font-light hover:opacity-70 transition-opacity"
+              >
                 daye
               </span>
               <div className="flex items-center" style={{ marginRight: '-8px' }}>
@@ -675,6 +681,17 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
                     </svg>
                   </div>
                 )}
+                <a
+                  href="/blog"
+                  aria-label="Blog"
+                  className="flex items-center justify-center hover:opacity-70 transition-opacity"
+                  style={{ width: '40px', height: '40px', color: 'var(--color-muted)', textDecoration: 'none' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ color: 'var(--color-muted)' }}>
+                    <rect x="3.5" y="2.5" width="11" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M6 6.5h6M6 9h6M6 11.5h3" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+                  </svg>
+                </a>
               </div>
             </div>
             <p className="text-[24px] leading-tight font-light" style={{ color: 'var(--color-ink)' }}>
@@ -749,7 +766,13 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
         {/* Header */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)' }} className="text-[13px] font-light">
+            <span
+              onClick={onHome}
+              role="button"
+              tabIndex={0}
+              style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)', cursor: 'pointer' }}
+              className="text-[13px] font-light hover:opacity-70 transition-opacity"
+            >
               daye
             </span>
             <div className="flex items-center gap-2" style={{ marginRight: '-8px' }}>
@@ -771,6 +794,17 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
                   </svg>
                 </div>
               )}
+              <a
+                href="/blog"
+                aria-label="Blog"
+                className="flex items-center justify-center hover:opacity-70 transition-opacity"
+                style={{ width: '40px', height: '40px', color: 'var(--color-muted)', textDecoration: 'none' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ color: 'var(--color-muted)' }}>
+                  <rect x="3.5" y="2.5" width="11" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M6 6.5h6M6 9h6M6 11.5h3" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+                </svg>
+              </a>
               {onViewHistory && (
                 <div
                   onClick={onViewHistory}

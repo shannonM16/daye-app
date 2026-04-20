@@ -300,7 +300,7 @@ Example: ["Finish the board deck", "1:1 with manager", "Clear email backlog"]`,
   return JSON.parse(match[0])
 }
 
-export default function TaskInput({ user, userProfile, checkInData, initialTasks, onSubmit, onBack, onTasksChange }) {
+export default function TaskInput({ user, userProfile, checkInData, initialTasks, onSubmit, onBack, onTasksChange, onHome }) {
   const stateLevel = checkInData
     ? getStateLevel({ energy: checkInData.energy, sleep: checkInData.sleep, mood: checkInData.mood })
     : 'neutral'
@@ -468,8 +468,11 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
           )}
 
           <span
-            style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)' }}
-            className="text-[13px] font-light block mb-2"
+            onClick={onHome}
+            role="button"
+            tabIndex={0}
+            style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)', cursor: 'pointer' }}
+            className="text-[13px] font-light block mb-2 hover:opacity-70 transition-opacity"
           >
             daye
           </span>

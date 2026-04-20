@@ -80,23 +80,39 @@ export default function ArticlePage({ slug }) {
         margin: '0 auto',
         padding: '60px 20px',
       }}>
-        {/* Back link */}
-        <button
-          onClick={() => navigate('/blog')}
-          style={{
-            background: 'none',
-            border: 'none',
-            fontFamily: 'var(--font-sans)',
-            fontSize: '13px',
-            color: 'var(--color-muted)',
-            cursor: 'pointer',
-            padding: 0,
-            marginBottom: '36px',
-            display: 'block',
-          }}
-        >
-          ← Back to blog
-        </button>
+        {/* Header row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '36px' }}>
+          <a
+            href="/"
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              fontSize: '18px',
+              fontWeight: 300,
+              color: 'var(--color-ink)',
+              textDecoration: 'none',
+              cursor: 'pointer',
+              transition: 'opacity 0.15s',
+            }}
+            className="hover:opacity-70"
+          >
+            daye
+          </a>
+          <button
+            onClick={() => navigate('/blog')}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '13px',
+              color: 'var(--color-muted)',
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            ← Back to blog
+          </button>
+        </div>
 
         {/* Category */}
         <p style={{

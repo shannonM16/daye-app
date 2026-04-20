@@ -485,7 +485,7 @@ function BottomSheet({ config, onSave, onClose }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function SettingsScreen({
-  user, userProfile, history, streakCount, bestStreak, onSaveUser, onSaveProfile, onClearAll, onBack,
+  user, userProfile, history, streakCount, bestStreak, onSaveUser, onSaveProfile, onClearAll, onBack, onHome,
 }) {
   const profile = userProfile || {}
 
@@ -551,6 +551,15 @@ export default function SettingsScreen({
       <div className="flex-1 overflow-y-auto">
         {/* Header */}
         <div className="mb-6">
+          <span
+            onClick={onHome}
+            role="button"
+            tabIndex={0}
+            style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)', cursor: 'pointer' }}
+            className="text-[13px] font-light block mb-4 hover:opacity-70 transition-opacity"
+          >
+            daye
+          </span>
           {onBack && (
             <button
               onClick={onBack}

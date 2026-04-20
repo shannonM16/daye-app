@@ -291,6 +291,7 @@ export default function App() {
         onStartAction={() => setScreen(SCREENS.ACTION)}
         onReset={handleReset}
         onBack={() => setScreen(SCREENS.TASK_INPUT)}
+        onHome={() => setScreen(SCREENS.CHECKIN)}
       />
     )
   }
@@ -306,6 +307,7 @@ export default function App() {
         userProfile={userProfile}
         dayName={plan.dayName}
         onBack={() => setScreen(SCREENS.OUTPUT)}
+        onHome={() => setScreen(SCREENS.CHECKIN)}
       />
     )
   }
@@ -323,6 +325,7 @@ export default function App() {
           onSubmit={handleCheckIn}
           onViewHistory={() => setScreen(SCREENS.HISTORY)}
           onViewSettings={() => setScreen(SCREENS.SETTINGS)}
+          onHome={() => setScreen(SCREENS.CHECKIN)}
         />
       )
     }
@@ -337,6 +340,7 @@ export default function App() {
           onSubmit={handleTaskInput}
           onBack={() => setScreen(SCREENS.CHECKIN)}
           onTasksChange={setLiveSelectedTasks}
+          onHome={() => setScreen(SCREENS.CHECKIN)}
         />
       )
     }
@@ -346,6 +350,7 @@ export default function App() {
         <HistoryScreen
           history={checkInHistory || []}
           onBack={() => setScreen(SCREENS.CHECKIN)}
+          onHome={() => setScreen(SCREENS.CHECKIN)}
         />
       )
     }
@@ -363,6 +368,7 @@ export default function App() {
           onSaveProfile={setUserProfile}
           onClearAll={handleClearAll}
           onBack={() => setScreen(SCREENS.CHECKIN)}
+          onHome={() => setScreen(SCREENS.CHECKIN)}
         />
       )
     }
@@ -378,6 +384,7 @@ export default function App() {
         onSubmit={handleCheckIn}
         onViewHistory={() => setScreen(SCREENS.HISTORY)}
         onViewSettings={() => setScreen(SCREENS.SETTINGS)}
+        onHome={() => setScreen(SCREENS.CHECKIN)}
       />
     )
   }
