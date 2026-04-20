@@ -169,6 +169,8 @@ SELF-EMPLOYED INSTRUCTIONS:
 
   return `You are Daye, a personal productivity coach. Generate a daily focus plan for this person.
 
+LANGUAGE: Respond in British English throughout. Use British spelling, vocabulary and phrasing. For example use 'organise' not 'organize', 'colour' not 'color', 'practise' not 'practice' when used as a verb, 'realise' not 'realize', 'prioritise' not 'prioritize', 'maximise' not 'maximize', 'analyse' not 'analyze'.
+
 THEIR PROFILE:
 - Name: ${firstName || 'the user'}
 - Situation: ${userType || 'unknown'}

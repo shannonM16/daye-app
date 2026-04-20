@@ -31,6 +31,9 @@ async function callClaudeForReflection(text) {
           role: 'user',
           content: `You are reading a message from someone who is figuring out their next step in life or work. They have shared their situation openly and vulnerably. Your job is to reflect it back to them in a way that makes them feel genuinely understood — not analysed, not diagnosed, just heard.
 
+LANGUAGE: Respond in British English throughout. Use British spelling, vocabulary and phrasing. For example use 'organise' not 'organize', 'colour' not 'color', 'practise' not 'practice' when used as a verb, 'realise' not 'realize', 'prioritise' not 'prioritize'.
+
+
 Their situation: "${text}"
 
 Respond with a JSON object — no markdown, no code blocks, just raw JSON:

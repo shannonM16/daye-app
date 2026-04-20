@@ -339,7 +339,7 @@ async function parseTasksWithAI(text, userProfile) {
       messages: [
         {
           role: 'user',
-          content: `Extract a concise task list from this work day description.
+          content: `Extract a concise task list from this work day description. Respond in British English throughout — use British spelling, vocabulary and phrasing (e.g. 'organise' not 'organize', 'colour' not 'color').
 
 User context: ${fnLabel}, goal: ${userProfile.goal || 'general productivity'}
 
