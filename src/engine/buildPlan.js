@@ -79,7 +79,26 @@ STUDENT INSTRUCTIONS:
 - Do not use corporate or workplace language. Use academic language appropriate to their level.`
 }
 
-function buildPrompt(userProfile, checkInData, tasks) {
+function buildMeetingsContext(meetings) {
+  if (!Array.isArray(meetings) || meetings.length === 0) return ''
+  const list = meetings.map(m => `- ${m.name} from ${m.startTime} to ${m.endTime}`).join('\n')
+  const heavyDay = meetings.length >= 3
+  return `
+
+TODAY'S FIXED COMMITMENTS AND MEETINGS:
+${list}
+
+Build the time split around these fixed points. Do not schedule focus work during meeting times. Leave a 15-minute buffer before each meeting for preparation. If there are back-to-back meetings, acknowledge this in the why copy and adjust priorities accordingly — back-to-back meeting days need lighter focus work expectations. Show meetings in the time split exactly as entered by the user. In the timeSplit JSON array, for every meeting block prefix the task field with "[MEETING] " so it can be identified — for example: {"time": "9:00-9:30am", "task": "[MEETING] Team standup"}.${heavyDay ? `
+
+MEETING-HEAVY DAY INSTRUCTIONS:
+- This person has ${meetings.length} meetings today — this is a meeting-heavy day.
+- Cap priorities at 2, not 3.
+- The why copy must acknowledge: "You have a meeting-heavy day — we have focused your plan on the gaps between commitments."
+- Set dayLabel to "Meeting day" instead of "Busy day".
+- Suggest shorter focus blocks that fit between meetings rather than long deep work sessions.` : ''}`
+}
+
+function buildPrompt(userProfile, checkInData, tasks, meetings) {
   const {
     firstName,
     userType,
@@ -193,7 +212,7 @@ TODAY:
 - Sleep: ${sleep || 'not specified'}
 - Type of day: ${dayType || 'standard'}
 - Main pressure: ${pressureStr}
-- Tasks they have mentioned: ${tasksStr}${timeContext}
+- Tasks they have mentioned: ${tasksStr}${timeContext}${buildMeetingsContext(meetings)}
 
 Generate a daily focus plan. Be warm, direct and personal. Use their name. Reference their actual goal and blockers. Do not be generic.
 
@@ -225,7 +244,7 @@ Rules:
  * Calls the Claude API to generate a personalised focus plan.
  * Falls back to the rule-based decisionEngine if anything fails.
  */
-export async function buildPlan(userProfile, checkInData, tasks) {
+export async function buildPlan(userProfile, checkInData, tasks, meetings = []) {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
 
   if (!apiKey) {
@@ -247,7 +266,7 @@ export async function buildPlan(userProfile, checkInData, tasks) {
         messages: [
           {
             role: 'user',
-            content: buildPrompt(userProfile, checkInData, tasks),
+            content: buildPrompt(userProfile, checkInData, tasks, meetings),
           },
         ],
       }),

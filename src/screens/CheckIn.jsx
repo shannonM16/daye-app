@@ -419,6 +419,7 @@ function StepDots({ step }) {
     <div className="flex items-center justify-center gap-2">
       <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: step === 1 ? 'var(--color-ink)' : 'var(--color-border)', transition: 'background 0.2s' }} />
       <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: step === 2 ? 'var(--color-ink)' : 'var(--color-border)', transition: 'background 0.2s' }} />
+      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-border)', transition: 'background 0.2s' }} />
     </div>
   )
 }

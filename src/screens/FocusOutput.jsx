@@ -444,6 +444,7 @@ function ShareSheet({ open, onClose, cardBlobUrl, cardFilename, cardGenerating }
 
 export default function FocusOutput({
   plan, userTasks, user, userProfile, checkInData,
+  meetings,
   history, streakCount,
   extraTasks, onExtraTasksChange,
   onStartAction, onReset, onBack, onHome,
@@ -735,34 +736,42 @@ export default function FocusOutput({
               <div className="card">
                 <SectionLabel>Time split</SectionLabel>
                 <div>
-                  {timeBlocks.map((block, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center"
-                      style={{
-                        padding: '10px 0',
-                        borderBottom: i < timeBlocks.length - 1 ? '1px solid var(--color-linen-dark)' : 'none',
-                      }}
-                    >
-                      <div style={{ minWidth: '72px', flexShrink: 0, paddingRight: '12px' }}>
-                        <span style={{
-                          fontFamily: 'var(--font-sans)',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          color: 'var(--color-ink)',
-                          whiteSpace: 'nowrap',
-                        }}>
-                          {block.time}
-                        </span>
+                  {timeBlocks.map((block, i) => {
+                    const isMeeting = block.activity.startsWith('[MEETING] ')
+                    const activityLabel = isMeeting ? block.activity.slice('[MEETING] '.length) : block.activity
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center"
+                        style={{
+                          padding: '10px 0',
+                          borderBottom: i < timeBlocks.length - 1 ? '1px solid var(--color-linen-dark)' : 'none',
+                          ...(isMeeting ? { background: 'var(--color-linen-dark)', margin: '0 -20px', padding: '10px 20px' } : {}),
+                        }}
+                      >
+                        {isMeeting && (
+                          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-muted)', flexShrink: 0, marginRight: '10px' }} />
+                        )}
+                        <div style={{ minWidth: isMeeting ? '62px' : '72px', flexShrink: 0, paddingRight: '12px' }}>
+                          <span style={{
+                            fontFamily: 'var(--font-sans)',
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            color: isMeeting ? 'var(--color-muted)' : 'var(--color-ink)',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {block.time}
+                          </span>
+                        </div>
+                        <div style={{ width: '1px', height: '18px', background: 'var(--color-border)', flexShrink: 0, marginRight: '12px' }} />
+                        <div className="flex-1 min-w-0">
+                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: isMeeting ? 'var(--color-muted)' : 'var(--color-ink)' }}>
+                            {activityLabel}
+                          </span>
+                        </div>
                       </div>
-                      <div style={{ width: '1px', height: '18px', background: 'var(--color-border)', flexShrink: 0, marginRight: '12px' }} />
-                      <div className="flex-1 min-w-0">
-                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-ink)' }}>
-                          {block.activity}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}

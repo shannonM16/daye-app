@@ -11,6 +11,7 @@ import SignUp from './screens/SignUp'
 import Onboarding from './screens/Onboarding'
 import OnboardingFiguringItOut from './screens/OnboardingFiguringItOut'
 import CheckIn from './screens/CheckIn'
+import MeetingInput from './screens/MeetingInput'
 import TaskInput from './screens/TaskInput'
 import FocusOutput from './screens/FocusOutput'
 import ActionMode from './screens/ActionMode'
@@ -25,6 +26,7 @@ const SCREENS = {
   ONBOARDING: 'onboarding',
   FIO_REFLECTION: 'fio_reflection',
   CHECKIN: 'checkin',
+  MEETING_INPUT: 'meeting_input',
   TASK_INPUT: 'task_input',
   LOADING: 'loading',
   OUTPUT: 'output',
@@ -172,6 +174,7 @@ export default function App() {
   const [checkInHistory, setCheckInHistory] = useStorage('df_checkInHistory', [])
   const [plan, setPlan] = useState(null)
   const [checkInData, setCheckInData] = useState(null)
+  const [meetings, setMeetings] = useState([])
   const [liveSelectedTasks, setLiveSelectedTasks] = useState([])
   const [screen, setScreen] = useState(getInitialScreen)
 
@@ -199,8 +202,13 @@ export default function App() {
       const filtered = (prev || []).filter((h) => h.date !== today)
       return [...filtered, { date: today, ...data }]
     })
-    setScreen(SCREENS.TASK_INPUT)
+    setScreen(SCREENS.MEETING_INPUT)
   }, [setCheckInHistory])
+
+  const handleMeetingInput = useCallback((meetingsList) => {
+    setMeetings(meetingsList)
+    setScreen(SCREENS.TASK_INPUT)
+  }, [])
 
   const handleTaskInput = useCallback(async (tasks) => {
     setUserTasks(tasks)
@@ -209,7 +217,8 @@ export default function App() {
     const result = await buildPlan(
       { ...(userProfile || {}), firstName: user?.firstName },
       checkInData,
-      tasks
+      tasks,
+      meetings
     )
     setPlan(result)
     // Save plannedTasks to today's history entry so carry-over can read them tomorrow
@@ -373,6 +382,7 @@ export default function App() {
         user={user}
         userProfile={userProfile}
         checkInData={checkInData}
+        meetings={meetings}
         history={checkInHistory || []}
         streakCount={streakCount}
         extraTasks={extraTasks}
@@ -424,6 +434,15 @@ export default function App() {
       )
     }
 
+    if (screen === SCREENS.MEETING_INPUT) {
+      return (
+        <MeetingInput
+          onSubmit={handleMeetingInput}
+          onBack={() => setScreen(SCREENS.CHECKIN)}
+        />
+      )
+    }
+
     if (screen === SCREENS.TASK_INPUT) {
       return (
         <TaskInput
@@ -432,7 +451,7 @@ export default function App() {
           checkInData={checkInData}
           initialTasks={userTasks}
           onSubmit={handleTaskInput}
-          onBack={() => setScreen(SCREENS.CHECKIN)}
+          onBack={() => setScreen(SCREENS.MEETING_INPUT)}
           onTasksChange={setLiveSelectedTasks}
           onHome={() => setScreen(SCREENS.CHECKIN)}
         />
