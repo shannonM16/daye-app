@@ -79,23 +79,36 @@ STUDENT INSTRUCTIONS:
 - Do not use corporate or workplace language. Use academic language appropriate to their level.`
 }
 
+// Extracts the start-time in minutes from AI-generated time strings like "9:00-10:00am", "9-10am", "2:15-3:30pm"
+function parseTimeBlockStart(timeStr) {
+  if (!timeStr) return 9999
+  const norm = timeStr.replace(/[–—]/g, '-').trim()
+  const hyphenIdx = norm.search(/-(?!\d*:?\d*[ap]m)/i) // hyphen not part of am/pm
+  const startPart = hyphenIdx > 0 ? norm.slice(0, hyphenIdx).trim() : norm
+  const ampmMatch = norm.match(/(am|pm)\s*$/i)
+  const ampm = ampmMatch ? ampmMatch[1].toLowerCase() : 'am'
+  const timeMatch = startPart.match(/^(\d+)(?::(\d+))?(am|pm)?$/i)
+  if (!timeMatch) return 9999
+  let h = parseInt(timeMatch[1])
+  const min = timeMatch[2] ? parseInt(timeMatch[2]) : 0
+  const localAmpm = timeMatch[3] ? timeMatch[3].toLowerCase() : ampm
+  if (localAmpm === 'pm' && h !== 12) h += 12
+  if (localAmpm === 'am' && h === 12) h = 0
+  return h * 60 + min
+}
+
 function buildMeetingsContext(meetings) {
   if (!Array.isArray(meetings) || meetings.length === 0) return ''
-  const list = meetings.map(m => `- ${m.name} from ${m.startTime} to ${m.endTime}`).join('\n')
+  const list = meetings.map(m => `- ${m.name}: ${m.startTime} to ${m.endTime}`).join('\n')
   const heavyDay = meetings.length >= 3
-  return `
-
-TODAY'S FIXED COMMITMENTS AND MEETINGS:
+  return `FIXED COMMITMENTS TODAY (must appear in time split, do not schedule other tasks during these times):
 ${list}
 
-Build the time split around these fixed points. Do not schedule focus work during meeting times. Leave a 15-minute buffer before each meeting for preparation. If there are back-to-back meetings, acknowledge this in the why copy and adjust priorities accordingly — back-to-back meeting days need lighter focus work expectations. Show meetings in the time split exactly as entered by the user. In the timeSplit JSON array, for every meeting block prefix the task field with "[MEETING] " so it can be identified — for example: {"time": "9:00-9:30am", "task": "[MEETING] Team standup"}.${heavyDay ? `
+These are hard commitments. Build ALL time blocks around them. In the timeSplit JSON array, prefix every meeting block's task field with "[MEETING] " — for example: {"time": "9:00-9:30am", "task": "[MEETING] Team standup"}. Leave a 15-minute buffer before each meeting. If there are back-to-back meetings, acknowledge this in the why copy.${heavyDay ? `
 
-MEETING-HEAVY DAY INSTRUCTIONS:
-- This person has ${meetings.length} meetings today — this is a meeting-heavy day.
-- Cap priorities at 2, not 3.
-- The why copy must acknowledge: "You have a meeting-heavy day — we have focused your plan on the gaps between commitments."
-- Set dayLabel to "Meeting day" instead of "Busy day".
-- Suggest shorter focus blocks that fit between meetings rather than long deep work sessions.` : ''}`
+MEETING-HEAVY DAY: This person has ${meetings.length} meetings today. Cap priorities at 2. The why copy must acknowledge this is a meeting-heavy day. Set dayLabel to "Meeting day". Suggest shorter focus blocks that fit between meetings.` : ''}
+
+`
 }
 
 function buildPrompt(userProfile, checkInData, tasks, meetings) {
@@ -192,7 +205,9 @@ SELF-EMPLOYED INSTRUCTIONS:
 - This person is self-employed as a ${selfEmployedType || 'independent worker'}. Adapt your language and tone to their specific work type. For content creators: use language about audience, consistency, creativity and brand. For consultants: use language about clients, deliverables, positioning and revenue. For coaches: use language about clients, transformation, programmes and impact. For product builders: use language about users, shipping, growth and metrics. For trades: use language about jobs, bookings, quotes and reputation. Never use generic productivity language that could apply to anyone.
 - Invoicing and money admin is always relevant for self-employed people. If there is any sign of cash or invoice pressure, or if it is a moderate energy day with no critical deadline, include "Chase or send an invoice" or a similar revenue admin task in the priorities. Frame the reasoning as: revenue admin is easy to defer but it directly affects cashflow — keeping on top of it weekly matters.${revenueUrgency}` : ''
 
-  return `You are Daye, a personal productivity coach. Generate a daily focus plan for this person.
+  const meetingsContext = buildMeetingsContext(meetings)
+
+  return `${meetingsContext}You are Daye, a personal productivity coach. Generate a daily focus plan for this person.
 
 LANGUAGE: Respond in British English throughout. Use British spelling, vocabulary and phrasing. For example use 'organise' not 'organize', 'colour' not 'color', 'practise' not 'practice' when used as a verb, 'realise' not 'realize', 'prioritise' not 'prioritize', 'maximise' not 'maximize', 'analyse' not 'analyze'.
 
@@ -212,7 +227,7 @@ TODAY:
 - Sleep: ${sleep || 'not specified'}
 - Type of day: ${dayType || 'standard'}
 - Main pressure: ${pressureStr}
-- Tasks they have mentioned: ${tasksStr}${timeContext}${buildMeetingsContext(meetings)}
+- Tasks they have mentioned: ${tasksStr}${timeContext}
 
 Generate a daily focus plan. Be warm, direct and personal. Use their name. Reference their actual goal and blockers. Do not be generic.
 
@@ -245,6 +260,7 @@ Rules:
  * Falls back to the rule-based decisionEngine if anything fails.
  */
 export async function buildPlan(userProfile, checkInData, tasks, meetings = []) {
+  console.log('[daye] buildPlan — meetings passed:', meetings)
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
 
   if (!apiKey) {
@@ -306,6 +322,24 @@ export async function buildPlan(userProfile, checkInData, tasks, meetings = []) 
       time: b.time || '',
       activity: b.task || '',
     }))
+
+    // Fallback: ensure every meeting appears in the time split as a [MEETING] block
+    const meetingsList = Array.isArray(meetings) ? meetings : []
+    if (meetingsList.length > 0) {
+      const missingMeetings = meetingsList.filter(m =>
+        !timeBlocks.some(b =>
+          b.activity.startsWith('[MEETING]') &&
+          b.activity.toLowerCase().includes(m.name.toLowerCase())
+        )
+      )
+      if (missingMeetings.length > 0) {
+        console.log('[daye] Inserting missing meeting blocks:', missingMeetings.map(m => m.name))
+        for (const m of missingMeetings) {
+          timeBlocks.push({ time: `${m.startTime}–${m.endTime}`, activity: `[MEETING] ${m.name}` })
+        }
+        timeBlocks.sort((a, b) => parseTimeBlockStart(a.time) - parseTimeBlockStart(b.time))
+      }
+    }
 
     return {
       priorities,

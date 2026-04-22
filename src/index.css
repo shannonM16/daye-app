@@ -65,6 +65,15 @@
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+.meeting-name-input::placeholder {
+  color: var(--color-muted);
+}
+
+@keyframes micPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
 @keyframes goalToastOut {
   from { opacity: 1; transform: translateX(-50%) translateY(0); }
   to   { opacity: 0; transform: translateX(-50%) translateY(20px); }

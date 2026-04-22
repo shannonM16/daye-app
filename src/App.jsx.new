@@ -167,10 +167,6 @@ function RightPanel({ screen, user, userProfile, checkInData, liveSelectedTasks 
 // ── Main app ───────────────────────────────────────────────────────
 
 export default function App() {
-  // Fix 3: verify env vars are loaded
-  console.log('Supabase URL present:', !!import.meta.env.VITE_SUPABASE_URL)
-  console.log('Supabase key present:', !!import.meta.env.VITE_SUPABASE_ANON_KEY)
-
   const location = useLocation()
   const [user, setUser] = useStorage('df_user', null)
   const [userProfile, setUserProfile] = useStorage('df_userProfile', null)
@@ -296,10 +292,8 @@ export default function App() {
       const filtered = (prev || []).filter((h) => h.date !== today)
       return [...filtered, { date: today, ...data }]
     })
-    // Sync latest check-in data into the user profile record
-    syncUserToSupabase(user, userProfile)
     setScreen(SCREENS.MEETING_INPUT)
-  }, [setCheckInHistory, user, userProfile])
+  }, [setCheckInHistory])
 
   const handleMeetingInput = useCallback((meetingsList) => {
     setMeetings(meetingsList)

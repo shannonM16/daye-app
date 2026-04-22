@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { deduplicateTasks } from '../engine/deduplicateTasks'
 import { saveCompletionsForDate, taskMatchesGoal, incrementGoalCompletionCount, getGoalToastContent } from '../utils/completions'
+import { getAutoEndTime, getNextMeeting, getTodayMeetings } from '../utils/timeOptions'
+import TimePicker from '../components/TimePicker'
 
 const TIMER_SAVE_KEY = 'df_timerState'
 const REST_DURATION = 5 * 60
@@ -166,13 +168,29 @@ function CheckItem({ label, checked, onToggle }) {
   )
 }
 
-export default function ActionMode({ priorities, prioritySubtitles, userTasks, extraTasks, checkInData, userProfile, dayName, onBack, onHome }) {
+export default function ActionMode({ priorities, prioritySubtitles, userTasks, extraTasks, checkInData, userProfile, meetings: meetingsProp, dayName, onBack, onHome, onAddMeeting }) {
   const mood = checkInData?.mood || ''
   const energy = checkInData?.energy || 3
 
-  const { recommended, alternative } = getTimerOptions(
-    checkInData, userProfile, (userTasks || []).length
-  )
+  // Meeting-aware timer (improvement 7)
+  const todayMeetings = meetingsProp?.length ? meetingsProp : getTodayMeetings()
+  const nextMeeting = getNextMeeting(todayMeetings)
+  const now = new Date()
+  const currentMins = now.getHours() * 60 + now.getMinutes()
+  const minsUntilMeeting = nextMeeting ? (nextMeeting.startMins - currentMins) : Infinity
+
+  const getMeetingAdjustedRecommended = () => {
+    if (minsUntilMeeting >= 60) return null // use normal logic
+    if (minsUntilMeeting < 15) return null  // show prep card instead
+    if (minsUntilMeeting < 30) return { duration: 15 * 60, reason: `You have ${Math.floor(minsUntilMeeting)} minutes before ${nextMeeting.name} — a short focused sprint.` }
+    if (minsUntilMeeting < 45) return { duration: 25 * 60, reason: `You have ${Math.floor(minsUntilMeeting)} minutes before ${nextMeeting.name} — a focused Pomodoro fits perfectly.` }
+    return { duration: 45 * 60, reason: `Your next meeting starts at ${nextMeeting.startTime} — we have adjusted your block to fit.` }
+  }
+
+  const meetingAdjusted = getMeetingAdjustedRecommended()
+  const baseOptions = getTimerOptions(checkInData, userProfile, (userTasks || []).length)
+  const { recommended: baseRec, alternative } = baseOptions
+  const recommended = meetingAdjusted || baseRec
 
   const allItems = deduplicateTasks(priorities || [], userTasks || [])
   const orderedItems = reorderForMood(allItems, mood, energy)
@@ -197,6 +215,18 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
   const [goalToastVisible, setGoalToastVisible] = useState(false)
   const goalToastRef = useRef(null)
   const completionsSinceLastToastRef = useRef(2) // start at 2 so first match can fire
+
+  // Wake lock (improvement 6)
+  const wakeLockRef = useRef(null)
+  const [wakeLockActive, setWakeLockActive] = useState(false)
+
+  // Add meeting sheet (improvement 5)
+  const [showMeetingSheet, setShowMeetingSheet] = useState(false)
+  const [sheetName, setSheetName] = useState('')
+  const [sheetStart, setSheetStart] = useState('9:00am')
+  const [sheetEnd, setSheetEnd] = useState(() => getAutoEndTime('9:00am'))
+  const [meetingToast, setMeetingToast] = useState(null)
+  const [timerNote, setTimerNote] = useState(meetingAdjusted ? meetingAdjusted.reason : null)
   const toastsThisSessionRef = useRef(0)
 
   const microCopyArr = getMicroCopy(mood, energy)
@@ -288,6 +318,46 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
     return () => clearInterval(restRef.current)
   }, [restLeft !== null]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Wake lock — request when running, release when paused/stopped (improvement 6)
+  useEffect(() => {
+    if (!('wakeLock' in navigator)) return
+    let lock = null
+    const request = async () => {
+      try {
+        lock = await navigator.wakeLock.request('screen')
+        lock.addEventListener('release', () => setWakeLockActive(false))
+        wakeLockRef.current = lock
+        setWakeLockActive(true)
+      } catch { /* silently fail */ }
+    }
+    const release = async () => {
+      if (wakeLockRef.current) {
+        try { await wakeLockRef.current.release() } catch { /* ignore */ }
+        wakeLockRef.current = null
+        setWakeLockActive(false)
+      }
+    }
+    if (running) request()
+    else release()
+    return () => { release() }
+  }, [running])
+
+  useEffect(() => {
+    if (!('wakeLock' in navigator)) return
+    const reacquire = async () => {
+      if (document.visibilityState === 'visible' && running && !wakeLockRef.current) {
+        try {
+          const lock = await navigator.wakeLock.request('screen')
+          lock.addEventListener('release', () => setWakeLockActive(false))
+          wakeLockRef.current = lock
+          setWakeLockActive(true)
+        } catch { /* ignore */ }
+      }
+    }
+    document.addEventListener('visibilitychange', reacquire)
+    return () => document.removeEventListener('visibilitychange', reacquire)
+  }, [running])
+
   const handleSelectOption = (key) => {
     if (running || sessionDone) return
     setSelectedKey(key)
@@ -370,6 +440,35 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
     setResumeData(null)
   }
 
+  const handleMeetingSheetSubmit = useCallback(async () => {
+    if (!sheetName.trim()) return
+    const meeting = { name: sheetName.trim(), startTime: sheetStart, endTime: sheetEnd }
+    setShowMeetingSheet(false)
+    setSheetName('')
+
+    // Adjust timer if meeting starts within 45 min
+    const now2 = new Date()
+    const currentMins2 = now2.getHours() * 60 + now2.getMinutes()
+    const { timeStringToMinutes: ttm } = await import('../utils/timeOptions')
+    const startMins = ttm(sheetStart)
+    const minsAway = startMins - currentMins2
+    if (minsAway > 0 && minsAway <= 45 && !running) {
+      let newDuration = 25 * 60
+      if (minsAway <= 15) newDuration = 15 * 60
+      else if (minsAway <= 30) newDuration = 20 * 60
+      setSelectedKey('recommended')
+      setTimeLeft(newDuration)
+      setTimerNote(`Timer updated — your meeting starts at ${sheetStart}`)
+    }
+
+    // Show toast
+    setMeetingToast('Meeting added — your plan has been updated.')
+    setTimeout(() => setMeetingToast(null), 3500)
+
+    // Regenerate plan
+    onAddMeeting?.(meeting)
+  }, [sheetName, sheetStart, sheetEnd, running, onAddMeeting])
+
   const allSessionsDone = sessionNumber > totalSessions
   const progress = 1 - timeLeft / selectedDuration
   const circumference = 2 * Math.PI * 54
@@ -389,6 +488,69 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
 
   return (
     <div className="screen action-screen-wide">
+      {/* Meeting toast (improvement 5) */}
+      {meetingToast && (
+        <div style={{
+          position: 'fixed', bottom: '88px', left: '50%', transform: 'translateX(-50%)',
+          width: 'calc(100% - 64px)', maxWidth: '480px',
+          background: 'var(--color-linen)', border: '0.5px solid var(--color-border)',
+          borderLeft: '3px solid var(--color-sage)', borderRadius: '0 12px 12px 0',
+          padding: '12px 16px', zIndex: 600, boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
+        }}>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, color: 'var(--color-ink)', margin: 0 }}>
+            {meetingToast}
+          </p>
+        </div>
+      )}
+
+      {/* Add meeting bottom sheet (improvement 5) */}
+      {showMeetingSheet && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 700, display: 'flex', alignItems: 'flex-end' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowMeetingSheet(false) }}
+        >
+          <div style={{ width: '100%', background: 'var(--color-white)', borderRadius: '20px 20px 0 0', padding: '12px 20px 32px', maxHeight: '80vh', overflowY: 'auto' }}>
+            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'var(--color-border)', margin: '0 auto 20px' }} />
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, color: 'var(--color-ink)', marginBottom: '16px' }}>
+              Add a last-minute meeting
+            </p>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', marginBottom: '10px' }}>
+              <div style={{ flex: 1 }}>
+                <TimePicker
+                  value={sheetStart}
+                  onChange={v => { setSheetStart(v); setSheetEnd(getAutoEndTime(v)) }}
+                  bookedMeetings={todayMeetings}
+                />
+              </div>
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', paddingBottom: '10px', flexShrink: 0 }}>to</span>
+              <div style={{ flex: 1 }}>
+                <TimePicker value={sheetEnd} onChange={setSheetEnd} bookedMeetings={[]} />
+              </div>
+            </div>
+            <input
+              type="text"
+              value={sheetName}
+              onChange={e => setSheetName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleMeetingSheetSubmit() }}
+              placeholder="Meeting name..."
+              style={{ width: '100%', fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-ink)', background: 'var(--color-linen)', border: '0.5px solid var(--color-border)', borderRadius: '8px', padding: '10px 12px', outline: 'none', boxSizing: 'border-box', marginBottom: '14px' }}
+            />
+            <button
+              onClick={handleMeetingSheetSubmit}
+              style={{ width: '100%', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, color: 'white', background: 'var(--color-ink)', border: 'none', borderRadius: '10px', padding: '12px', cursor: 'pointer', marginBottom: '10px' }}
+            >
+              Add to today
+            </button>
+            <button
+              onClick={() => setShowMeetingSheet(false)}
+              style={{ width: '100%', background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', cursor: 'pointer', padding: '4px' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Feature 3: Goal progress toast */}
       {goalToast && (
         <div style={{
@@ -489,39 +651,70 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
             {/* Timer options — mobile: order 1 (before ring); desktop: order 2 (after ring) */}
             {!resumeData && !sessionDone && !allSessionsDone && (
               <div className="action-options-group">
-                <p className="text-[10px] uppercase tracking-widest font-medium mb-2" style={{ color: 'var(--color-muted)' }}>
-                  Recommended for you
-                </p>
-                <div className="action-options-cards">
-                  {[
-                    { key: 'recommended', data: recommended },
-                    { key: 'alternative', data: alternative },
-                  ].map(({ key, data }) => (
+                {/* < 15 min until meeting — show prep card instead of timer (improvement 7) */}
+                {minsUntilMeeting < 15 && nextMeeting ? (
+                  <div className="rounded-2xl px-4 py-4" style={{ background: 'var(--color-linen-dark)', border: '1px solid var(--color-border)' }}>
+                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, color: 'var(--color-ink)', marginBottom: '8px' }}>
+                      Your next meeting starts in {Math.max(1, Math.floor(minsUntilMeeting))} minute{Math.floor(minsUntilMeeting) !== 1 ? 's' : ''} — use this time to prepare.
+                    </p>
                     <button
-                      key={key}
-                      onClick={() => handleSelectOption(key)}
-                      disabled={running}
-                      className="text-left px-4 py-3 rounded-2xl transition-all duration-150 active:scale-[0.99] disabled:cursor-default"
-                      style={{
-                        border: `2px solid ${selectedKey === key ? 'var(--color-ink)' : 'var(--color-border)'}`,
-                        background: selectedKey === key ? 'var(--color-ink)' : 'var(--color-white)',
-                      }}
+                      onClick={() => {}}
+                      style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, color: 'white', background: 'var(--color-ink)', border: 'none', borderRadius: '20px', padding: '7px 18px', cursor: 'pointer' }}
                     >
-                      <div
-                        className="text-lg font-semibold leading-tight"
-                        style={{ color: selectedKey === key ? 'var(--color-white)' : 'var(--color-ink)' }}
-                      >
-                        {formatDuration(data.duration)}
-                      </div>
-                      <div
-                        className="text-xs leading-relaxed mt-0.5"
-                        style={{ color: selectedKey === key ? 'rgba(255,255,255,0.65)' : 'var(--color-muted)' }}
-                      >
-                        {data.reason}
-                      </div>
+                      I&apos;m ready
                     </button>
-                  ))}
-                </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-[10px] uppercase tracking-widest font-medium mb-2" style={{ color: 'var(--color-muted)' }}>
+                      Recommended for you
+                    </p>
+                    <div className="action-options-cards">
+                      {[
+                        { key: 'recommended', data: recommended },
+                        { key: 'alternative', data: alternative },
+                      ].map(({ key, data }) => (
+                        <button
+                          key={key}
+                          onClick={() => handleSelectOption(key)}
+                          disabled={running}
+                          className="text-left px-4 py-3 rounded-2xl transition-all duration-150 active:scale-[0.99] disabled:cursor-default"
+                          style={{
+                            border: `2px solid ${selectedKey === key ? 'var(--color-ink)' : 'var(--color-border)'}`,
+                            background: selectedKey === key ? 'var(--color-ink)' : 'var(--color-white)',
+                          }}
+                        >
+                          <div
+                            className="text-lg font-semibold leading-tight"
+                            style={{ color: selectedKey === key ? 'var(--color-white)' : 'var(--color-ink)' }}
+                          >
+                            {formatDuration(data.duration)}
+                          </div>
+                          <div
+                            className="text-xs leading-relaxed mt-0.5"
+                            style={{ color: selectedKey === key ? 'rgba(255,255,255,0.65)' : 'var(--color-muted)' }}
+                          >
+                            {data.reason}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    {/* Timer note for meeting-adjusted block (improvement 7) */}
+                    {timerNote && (
+                      <p className="text-[11px] mt-2 italic" style={{ color: 'var(--color-muted)', fontFamily: 'var(--font-sans)' }}>
+                        {timerNote}
+                      </p>
+                    )}
+                    {/* Add a meeting link (improvement 5) */}
+                    <button
+                      onClick={() => setShowMeetingSheet(true)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '10px', fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', padding: 0 }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      Add a meeting
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
@@ -568,7 +761,19 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
                   </div>
                 </div>
               ) : (
-                <div className="card flex flex-col items-center py-5">
+                <div className="card flex flex-col items-center py-5" style={{ position: 'relative' }}>
+                  {/* Wake lock indicator (improvement 6) */}
+                  {wakeLockActive && (
+                    <div
+                      title="Screen will stay on while timer runs"
+                      style={{ position: 'absolute', top: '12px', right: '12px', cursor: 'default' }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ color: 'var(--color-muted)' }}>
+                        <ellipse cx="7" cy="7" rx="6" ry="4" stroke="currentColor" strokeWidth="1.25"/>
+                        <circle cx="7" cy="7" r="1.75" stroke="currentColor" strokeWidth="1.25"/>
+                      </svg>
+                    </div>
+                  )}
                   <p className="text-[11px] mb-3" style={{ color: 'var(--color-muted)' }}>
                     Block {sessionNumber} of {totalSessions}
                   </p>

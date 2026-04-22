@@ -1,18 +1,6 @@
 import { useState, useRef } from 'react'
-
-const TIME_OPTIONS = (() => {
-  const opts = []
-  for (let h = 6; h <= 22; h++) {
-    for (let m = 0; m < 60; m += 30) {
-      if (h === 22 && m > 0) break
-      const ampm = h >= 12 ? 'pm' : 'am'
-      const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
-      const mStr = String(m).padStart(2, '0')
-      opts.push(`${h12}:${mStr}${ampm}`)
-    }
-  }
-  return opts
-})()
+import { getAutoEndTime, getNextQuarterHour, timeStringToMinutes } from '../utils/timeOptions'
+import TimePicker from '../components/TimePicker'
 
 const QUICK_CHIPS = [
   'Team standup',
@@ -27,19 +15,13 @@ const QUICK_CHIPS = [
   'Other',
 ]
 
-function toMinutes(t) {
-  const match = t.match(/^(\d+):(\d+)(am|pm)$/i)
-  if (!match) return 0
-  let h = parseInt(match[1])
-  const min = parseInt(match[2])
-  const ap = match[3].toLowerCase()
-  if (ap === 'pm' && h !== 12) h += 12
-  if (ap === 'am' && h === 12) h = 0
-  return h * 60 + min
+function sortMeetings(meetings) {
+  return [...meetings].sort((a, b) => timeStringToMinutes(a.startTime) - timeStringToMinutes(b.startTime))
 }
 
-function sortMeetings(meetings) {
-  return [...meetings].sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime))
+function timesOverlap(aStart, aEnd, bStart, bEnd) {
+  return timeStringToMinutes(aStart) < timeStringToMinutes(bEnd) &&
+    timeStringToMinutes(aEnd) > timeStringToMinutes(bStart)
 }
 
 function StepDots() {
@@ -52,39 +34,51 @@ function StepDots() {
   )
 }
 
-export default function MeetingInput({ onSubmit, onBack }) {
-  const [meetings, setMeetings] = useState([])
+export default function MeetingInput({ onSubmit, onBack, initialMeetings = [] }) {
+  const [meetings, setMeetings] = useState(() => {
+    if (initialMeetings && initialMeetings.length > 0) return sortMeetings(initialMeetings)
+    try {
+      const saved = JSON.parse(localStorage.getItem('df_meetings') || '[]')
+      return Array.isArray(saved) && saved.length > 0 ? sortMeetings(saved) : []
+    } catch { return [] }
+  })
   const [name, setName] = useState('')
-  const [startTime, setStartTime] = useState('9:00am')
-  const [endTime, setEndTime] = useState('9:30am')
+  const [startTime, setStartTime] = useState(() => getNextQuarterHour())
+  const [endTime, setEndTime] = useState(() => getAutoEndTime(getNextQuarterHour()))
+  const [overlapError, setOverlapError] = useState(null)
   const nameInputRef = useRef(null)
 
-  const getAutoEndTime = (start) => {
-    const match = start.match(/^(\d+):(\d+)(am|pm)$/i)
-    if (!match) return start
-    let h = parseInt(match[1])
-    const min = parseInt(match[2])
-    const ap = match[3].toLowerCase()
-    if (ap === 'pm' && h !== 12) h += 12
-    if (ap === 'am' && h === 12) h = 0
-    let totalMins = h * 60 + min + 30
-    if (totalMins >= 24 * 60) totalMins = totalMins % (24 * 60)
-    const newH = Math.floor(totalMins / 60)
-    const newM = totalMins % 60
-    const newAmpm = newH >= 12 ? 'pm' : 'am'
-    const newH12 = newH === 0 ? 12 : newH > 12 ? newH - 12 : newH
-    return `${newH12}:${String(newM).padStart(2, '0')}${newAmpm}`
-  }
-
-  const handleStartTimeChange = (val) => {
+  const handleStartChange = (val) => {
     setStartTime(val)
     setEndTime(getAutoEndTime(val))
+    setOverlapError(null)
+  }
+
+  const handleEndChange = (val) => {
+    setEndTime(val)
+    setOverlapError(null)
+  }
+
+  const checkOverlap = (start, end) => {
+    for (const m of meetings) {
+      if (timesOverlap(start, end, m.startTime, m.endTime)) {
+        return m
+      }
+    }
+    return null
   }
 
   const addMeeting = (meetingName, start, end) => {
     const trimmed = meetingName.trim()
-    if (!trimmed) return
+    if (!trimmed) return false
+    const conflict = checkOverlap(start, end)
+    if (conflict) {
+      setOverlapError(`This time overlaps with ${conflict.name} (${conflict.startTime} – ${conflict.endTime}). Please choose a different time.`)
+      return false
+    }
+    setOverlapError(null)
     setMeetings(prev => sortMeetings([...prev, { name: trimmed, startTime: start, endTime: end }]))
+    return true
   }
 
   const handleChipTap = (chip) => {
@@ -97,8 +91,8 @@ export default function MeetingInput({ onSubmit, onBack }) {
 
   const handleAdd = () => {
     if (!name.trim()) return
-    addMeeting(name, startTime, endTime)
-    setName('')
+    const added = addMeeting(name, startTime, endTime)
+    if (added) setName('')
   }
 
   const handleKeyDown = (e) => {
@@ -107,6 +101,7 @@ export default function MeetingInput({ onSubmit, onBack }) {
 
   const removeMeeting = (idx) => {
     setMeetings(prev => prev.filter((_, i) => i !== idx))
+    setOverlapError(null)
   }
 
   const handleContinue = () => {
@@ -172,73 +167,83 @@ export default function MeetingInput({ onSubmit, onBack }) {
           ))}
         </div>
 
-        {/* Manual add form */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <input
-            ref={nameInputRef}
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Meeting name..."
-            style={{
-              fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-ink)',
-              background: 'var(--color-linen)', border: '0.5px solid var(--color-border)',
-              borderRadius: '8px', padding: '10px 12px', width: '100%', outline: 'none', boxSizing: 'border-box',
-            }}
-          />
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <select
-              value={startTime}
-              onChange={e => handleStartTimeChange(e.target.value)}
+        {/* Add meeting form */}
+        <div style={{
+          background: 'white', border: '0.5px solid var(--color-border)',
+          borderRadius: '12px', padding: '14px 16px',
+          display: 'flex', flexDirection: 'column', gap: '0',
+        }}>
+          {/* Single-row time range */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <TimePicker value={startTime} onChange={handleStartChange} bookedMeetings={meetings} />
+            <span style={{
+              fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)',
+              padding: '0 8px', flexShrink: 0, userSelect: 'none',
+            }}>→</span>
+            <TimePicker value={endTime} onChange={handleEndChange} bookedMeetings={[]} />
+          </div>
+
+          {/* Divider */}
+          <div style={{ borderTop: '0.5px solid var(--color-border)', margin: '12px 0' }} />
+
+          {/* Name + Add in one row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <input
+              ref={nameInputRef}
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Meeting name..."
+              className="meeting-name-input"
               style={{
-                flex: 1, fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-ink)',
-                background: 'var(--color-linen)', border: '0.5px solid var(--color-border)',
-                borderRadius: '8px', padding: '8px 6px', outline: 'none', minWidth: 0,
+                flex: 1, fontFamily: 'var(--font-sans)', fontSize: '14px',
+                color: 'var(--color-ink)', background: 'transparent',
+                border: 'none', borderBottom: '1px solid var(--color-border)',
+                outline: 'none', padding: '2px 0 4px',
               }}
-            >
-              {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', flexShrink: 0 }}>to</span>
-            <select
-              value={endTime}
-              onChange={e => setEndTime(e.target.value)}
-              style={{
-                flex: 1, fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-ink)',
-                background: 'var(--color-linen)', border: '0.5px solid var(--color-border)',
-                borderRadius: '8px', padding: '8px 6px', outline: 'none', minWidth: 0,
-              }}
-            >
-              {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
+            />
             <button
               onClick={handleAdd}
               style={{
-                fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'white', whiteSpace: 'nowrap',
+                fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, color: 'white',
                 background: name.trim() ? 'var(--color-ink)' : 'var(--color-border)',
                 border: 'none', borderRadius: '8px', padding: '6px 16px',
-                cursor: name.trim() ? 'pointer' : 'default', transition: 'background 0.15s', flexShrink: 0,
+                cursor: name.trim() ? 'pointer' : 'default',
+                transition: 'background 0.15s', flexShrink: 0,
               }}
             >
               Add
             </button>
           </div>
+
+          {/* Overlap error */}
+          {overlapError && (
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', margin: '8px 0 0' }}>
+              {overlapError}
+            </p>
+          )}
         </div>
 
         {/* Meeting list */}
         {meetings.length > 0 && (
-          <div className="card">
+          <div>
             {meetings.map((m, i) => (
               <div
                 key={i}
                 style={{
                   display: 'flex', alignItems: 'center',
-                  padding: '10px 0',
-                  borderBottom: i < meetings.length - 1 ? '0.5px solid var(--color-border)' : 'none',
+                  padding: '10px 12px 10px 14px',
+                  borderBottom: '0.5px solid var(--color-border)',
+                  borderLeft: '2px solid var(--color-lavender)',
+                  background: 'white',
+                  borderTop: i === 0 ? '0.5px solid var(--color-border)' : 'none',
+                  borderRight: '0.5px solid var(--color-border)',
+                  borderRadius: i === 0 && meetings.length === 1 ? '8px' : i === 0 ? '8px 8px 0 0' : i === meetings.length - 1 ? '0 0 8px 8px' : '0',
                 }}
               >
                 <span style={{
-                  minWidth: '120px', flexShrink: 0, paddingRight: '12px',
+                  minWidth: '140px', flexShrink: 0, paddingRight: '12px',
                   fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)',
                   whiteSpace: 'nowrap',
                 }}>
@@ -251,7 +256,9 @@ export default function MeetingInput({ onSubmit, onBack }) {
                   onClick={() => removeMeeting(i)}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--color-muted)', fontSize: '18px', lineHeight: 1, padding: '0 0 0 8px',
+                    color: 'var(--color-muted)', fontSize: '18px', lineHeight: 1,
+                    padding: '0', width: '20px', height: '20px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
                   aria-label="Remove"
                 >
@@ -262,7 +269,7 @@ export default function MeetingInput({ onSubmit, onBack }) {
           </div>
         )}
 
-        {/* Continue button — only when meetings added */}
+        {/* Continue button */}
         {meetings.length > 0 && (
           <button className="btn-primary" onClick={handleContinue}>
             Continue →
@@ -271,7 +278,7 @@ export default function MeetingInput({ onSubmit, onBack }) {
 
       </div>
 
-      {/* Skip link — always visible */}
+      {/* Skip link */}
       <div style={{ paddingTop: '16px', paddingBottom: '4px', textAlign: 'center' }}>
         <button
           onClick={handleSkip}

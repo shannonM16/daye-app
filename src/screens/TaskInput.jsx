@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getStateLevel } from '../utils/stateDetection'
 import { getCustomChips, saveCustomChip, removeCustomChip } from '../utils/customChips'
 
@@ -360,7 +360,7 @@ Example: ["Finish the board deck", "1:1 with manager", "Clear email backlog"]`,
   return JSON.parse(match[0])
 }
 
-export default function TaskInput({ user, userProfile, checkInData, initialTasks, onSubmit, onBack, onTasksChange, onHome }) {
+export default function TaskInput({ user, userProfile, checkInData, initialTasks, initialFreeText, onSubmit, onBack, onTasksChange, onFreeTextChange, onHome }) {
   const stateLevel = checkInData
     ? getStateLevel({ energy: checkInData.energy, sleep: checkInData.sleep, mood: checkInData.mood })
     : 'neutral'
@@ -405,9 +405,49 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
   // Unified selected tasks array
   const [selected, setSelected] = useState(() => initialTasks || [])
 
-  const [freeText, setFreeText] = useState('')
+  const [freeText, setFreeText] = useState(initialFreeText || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  // Voice dictation
+  const SpeechRecognitionAPI = typeof window !== 'undefined'
+    ? (window.SpeechRecognition || window.webkitSpeechRecognition)
+    : null
+  const speechSupported = !!SpeechRecognitionAPI
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef(null)
+  const preDictationTextRef = useRef('')
+
+  const toggleDictation = () => {
+    if (!speechSupported) return
+    if (isListening) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
+      return
+    }
+    preDictationTextRef.current = freeText
+    const recognition = new SpeechRecognitionAPI()
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.lang = 'en-GB'
+    recognition.onresult = (event) => {
+      let final = '', interim = ''
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) final += event.results[i][0].transcript
+        else interim += event.results[i][0].transcript
+      }
+      const appended = (final + interim).trim()
+      const base = preDictationTextRef.current
+      const next = base + (base && appended ? ' ' : '') + appended
+      setFreeText(next)
+      onFreeTextChange?.(next)
+    }
+    recognition.onend = () => setIsListening(false)
+    recognition.onerror = () => setIsListening(false)
+    recognitionRef.current = recognition
+    recognition.start()
+    setIsListening(true)
+  }
 
   useEffect(() => {
     onTasksChange?.(selected)
@@ -808,19 +848,46 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
 
         {/* Free text */}
         <div>
-          <textarea
-            value={freeText}
-            onChange={(e) => setFreeText(e.target.value)}
-            placeholder={stateLevel === 'low'
-              ? "What is the one thing that really needs to happen today?"
-              : isOtherSE
-              ? "What are you working on today?"
-              : "Describe your day in your own words..."}
-            rows={4}
-            className="input-field resize-none"
-            style={{ borderRadius: '14px' }}
-          />
-          {freeText.trim().length > 0 && (
+          <div style={{ position: 'relative' }}>
+            <textarea
+              value={freeText}
+              onChange={(e) => { setFreeText(e.target.value); onFreeTextChange?.(e.target.value) }}
+              placeholder={stateLevel === 'low'
+                ? "What is the one thing that really needs to happen today?"
+                : isOtherSE
+                ? "What are you working on today?"
+                : "Describe your day in your own words..."}
+              rows={4}
+              className="input-field resize-none"
+              style={{ borderRadius: '14px', paddingBottom: '40px' }}
+            />
+            {speechSupported && (
+              <button
+                type="button"
+                onClick={toggleDictation}
+                aria-label={isListening ? 'Stop recording' : 'Start voice input'}
+                style={{
+                  position: 'absolute', bottom: '10px', right: '10px',
+                  width: '36px', height: '36px', borderRadius: '50%',
+                  background: 'var(--color-linen-dark)',
+                  border: `1px solid ${isListening ? 'var(--color-lavender)' : 'var(--color-border)'}`,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'border-color 0.2s',
+                  animation: isListening ? 'micPulse 1.2s ease-in-out infinite' : 'none',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: isListening ? 'var(--color-lavender)' : 'var(--color-muted)' }}>
+                  <rect x="5" y="1" width="6" height="9" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M2.5 8.5A5.5 5.5 0 0 0 8 14a5.5 5.5 0 0 0 5.5-5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="8" y1="14" x2="8" y2="15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {isListening && (
+            <p className="text-xs mt-1.5" style={{ color: 'var(--color-lavender)', fontFamily: 'var(--font-sans)' }}>Listening...</p>
+          )}
+          {!isListening && freeText.trim().length > 0 && (
             <p className="text-xs mt-1.5" style={{ color: 'var(--color-muted)' }}>We'll use AI to turn this into tasks.</p>
           )}
           {error && <p className="text-xs mt-1.5" style={{ color: '#b45309' }}>{error}</p>}
