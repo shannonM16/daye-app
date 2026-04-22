@@ -298,7 +298,10 @@ export default function App() {
     setTaskFreeText('')
     const today = new Date().toISOString().split('T')[0]
     setCheckInHistory((prev) => {
-      const filtered = (prev || []).filter((h) => h.date !== today)
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const cutoff = thirtyDaysAgo.toISOString().split('T')[0]
+      const filtered = (prev || []).filter((h) => h.date !== today && h.date >= cutoff)
       return [...filtered, { date: today, ...data }]
     })
     // SYNC 3: save check-in data immediately before plan generation

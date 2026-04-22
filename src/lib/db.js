@@ -71,11 +71,16 @@ export async function savePlan(userId, date, planData) {
 }
 
 export async function fetchPlans(userId) {
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  const cutoff = thirtyDaysAgo.toISOString().split('T')[0]
   const { data, error } = await supabase
     .from('plans')
     .select('date, plan_data')
     .eq('user_id', userId)
+    .gte('date', cutoff)
     .order('date', { ascending: false })
+    .limit(30)
   if (error) throw error
   return (data || []).map(row => ({ date: row.date, ...row.plan_data }))
 }
