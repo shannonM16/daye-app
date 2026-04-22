@@ -1,6 +1,17 @@
 import { useState, useRef } from 'react'
 import { getAutoEndTime, getNextQuarterHour, timeStringToMinutes } from '../utils/timeOptions'
 import TimePicker from '../components/TimePicker'
+import { upsertPlanPartial } from '../lib/db'
+
+function syncMeetings(meetings) {
+  try {
+    const userId = localStorage.getItem('daye_user_id')
+    if (!userId) return
+    const today = new Date().toISOString().split('T')[0]
+    console.log('Supabase sync: meetings updated')
+    upsertPlanPartial(userId, today, { meetings }).catch(() => {})
+  } catch { /* silently fail */ }
+}
 
 const QUICK_CHIPS = [
   'Team standup',
@@ -77,7 +88,11 @@ export default function MeetingInput({ onSubmit, onBack, initialMeetings = [] })
       return false
     }
     setOverlapError(null)
-    setMeetings(prev => sortMeetings([...prev, { name: trimmed, startTime: start, endTime: end }]))
+    setMeetings(prev => {
+      const next = sortMeetings([...prev, { name: trimmed, startTime: start, endTime: end }])
+      syncMeetings(next)
+      return next
+    })
     return true
   }
 
@@ -100,7 +115,11 @@ export default function MeetingInput({ onSubmit, onBack, initialMeetings = [] })
   }
 
   const removeMeeting = (idx) => {
-    setMeetings(prev => prev.filter((_, i) => i !== idx))
+    setMeetings(prev => {
+      const next = prev.filter((_, i) => i !== idx)
+      syncMeetings(next)
+      return next
+    })
     setOverlapError(null)
   }
 

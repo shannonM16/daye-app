@@ -3,6 +3,7 @@ import { deduplicateTasks } from '../engine/deduplicateTasks'
 import { saveCompletionsForDate, taskMatchesGoal, incrementGoalCompletionCount, getGoalToastContent } from '../utils/completions'
 import { getAutoEndTime, getNextMeeting, getTodayMeetings } from '../utils/timeOptions'
 import TimePicker from '../components/TimePicker'
+import { upsertPlanPartial } from '../lib/db'
 
 const TIMER_SAVE_KEY = 'df_timerState'
 const REST_DURATION = 5 * 60
@@ -238,8 +239,28 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
   const microRef = useRef(null)
   const restRef = useRef(null)
   const stateRef = useRef({})
+  const timerLogRef = useRef([])
 
   stateRef.current = { selectedKey, selectedDuration, timeLeft, running, sessionNumber, checked, extraChecked }
+
+  // SYNC 2: fire-and-forget timer event log
+  const logTimerEvent = (action) => {
+    try {
+      const event = { action, duration_selected: Math.floor(stateRef.current.selectedDuration / 60), time: new Date().toISOString() }
+      timerLogRef.current = [...timerLogRef.current, event]
+      const userId = localStorage.getItem('daye_user_id')
+      if (!userId) return
+      const today = new Date().toISOString().split('T')[0]
+      console.log('Supabase sync: timer', action)
+      upsertPlanPartial(userId, today, { timer_log: timerLogRef.current }).catch(() => {})
+    } catch { /* silently fail */ }
+  }
+
+  const handleStartPause = () => {
+    const isStarting = !running
+    setRunning((r) => !r)
+    logTimerEvent(isStarting ? 'start' : 'pause')
+  }
 
   useEffect(() => {
     try {
@@ -284,6 +305,8 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
             setRunning(false)
             setSessionDone(true)
             setShowBreakCard(true)
+            // SYNC 2: timer completed naturally
+            logTimerEvent('complete')
             return 0
           }
           return prev - 1
@@ -293,7 +316,7 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
       clearInterval(timerRef.current)
     }
     return () => clearInterval(timerRef.current)
-  }, [running, sessionDone])
+  }, [running, sessionDone]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (running) {
@@ -369,7 +392,7 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
       const isNowChecked = !prev.includes(task)
       const next = isNowChecked ? [...prev, task] : prev.filter((t) => t !== task)
       const today = new Date().toISOString().split('T')[0]
-      saveCompletionsForDate(today, [...next, ...extraChecked])
+      saveCompletionsForDate(today, [...next, ...stateRef.current.extraChecked])
       if (isNowChecked) {
         const goals = userProfile?.goals?.length ? userProfile.goals : (userProfile?.goal ? [userProfile.goal] : [])
         const primaryGoal = goals[0]
@@ -393,6 +416,15 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
           }, 3000)
         }
       }
+      // SYNC 1: task completion
+      try {
+        const userId = localStorage.getItem('daye_user_id')
+        if (userId) {
+          const allCompleted = [...next, ...stateRef.current.extraChecked]
+          console.log('Supabase sync: task completed', task)
+          upsertPlanPartial(userId, today, { completed_tasks: allCompleted }).catch(() => {})
+        }
+      } catch { /* silently fail */ }
       return next
     })
   }
@@ -401,7 +433,16 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
     setExtraChecked((prev) => {
       const next = prev.includes(task) ? prev.filter((t) => t !== task) : [...prev, task]
       const today = new Date().toISOString().split('T')[0]
-      saveCompletionsForDate(today, [...checked, ...next])
+      saveCompletionsForDate(today, [...stateRef.current.checked, ...next])
+      // SYNC 1: task completion
+      try {
+        const userId = localStorage.getItem('daye_user_id')
+        if (userId) {
+          const allCompleted = [...stateRef.current.checked, ...next]
+          console.log('Supabase sync: task completed', task)
+          upsertPlanPartial(userId, today, { completed_tasks: allCompleted }).catch(() => {})
+        }
+      } catch { /* silently fail */ }
       return next
     })
   }
@@ -807,7 +848,7 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
                   {/* Controls — visible on mobile, hidden on desktop (replaced by external button) */}
                   <div className="action-controls-in-card">
                     <button
-                      onClick={() => setRunning((r) => !r)}
+                      onClick={handleStartPause}
                       className="px-8 py-2.5 rounded-full text-sm font-medium transition-all active:scale-95"
                       style={{ background: 'var(--color-ink)', color: 'var(--color-white)' }}
                     >
@@ -831,7 +872,7 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
             {!allSessionsDone && !showBreakCard && !resumeData && (
               <button
                 className="action-start-btn-desktop btn-primary"
-                onClick={() => setRunning((r) => !r)}
+                onClick={handleStartPause}
               >
                 {startPauseLabel}
               </button>

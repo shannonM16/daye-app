@@ -1,5 +1,32 @@
 import { supabase } from './supabase'
 
+// Partial plan upsert — updates only the provided fields on today's plan row.
+// These nullable columns must exist in the plans table for full support:
+//   ALTER TABLE plans ADD COLUMN IF NOT EXISTS check_in jsonb;
+//   ALTER TABLE plans ADD COLUMN IF NOT EXISTS meetings jsonb;
+//   ALTER TABLE plans ADD COLUMN IF NOT EXISTS completed_tasks jsonb;
+//   ALTER TABLE plans ADD COLUMN IF NOT EXISTS timer_log jsonb;
+//   ALTER TABLE plans ADD COLUMN IF NOT EXISTS reflection jsonb;
+export async function upsertPlanPartial(userId, date, fields) {
+  const { error } = await supabase
+    .from('plans')
+    .upsert(
+      { user_id: userId, date, ...fields },
+      { onConflict: 'user_id,date' }
+    )
+  if (error) throw error
+}
+
+// Update last_seen on the users table for DAU tracking.
+// Requires: ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen timestamptz;
+export async function updateUserLastSeen(userId) {
+  const { error } = await supabase
+    .from('users')
+    .update({ last_seen: new Date().toISOString() })
+    .eq('id', userId)
+  if (error) throw error
+}
+
 export async function upsertUser({ firstName, email, profile = {} }) {
   console.log('Supabase: attempting to save user', email)
   const { data, error } = await supabase

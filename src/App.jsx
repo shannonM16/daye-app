@@ -4,7 +4,7 @@ import { useStorage } from './hooks/useStorage'
 import { buildPlan } from './engine/buildPlan'
 import { calculateStreak } from './utils/patternEngine'
 import { getCompletionsForDate, saveCompletionsForDate } from './utils/completions'
-import { upsertUser, fetchUserByEmail, savePlan, fetchPlans, fetchWeeklyWins } from './lib/db'
+import { upsertUser, fetchUserByEmail, savePlan, fetchPlans, fetchWeeklyWins, upsertPlanPartial, updateUserLastSeen } from './lib/db'
 import Landing from './screens/Landing'
 import BlogIndex from './blog/BlogIndex'
 import ArticlePage from './blog/ArticlePage'
@@ -200,6 +200,9 @@ export default function App() {
 
         if (supaUser) {
           localStorage.setItem('daye_user_id', supaUser.id)
+          // SYNC 8: session tracking
+          console.log('Supabase sync: session tracked')
+          updateUserLastSeen(supaUser.id).catch(() => {})
           setUser({ firstName: supaUser.first_name, email: supaUser.email })
           if (supaUser.profile && Object.keys(supaUser.profile).length > 0) {
             setUserProfile(supaUser.profile)
@@ -278,11 +281,13 @@ export default function App() {
 
   const handleUpdateUser = useCallback((userData) => {
     setUser(userData)
+    console.log('Supabase sync: profile updated')
     syncUserToSupabase(userData, userProfile)
   }, [setUser, userProfile])
 
   const handleUpdateProfile = useCallback((profile) => {
     setUserProfile(profile)
+    console.log('Supabase sync: profile updated')
     syncUserToSupabase(user, profile)
   }, [setUserProfile, user])
 
@@ -296,7 +301,12 @@ export default function App() {
       const filtered = (prev || []).filter((h) => h.date !== today)
       return [...filtered, { date: today, ...data }]
     })
-    // Sync latest check-in data into the user profile record
+    // SYNC 3: save check-in data immediately before plan generation
+    const userId = localStorage.getItem('daye_user_id')
+    if (userId) {
+      console.log('Supabase sync: check-in saved')
+      upsertPlanPartial(userId, today, { check_in: data }).catch(() => {})
+    }
     syncUserToSupabase(user, userProfile)
     setScreen(SCREENS.MEETING_INPUT)
   }, [setCheckInHistory, user, userProfile])
@@ -339,6 +349,13 @@ export default function App() {
     const updatedMeetings = [...meetings, meeting]
     setMeetings(updatedMeetings)
     localStorage.setItem('df_meetings', JSON.stringify(updatedMeetings))
+    // SYNC 4: meetings updated from action mode timer sheet
+    const userId = localStorage.getItem('daye_user_id')
+    if (userId) {
+      const today = new Date().toISOString().split('T')[0]
+      console.log('Supabase sync: meetings updated')
+      upsertPlanPartial(userId, today, { meetings: updatedMeetings }).catch(() => {})
+    }
     try {
       const result = await buildPlan(
         { ...(userProfile || {}), firstName: user?.firstName },
