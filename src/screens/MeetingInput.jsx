@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { getAutoEndTime, getNextQuarterHour, timeStringToMinutes } from '../utils/timeOptions'
+import { getAutoEndTime, getNextQuarterHour, timeStringToMinutes, getMeetingsForToday, saveMeetingsForToday } from '../utils/timeOptions'
 import TimePicker from '../components/TimePicker'
 import { upsertPlanPartial } from '../lib/db'
 
@@ -47,10 +47,8 @@ function StepDots() {
 export default function MeetingInput({ onSubmit, onBack, initialMeetings = [] }) {
   const [meetings, setMeetings] = useState(() => {
     if (initialMeetings && initialMeetings.length > 0) return sortMeetings(initialMeetings)
-    try {
-      const saved = JSON.parse(localStorage.getItem('df_meetings') || '[]')
-      return Array.isArray(saved) && saved.length > 0 ? sortMeetings(saved) : []
-    } catch { return [] }
+    const saved = getMeetingsForToday()
+    return saved.length > 0 ? sortMeetings(saved) : []
   })
   const [name, setName] = useState('')
   const [startTime, setStartTime] = useState(() => getNextQuarterHour())
@@ -123,12 +121,12 @@ export default function MeetingInput({ onSubmit, onBack, initialMeetings = [] })
   }
 
   const handleContinue = () => {
-    localStorage.setItem('df_meetings', JSON.stringify(meetings))
+    saveMeetingsForToday(meetings)
     onSubmit(meetings)
   }
 
   const handleSkip = () => {
-    localStorage.setItem('df_meetings', JSON.stringify([]))
+    saveMeetingsForToday([])
     onSubmit([])
   }
 

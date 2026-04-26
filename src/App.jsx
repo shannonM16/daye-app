@@ -4,6 +4,7 @@ import { useStorage } from './hooks/useStorage'
 import { buildPlan } from './engine/buildPlan'
 import { calculateStreak } from './utils/patternEngine'
 import { getCompletionsForDate, saveCompletionsForDate } from './utils/completions'
+import { getMeetingsForToday, saveMeetingsForToday } from './utils/timeOptions'
 import { upsertUser, fetchUserByEmail, savePlan, fetchPlans, fetchWeeklyWins, upsertPlanPartial, updateUserLastSeen } from './lib/db'
 import { addLoopsContact, updateLoopsContact, sendLoopsWelcomeEmail, sendLoopsPlanCreatedEvent } from './lib/loops'
 import Landing from './screens/Landing'
@@ -318,11 +319,8 @@ export default function App() {
     setUserTasks(tasks)
     setExtraTasks([])
     setScreen(SCREENS.LOADING)
-    let freshMeetings = meetings
-    try {
-      const saved = JSON.parse(localStorage.getItem('df_meetings') || '[]')
-      if (Array.isArray(saved) && saved.length > 0) freshMeetings = saved
-    } catch { /* use meetings from state */ }
+    const storedMeetings = getMeetingsForToday()
+    const freshMeetings = storedMeetings.length > 0 ? storedMeetings : meetings
     const result = await buildPlan(
       { ...(userProfile || {}), firstName: user?.firstName },
       checkInData,
@@ -349,7 +347,7 @@ export default function App() {
   const handleAddMeetingFromTimer = useCallback(async (meeting) => {
     const updatedMeetings = [...meetings, meeting]
     setMeetings(updatedMeetings)
-    localStorage.setItem('df_meetings', JSON.stringify(updatedMeetings))
+    saveMeetingsForToday(updatedMeetings)
     const userId = localStorage.getItem('daye_user_id')
     if (userId) {
       const today = new Date().toISOString().split('T')[0]
@@ -510,6 +508,7 @@ export default function App() {
         onBack={() => setScreen(SCREENS.OUTPUT)}
         onHome={() => setScreen(SCREENS.CHECKIN)}
         onAddMeeting={handleAddMeetingFromTimer}
+        onEndOfDayReflection={() => setScreen(SCREENS.CHECKIN)}
       />
     )
   }

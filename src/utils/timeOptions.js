@@ -52,13 +52,28 @@ export function getNextQuarterHour() {
   return `${h12}:${String(m).padStart(2, '0')}${ampm}`
 }
 
-export function getTodayMeetings() {
+export function getMeetingsForToday() {
   try {
-    return JSON.parse(localStorage.getItem('df_meetings') || '[]')
+    const raw = localStorage.getItem('df_meetings')
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    // Legacy format (plain array) — treat as stale
+    if (Array.isArray(parsed)) return []
+    const today = new Date().toISOString().split('T')[0]
+    if (parsed.date !== today) return []
+    return Array.isArray(parsed.list) ? parsed.list : []
   } catch {
     return []
   }
 }
+
+export function saveMeetingsForToday(list) {
+  const today = new Date().toISOString().split('T')[0]
+  localStorage.setItem('df_meetings', JSON.stringify({ date: today, list }))
+}
+
+// Keep old name as alias so ActionMode's direct import still works
+export const getTodayMeetings = getMeetingsForToday
 
 export function getNextMeeting(meetings) {
   const now = new Date()

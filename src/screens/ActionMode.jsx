@@ -169,7 +169,7 @@ function CheckItem({ label, checked, onToggle }) {
   )
 }
 
-export default function ActionMode({ priorities, prioritySubtitles, userTasks, extraTasks, checkInData, userProfile, meetings: meetingsProp, dayName, onBack, onHome, onAddMeeting }) {
+export default function ActionMode({ priorities, prioritySubtitles, userTasks, extraTasks, checkInData, userProfile, meetings: meetingsProp, dayName, onBack, onHome, onAddMeeting, onEndOfDayReflection }) {
   const mood = checkInData?.mood || ''
   const energy = checkInData?.energy || 3
 
@@ -526,6 +526,82 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
 
   return (
     <div className="screen action-screen-wide">
+
+      {/* All-tasks completion overlay */}
+      {allMainDone && allExtraDone && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: '#f9f7f5',
+          zIndex: 800,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          padding: '40px 32px',
+          animation: 'completionFadeIn 700ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
+        }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', maxWidth: '340px' }}>
+            <h1 style={{
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              fontWeight: 300,
+              fontSize: '48px',
+              color: 'var(--color-ink)',
+              lineHeight: 1.1,
+              margin: '0 0 24px 0',
+            }}>
+              Day complete.
+            </h1>
+            <div style={{ width: '48px', height: '1.5px', background: '#c9b8d8', borderRadius: '2px', marginBottom: '20px' }} />
+            <p style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '15px',
+              color: 'var(--color-muted)',
+              lineHeight: 1.6,
+              fontWeight: 400,
+              margin: 0,
+            }}>
+              Everything you set out to do, done.
+            </p>
+          </div>
+
+          <div style={{ width: '100%', maxWidth: '340px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button
+              onClick={onEndOfDayReflection || onHome}
+              style={{
+                width: '100%',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#ffffff',
+                background: 'var(--color-ink)',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '14px',
+                cursor: 'pointer',
+              }}
+            >
+              End of day reflection
+            </button>
+            <button
+              onClick={onHome}
+              style={{
+                width: '100%',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '14px',
+                fontWeight: 400,
+                color: 'var(--color-muted)',
+                background: 'none',
+                border: '0.5px solid var(--color-border)',
+                borderRadius: '12px',
+                padding: '14px',
+                cursor: 'pointer',
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Meeting toast (improvement 5) */}
       {meetingToast && (
         <div style={{

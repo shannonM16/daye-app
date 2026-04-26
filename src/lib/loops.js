@@ -1,16 +1,14 @@
-const API_KEY = import.meta.env.VITE_LOOPS_API_KEY
 const BASE = 'https://app.loops.so/api/v1'
 
 function headers() {
   return {
-    Authorization: 'Bearer ' + API_KEY,
     'Content-Type': 'application/json',
   }
 }
 
 export async function addLoopsContact(email, firstName) {
   try {
-    await fetch(BASE + '/contacts/create', {
+    await fetch('/api/loops/create-contact', {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({
@@ -46,7 +44,7 @@ export async function updateLoopsContact(email, profile) {
 
 export async function sendLoopsWelcomeEmail(email, firstName) {
   try {
-    await fetch(BASE + '/transactional', {
+    await fetch('/api/loops/send-transactional', {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({
