@@ -621,19 +621,17 @@ export default function FocusOutput({
               {dayName}
             </p>
           )}
-          <div className="flex items-baseline gap-3">
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-ink)' }} className="text-[28px] font-normal leading-tight">
-              {firstName ? `${firstName}'s plan.` : 'Your plan.'}
-            </h1>
-            {dayLabel && (
-              <span
-                className="text-[11px] font-medium px-2.5 py-1 rounded-full flex-shrink-0"
-                style={{ background: 'var(--color-linen-dark)', color: 'var(--color-muted)', border: '0.5px solid var(--color-border)' }}
-              >
-                {dayLabel}
-              </span>
-            )}
-          </div>
+          <h1 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-ink)' }} className="text-[28px] font-normal leading-tight">
+            {firstName ? `${firstName}'s plan.` : 'Your plan.'}
+          </h1>
+          {dayLabel && (
+            <span
+              className="text-[11px] font-medium px-2.5 py-1 rounded-full inline-block mt-2"
+              style={{ background: 'var(--color-linen-dark)', color: 'var(--color-muted)', border: '0.5px solid var(--color-border)' }}
+            >
+              {dayLabel}
+            </span>
+          )}
         </div>
 
         {isLow && (
