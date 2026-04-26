@@ -8,7 +8,7 @@ function headers() {
 
 export async function addLoopsContact(email, firstName) {
   try {
-    await fetch('/api/loops/create-contact', {
+    await fetch('/api/loops-create-contact', {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({
@@ -44,7 +44,7 @@ export async function updateLoopsContact(email, profile) {
 
 export async function sendLoopsWelcomeEmail(email, firstName) {
   try {
-    await fetch('/api/loops/send-transactional', {
+    await fetch('/api/loops-send-transactional', {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({
