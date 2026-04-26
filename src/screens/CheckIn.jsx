@@ -514,7 +514,7 @@ function CustomChipArea({ screenKey, customChips, onAddChip, onRemoveChip, editM
   )
 }
 
-export default function CheckIn({ user, userProfile, initialValues, history = [], streakCount = 0, carryOverTask, onCarryOverAccept, onCarryOverDismiss, onActivateTestMode, onSubmit, onViewHistory, onViewSettings, onHome, onRetakeReflection }) {
+export default function CheckIn({ user, userProfile, initialValues, history = [], streakCount = 0, carryOverTask, onCarryOverAccept, onCarryOverDismiss, onSubmit, onViewHistory, onViewSettings, onHome, onRetakeReflection }) {
   const isFiguringItOut = userProfile?.userType === 'figuring-it-out'
   const selfEmployedType = userProfile?.selfEmployedType || userProfile?.workType || null
   const pressureOptions = getPressureOptions(
@@ -577,14 +577,6 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
   const showFridayWinStep = isFridayAfternoon && !fridayWinAlreadySaved
   const [fridayWin, setFridayWin] = useState('')
   const [carryOverDismissedLocal, setCarryOverDismissedLocal] = useState(false)
-
-  // Dev test mode trigger — remove before launch
-  const [testModeToast, setTestModeToast] = useState(false)
-  const handleDevTap = () => {
-    onActivateTestMode?.()
-    setTestModeToast(true)
-    setTimeout(() => setTestModeToast(false), 2500)
-  }
 
   const handleEnergyChange = (val) => {
     setEnergy(val)
@@ -890,37 +882,6 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
 
   return (
     <div className="screen">
-      {/* Dev test mode button — remove before launch */}
-      <button
-        onClick={handleDevTap}
-        style={{ position: 'fixed', bottom: 12, left: 12, fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)', background: 'var(--color-linen-dark)', border: '0.5px solid var(--color-border)', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer', zIndex: 300 }}
-      >
-        Dev
-      </button>
-
-      {/* Test mode toast */}
-      {testModeToast && (
-        <div style={{
-          position: 'fixed',
-          bottom: '80px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'var(--color-ink)',
-          color: 'var(--color-white)',
-          borderRadius: '10px',
-          padding: '10px 18px',
-          fontFamily: 'var(--font-sans)',
-          fontSize: '12px',
-          fontWeight: 500,
-          zIndex: 200,
-          whiteSpace: 'nowrap',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          animation: 'slideUpToast 0.25s ease',
-        }}>
-          Test mode active — history populated
-        </div>
-      )}
-
       <div className="flex-1 overflow-y-auto space-y-4">
         {/* Header */}
         <div>

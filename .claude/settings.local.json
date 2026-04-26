@@ -12,7 +12,9 @@
       "Bash(pkill -f \"vite --port 5199\")",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(zip welcome-email.zip index.mjml)",
+      "Bash(zip -j welcome-email.zip index.mjml)"
     ]
   }
 }

@@ -5,6 +5,7 @@ import { buildPlan } from './engine/buildPlan'
 import { calculateStreak } from './utils/patternEngine'
 import { getCompletionsForDate, saveCompletionsForDate } from './utils/completions'
 import { upsertUser, fetchUserByEmail, savePlan, fetchPlans, fetchWeeklyWins, upsertPlanPartial, updateUserLastSeen } from './lib/db'
+import { addLoopsContact, updateLoopsContact, sendLoopsWelcomeEmail, sendLoopsPlanCreatedEvent } from './lib/loops'
 import Landing from './screens/Landing'
 import BlogIndex from './blog/BlogIndex'
 import ArticlePage from './blog/ArticlePage'
@@ -267,6 +268,8 @@ export default function App() {
       localStorage.setItem('daye_member_since', new Date().toISOString())
     }
     syncUserToSupabase(userData, userProfile)
+    addLoopsContact(userData.email, userData.firstName)
+    sendLoopsWelcomeEmail(userData.email, userData.firstName)
     setScreen(SCREENS.ONBOARDING)
   }, [setUser, userProfile])
 
@@ -276,6 +279,7 @@ export default function App() {
       localStorage.setItem('daye_member_since', new Date().toISOString())
     }
     syncUserToSupabase(user, profile)
+    if (user?.email) updateLoopsContact(user.email, profile)
     setScreen(SCREENS.CHECKIN)
   }, [setUserProfile, user])
 
@@ -344,6 +348,10 @@ export default function App() {
     const userId = localStorage.getItem('daye_user_id')
     if (userId) {
       savePlan(userId, today, planEntry).catch(() => {})
+    }
+    if (user?.email && !localStorage.getItem('daye_plan_created_sent')) {
+      sendLoopsPlanCreatedEvent(user.email)
+      localStorage.setItem('daye_plan_created_sent', 'true')
     }
     setScreen(SCREENS.OUTPUT)
   }, [userProfile, checkInData, user, meetings, setUserTasks, setExtraTasks, setCheckInHistory])

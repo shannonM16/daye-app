@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 56">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital@1&amp;display=swap');
+    </style>
+  </defs>
+  <rect x="0" y="4" width="48" height="48" rx="10" fill="#f9f7f5"/>
+  <text
+    x="10"
+    y="38"
+    font-family="'Cormorant Garamond', Georgia, serif"
+    font-size="32"
+    font-style="italic"
+    font-weight="400"
+    fill="#1a1a1a"
+  >d</text>
+  <text
+    x="60"
+    y="38"
+    font-family="'Cormorant Garamond', Georgia, serif"
+    font-size="32"
+    font-style="italic"
+    font-weight="400"
+    fill="#f9f7f5"
+  >daye.</text>
+</svg>

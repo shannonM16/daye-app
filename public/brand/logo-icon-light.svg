@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital@1&amp;display=swap');
+    </style>
+  </defs>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="13.5" fill="#f9f7f5" stroke="#e2ddd8" stroke-width="1"/>
+  <text
+    x="13"
+    y="46"
+    font-family="'Cormorant Garamond', Georgia, serif"
+    font-size="42"
+    font-style="italic"
+    font-weight="400"
+    fill="#1a1a1a"
+  >d</text>
+</svg>

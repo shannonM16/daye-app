@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daye — Brand Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:      #1a1a1a;
+      --linen:    #f9f7f5;
+      --lavender: #c9b8d8;
+      --blush:    #e8d5c4;
+      --sage:     #b8c9c4;
+      --muted:    #999490;
+      --border:   #e2ddd8;
+    }
+
+    body {
+      background: var(--linen);
+      color: var(--ink);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-weight: 400;
+      line-height: 1.6;
+      padding: 0 0 80px;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 64px 48px 48px;
+      border-bottom: 0.5px solid var(--border);
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    header .eyebrow {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    header h1 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 52px;
+      line-height: 1.1;
+      color: var(--ink);
+    }
+
+    header p {
+      margin-top: 16px;
+      font-size: 14px;
+      color: var(--muted);
+      max-width: 480px;
+    }
+
+    /* ── Layout ── */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 48px;
+    }
+
+    section {
+      padding-top: 64px;
+    }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .section-heading {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 32px;
+      color: var(--ink);
+      margin-bottom: 32px;
+    }
+
+    .divider {
+      height: 0.5px;
+      background: var(--border);
+      margin-bottom: 40px;
+    }
+
+    /* ── Logo grid ── */
+    .logo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+    }
+
+    @media (max-width: 640px) {
+      .logo-grid { grid-template-columns: 1fr; }
+      header, main { padding-left: 24px; padding-right: 24px; }
+    }
+
+    .logo-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 32px 32px;
+      gap: 20px;
+      border-radius: 16px;
+    }
+
+    .logo-cell.on-light  { background: var(--linen); border: 0.5px solid var(--border); }
+    .logo-cell.on-dark   { background: var(--ink); }
+    .logo-cell.on-lavender { background: var(--lavender); }
+
+    .logo-cell img, .logo-cell svg {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .logo-meta {
+      text-align: center;
+    }
+
+    .logo-meta .logo-name {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .logo-cell.on-light  .logo-name { color: var(--muted); }
+    .logo-cell.on-dark   .logo-name { color: rgba(249,247,245,0.5); }
+    .logo-cell.on-lavender .logo-name { color: rgba(255,255,255,0.7); }
+
+    .logo-meta .logo-usage {
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .logo-cell.on-light  .logo-usage { color: var(--muted); }
+    .logo-cell.on-dark   .logo-usage { color: rgba(249,247,245,0.6); }
+    .logo-cell.on-lavender .logo-usage { color: rgba(255,255,255,0.75); }
+
+    .icon-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin-bottom: 2px;
+    }
+
+    /* ── Colour palette ── */
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .palette { grid-template-columns: repeat(2, 1fr); }
+      .icon-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .swatch {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 0.5px solid var(--border);
+    }
+
+    .swatch-color {
+      height: 80px;
+    }
+
+    .swatch-info {
+      background: white;
+      padding: 12px 14px;
+    }
+
+    .swatch-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+
+    .swatch-hex {
+      font-size: 11px;
+      color: var(--muted);
+      font-feature-settings: 'tnum';
+      letter-spacing: 0.04em;
+    }
+
+    .swatch-note {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    /* ── Typography ── */
+    .type-samples {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .type-block {
+      border-left: 2px solid var(--border);
+      padding-left: 24px;
+    }
+
+    .type-block .type-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .type-block .type-sample-serif {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 36px;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+
+    .type-block .type-sample-sans {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-weight: 400;
+      font-size: 16px;
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .type-block .type-meta {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── Usage rules ── */
+    .rules {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .rule {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .rule-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ink);
+      flex-shrink: 0;
+      margin-top: 7px;
+    }
+
+    .rule p {
+      font-size: 14px;
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .rule p span {
+      color: var(--muted);
+    }
+
+    /* ── Inline logo preview ── */
+    .inline-preview {
+      display: inline-block;
+      vertical-align: middle;
+      margin: 0 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <p class="eyebrow">Brand Guide · 2025</p>
+    <h1>daye.</h1>
+    <p>Visual identity guidelines for the Daye brand — covering logos, colour, typography, and usage rules.</p>
+  </header>
+
+  <main>
+
+    <!-- WORDMARKS -->
+    <section>
+      <p class="section-title">01 — Wordmark</p>
+      <h2 class="section-heading">The full wordmark</h2>
+      <div class="divider"></div>
+
+      <div class="logo-grid">
+        <div class="logo-cell on-light">
+          <img src="logo-wordmark-dark.svg" alt="Daye wordmark dark" width="120" height="48" />
+          <div class="logo-meta">
+            <p class="logo-name">Wordmark — Dark</p>
+            <p class="logo-usage">Use on light or linen backgrounds</p>
+          </div>
+        </div>
+        <div class="logo-cell on-dark">
+          <img src="logo-wordmark-light.svg" alt="Daye wordmark light" width="120" height="48" />
+          <div class="logo-meta">
+            <p class="logo-name">Wordmark — Light</p>
+            <p class="logo-usage">Use on dark or photographic backgrounds</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ICONS -->
+    <section>
+      <p class="section-title">02 — Monogram Icon</p>
+      <h2 class="section-heading">The "d" mark</h2>
+      <div class="divider"></div>
+
+      <div class="icon-row">
+        <div class="logo-cell on-light">
+          <img src="logo-icon-dark.svg" alt="Icon dark" width="64" height="64" />
+          <div class="logo-meta">
+            <p class="logo-name">Icon — Dark</p>
+            <p class="logo-usage">App icon, favicon, light UI contexts</p>
+          </div>
+        </div>
+        <div class="logo-cell on-dark">
+          <img src="logo-icon-light.svg" alt="Icon light" width="64" height="64" />
+          <div class="logo-meta">
+            <p class="logo-name">Icon — Light</p>
+            <p class="logo-usage">Dark UI contexts, email headers</p>
+          </div>
+        </div>
+        <div class="logo-cell on-lavender">
+          <img src="logo-icon-lavender.svg" alt="Icon lavender" width="64" height="64" />
+          <div class="logo-meta">
+            <p class="logo-name">Icon — Lavender</p>
+            <p class="logo-usage">Social media profile pictures</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOCKUPS -->
+    <section>
+      <p class="section-title">03 — Lockup</p>
+      <h2 class="section-heading">Icon + wordmark together</h2>
+      <div class="divider"></div>
+
+      <div class="logo-grid">
+        <div class="logo-cell on-light">
+          <img src="logo-lockup-dark.svg" alt="Lockup dark" width="200" height="56" />
+          <div class="logo-meta">
+            <p class="logo-name">Lockup — Dark</p>
+            <p class="logo-usage">Landing pages, presentations, marketing</p>
+          </div>
+        </div>
+        <div class="logo-cell on-dark">
+          <img src="logo-lockup-light.svg" alt="Lockup light" width="200" height="56" />
+          <div class="logo-meta">
+            <p class="logo-name">Lockup — Light</p>
+            <p class="logo-usage">Dark backgrounds, branded content</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLOUR -->
+    <section>
+      <p class="section-title">04 — Colour</p>
+      <h2 class="section-heading">The palette</h2>
+      <div class="divider"></div>
+
+      <div class="palette">
+        <div class="swatch">
+          <div class="swatch-color" style="background:#1a1a1a;"></div>
+          <div class="swatch-info">
+            <p class="swatch-name">Ink</p>
+            <p class="swatch-hex">#1a1a1a</p>
+            <p class="swatch-note">Primary text, dark icon, CTA buttons</p>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#f9f7f5; border-bottom: 0.5px solid #e2ddd8;"></div>
+          <div class="swatch-info">
+            <p class="swatch-name">Linen</p>
+            <p class="swatch-hex">#f9f7f5</p>
+            <p class="swatch-note">App background, light icon fill</p>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#c9b8d8;"></div>
+          <div class="swatch-info">
+            <p class="swatch-name">Lavender</p>
+            <p class="swatch-hex">#c9b8d8</p>
+            <p class="swatch-note">Secondary priority, social icon, accents</p>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#e8d5c4;"></div>
+          <div class="swatch-info">
+            <p class="swatch-name">Blush</p>
+            <p class="swatch-hex">#e8d5c4</p>
+            <p class="swatch-note">Tertiary priority, low-energy state</p>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#b8c9c4;"></div>
+          <div class="swatch-info">
+            <p class="swatch-name">Sage</p>
+            <p class="swatch-hex">#b8c9c4</p>
+            <p class="swatch-note">Success states, calm indicators</p>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#999490;"></div>
+          <div class="swatch-info">
+            <p class="swatch-name">Muted</p>
+            <p class="swatch-hex">#999490</p>
+            <p class="swatch-note">Secondary text, labels, placeholders</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TYPOGRAPHY -->
+    <section>
+      <p class="section-title">05 — Typography</p>
+      <h2 class="section-heading">Typefaces</h2>
+      <div class="divider"></div>
+
+      <div class="type-samples">
+        <div class="type-block">
+          <p class="type-label">Cormorant Garamond · Headings &amp; Brand</p>
+          <p class="type-sample-serif">Focus begins with a single decision.</p>
+          <p class="type-meta">Cormorant Garamond · Italic · Weight 300–400 · Used for headings, the wordmark, and all branded moments</p>
+        </div>
+        <div class="type-block">
+          <p class="type-label">DM Sans · Body &amp; UI</p>
+          <p class="type-sample-sans">Your daily focus plan, built around you. Clear, calm, and purposeful — every single day.</p>
+          <p class="type-meta">DM Sans · Weight 300–500 · Used for all body copy, labels, buttons, and UI text</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- USAGE RULES -->
+    <section>
+      <p class="section-title">06 — Usage</p>
+      <h2 class="section-heading">Do's and don'ts</h2>
+      <div class="divider"></div>
+
+      <div class="rules">
+        <div class="rule">
+          <div class="rule-dot"></div>
+          <p>Always use the wordmark or lockup at a minimum size of <strong>80px wide</strong> to preserve legibility of the italic letterforms.</p>
+        </div>
+        <div class="rule">
+          <div class="rule-dot"></div>
+          <p>Never recolour the logo. Use only the provided dark, light, or lavender variants. <span>Do not apply custom tints, gradients, or drop shadows.</span></p>
+        </div>
+        <div class="rule">
+          <div class="rule-dot"></div>
+          <p>Never stretch or skew the logo. Scale proportionally and preserve the original aspect ratio at all times.</p>
+        </div>
+        <div class="rule">
+          <div class="rule-dot"></div>
+          <p>Maintain a clear space equal to the height of the letter "d" on all sides of the logo. <span>Nothing should encroach on this zone.</span></p>
+        </div>
+        <div class="rule">
+          <div class="rule-dot"></div>
+          <p>Use the <strong>lavender icon</strong> exclusively for social profile pictures. On all other surfaces use dark or light variants.</p>
+        </div>
+        <div class="rule">
+          <div class="rule-dot"></div>
+          <p>Cormorant Garamond should only appear in <strong>italic</strong>. Never use it in roman (upright) weight — the italic is fundamental to the brand voice.</p>
+        </div>
+        <div class="rule">
+          <div class="rule-dot"></div>
+          <p>The brand name is always lowercase: <strong>daye</strong> — never "Daye" or "DAYE" in any logo or product context.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+</body>
+</html>

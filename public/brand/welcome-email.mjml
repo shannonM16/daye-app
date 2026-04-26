@@ -1,0 +1,214 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Georgia, 'Times New Roman', serif" />
+      <mj-text font-size="15px" color="#1a1a1a" line-height="1.6" />
+    </mj-attributes>
+    <mj-style>
+      .step-circle-dark {
+        display: inline-block;
+        width: 32px;
+        height: 32px;
+        background-color: #1a1a1a;
+        border-radius: 50%;
+        color: #ffffff;
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+        font-weight: bold;
+        text-align: center;
+        line-height: 32px;
+      }
+      .step-circle-purple {
+        display: inline-block;
+        width: 32px;
+        height: 32px;
+        background-color: #c9b8d8;
+        border-radius: 50%;
+        color: #ffffff;
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+        font-weight: bold;
+        text-align: center;
+        line-height: 32px;
+      }
+    </mj-style>
+  </mj-head>
+
+  <mj-body background-color="#f9f7f5">
+
+    <!-- Spacer -->
+    <mj-section background-color="#f9f7f5" padding="24px 0 0 0">
+      <mj-column>
+        <mj-text> </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Card wrapper: header -->
+    <mj-section background-color="#ffffff" border-radius="12px 12px 0 0" padding="32px 40px 24px 40px" css-class="card-top">
+      <mj-column>
+        <mj-text
+          font-size="32px"
+          font-style="italic"
+          font-weight="normal"
+          align="center"
+          padding-bottom="24px"
+          border-bottom="1px solid #e2ddd8"
+          color="#1a1a1a"
+        >daye.</mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Card body -->
+    <mj-section background-color="#ffffff" padding="32px 40px 8px 40px">
+      <mj-column>
+
+        <!-- Welcome heading -->
+        <mj-text font-size="24px" font-style="italic" font-weight="normal" padding-bottom="20px" color="#1a1a1a">
+          Welcome, {{contact.firstName}}.
+        </mj-text>
+
+        <!-- Paragraph 1 -->
+        <mj-text padding-bottom="16px" color="#3a3a3a">
+          You've just made a small decision that has a big impact. daye helps you start every day with clarity — knowing exactly what you're working on, and why it matters.
+        </mj-text>
+
+        <!-- Paragraph 2 -->
+        <mj-text padding-bottom="16px" color="#3a3a3a">
+          We built daye because the hardest part of a productive day isn't the doing — it's the deciding. Every morning, daye helps you cut through the noise and commit to what actually moves the needle.
+        </mj-text>
+
+        <!-- Paragraph 3 -->
+        <mj-text padding-bottom="28px" color="#3a3a3a">
+          Your first plan is one tap away. We can't wait to see what you accomplish.
+        </mj-text>
+
+      </mj-column>
+    </mj-section>
+
+    <!-- Divider -->
+    <mj-section background-color="#ffffff" padding="0 40px">
+      <mj-column>
+        <mj-divider border-color="#e2ddd8" border-width="1px" padding="0 0 28px 0" />
+      </mj-column>
+    </mj-section>
+
+    <!-- HOW IT WORKS heading -->
+    <mj-section background-color="#ffffff" padding="0 40px 20px 40px">
+      <mj-column>
+        <mj-text
+          font-size="11px"
+          font-family="Arial, Helvetica, sans-serif"
+          letter-spacing="2px"
+          color="#8a8a8a"
+          font-style="normal"
+          padding-bottom="20px"
+        >HOW IT WORKS</mj-text>
+
+        <!-- Step 1 -->
+        <mj-text padding-bottom="20px" color="#1a1a1a">
+          <table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+            <tr>
+              <td width="36" valign="top" style="padding-right:14px;">
+                <table cellpadding="0" cellspacing="0" border="0" role="presentation">
+                  <tr>
+                    <td align="center" valign="middle" width="32" height="32" style="width:32px;height:32px;background-color:#1a1a1a;border-radius:16px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;text-align:center;">1</td>
+                  </tr>
+                </table>
+              </td>
+              <td valign="top">
+                <p style="margin:0 0 4px 0;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#1a1a1a;font-weight:bold;">Set your priorities</p>
+                <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#5a5a5a;line-height:1.5;">Each morning, tell daye your top tasks and what you're aiming to achieve today.</p>
+              </td>
+            </tr>
+          </table>
+        </mj-text>
+
+        <!-- Step 2 -->
+        <mj-text padding-bottom="20px" color="#1a1a1a">
+          <table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+            <tr>
+              <td width="36" valign="top" style="padding-right:14px;">
+                <table cellpadding="0" cellspacing="0" border="0" role="presentation">
+                  <tr>
+                    <td align="center" valign="middle" width="32" height="32" style="width:32px;height:32px;background-color:#1a1a1a;border-radius:16px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;text-align:center;">2</td>
+                  </tr>
+                </table>
+              </td>
+              <td valign="top">
+                <p style="margin:0 0 4px 0;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#1a1a1a;font-weight:bold;">Follow your plan</p>
+                <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#5a5a5a;line-height:1.5;">daye structures your day so you spend your best hours on what matters most.</p>
+              </td>
+            </tr>
+          </table>
+        </mj-text>
+
+        <!-- Step 3 (purple circle) -->
+        <mj-text padding-bottom="28px" color="#1a1a1a">
+          <table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+            <tr>
+              <td width="36" valign="top" style="padding-right:14px;">
+                <table cellpadding="0" cellspacing="0" border="0" role="presentation">
+                  <tr>
+                    <td align="center" valign="middle" width="32" height="32" style="width:32px;height:32px;background-color:#c9b8d8;border-radius:16px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;text-align:center;">3</td>
+                  </tr>
+                </table>
+              </td>
+              <td valign="top">
+                <p style="margin:0 0 4px 0;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#1a1a1a;font-weight:bold;">Reflect &amp; grow</p>
+                <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#5a5a5a;line-height:1.5;">Check in as you go, and finish with a moment of reflection. Your momentum builds day by day.</p>
+              </td>
+            </tr>
+          </table>
+        </mj-text>
+
+      </mj-column>
+    </mj-section>
+
+    <!-- CTA button -->
+    <mj-section background-color="#ffffff" padding="0 40px 40px 40px">
+      <mj-column>
+        <mj-button
+          background-color="#1a1a1a"
+          color="#ffffff"
+          font-size="15px"
+          font-family="Georgia, 'Times New Roman', serif"
+          font-style="normal"
+          border-radius="6px"
+          inner-padding="14px 28px"
+          href="https://withdaye.com"
+          align="center"
+        >Start today's plan →</mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer -->
+    <mj-section background-color="#f9f7f5" border-radius="0 0 12px 12px" padding="28px 40px 40px 40px">
+      <mj-column>
+        <mj-text
+          font-size="13px"
+          font-style="italic"
+          color="#8a8a8a"
+          align="center"
+          padding-bottom="12px"
+        >Your day, decided.</mj-text>
+        <mj-text
+          font-size="12px"
+          font-family="Arial, Helvetica, sans-serif"
+          font-style="normal"
+          color="#aaaaaa"
+          align="center"
+        >You're receiving this because you signed up for daye.<br />
+          <a href="{{unsubscribeUrl}}" style="color:#aaaaaa;text-decoration:underline;">Unsubscribe</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Bottom spacer -->
+    <mj-section background-color="#f9f7f5" padding="0 0 24px 0">
+      <mj-column>
+        <mj-text> </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>
