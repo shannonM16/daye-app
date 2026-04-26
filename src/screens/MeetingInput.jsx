@@ -8,7 +8,6 @@ function syncMeetings(meetings) {
     const userId = localStorage.getItem('daye_user_id')
     if (!userId) return
     const today = new Date().toISOString().split('T')[0]
-    console.log('Supabase sync: meetings updated')
     upsertPlanPartial(userId, today, { meetings }).catch(() => {})
   } catch { /* silently fail */ }
 }

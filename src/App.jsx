@@ -168,10 +168,6 @@ function RightPanel({ screen, user, userProfile, checkInData, liveSelectedTasks 
 // ── Main app ───────────────────────────────────────────────────────
 
 export default function App() {
-  // Fix 3: verify env vars are loaded
-  console.log('Supabase URL present:', !!import.meta.env.VITE_SUPABASE_URL)
-  console.log('Supabase key present:', !!import.meta.env.VITE_SUPABASE_ANON_KEY)
-
   const location = useLocation()
   const [user, setUser] = useStorage('df_user', null)
   const [userProfile, setUserProfile] = useStorage('df_userProfile', null)
@@ -202,7 +198,6 @@ export default function App() {
         if (supaUser) {
           localStorage.setItem('daye_user_id', supaUser.id)
           // SYNC 8: session tracking
-          console.log('Supabase sync: session tracked')
           updateUserLastSeen(supaUser.id).catch(() => {})
           setUser({ firstName: supaUser.first_name, email: supaUser.email })
           if (supaUser.profile && Object.keys(supaUser.profile).length > 0) {
@@ -285,13 +280,11 @@ export default function App() {
 
   const handleUpdateUser = useCallback((userData) => {
     setUser(userData)
-    console.log('Supabase sync: profile updated')
     syncUserToSupabase(userData, userProfile)
   }, [setUser, userProfile])
 
   const handleUpdateProfile = useCallback((profile) => {
     setUserProfile(profile)
-    console.log('Supabase sync: profile updated')
     syncUserToSupabase(user, profile)
   }, [setUserProfile, user])
 
@@ -308,10 +301,8 @@ export default function App() {
       const filtered = (prev || []).filter((h) => h.date !== today && h.date >= cutoff)
       return [...filtered, { date: today, ...data }]
     })
-    // SYNC 3: save check-in data immediately before plan generation
     const userId = localStorage.getItem('daye_user_id')
     if (userId) {
-      console.log('Supabase sync: check-in saved')
       upsertPlanPartial(userId, today, { check_in: data }).catch(() => {})
     }
     syncUserToSupabase(user, userProfile)
@@ -332,7 +323,6 @@ export default function App() {
       const saved = JSON.parse(localStorage.getItem('df_meetings') || '[]')
       if (Array.isArray(saved) && saved.length > 0) freshMeetings = saved
     } catch { /* use meetings from state */ }
-    console.log('[daye] handleTaskInput — meetings from state:', meetings, '— freshMeetings:', freshMeetings)
     const result = await buildPlan(
       { ...(userProfile || {}), firstName: user?.firstName },
       checkInData,
@@ -360,11 +350,9 @@ export default function App() {
     const updatedMeetings = [...meetings, meeting]
     setMeetings(updatedMeetings)
     localStorage.setItem('df_meetings', JSON.stringify(updatedMeetings))
-    // SYNC 4: meetings updated from action mode timer sheet
     const userId = localStorage.getItem('daye_user_id')
     if (userId) {
       const today = new Date().toISOString().split('T')[0]
-      console.log('Supabase sync: meetings updated')
       upsertPlanPartial(userId, today, { meetings: updatedMeetings }).catch(() => {})
     }
     try {
@@ -436,48 +424,6 @@ export default function App() {
   const handleCarryOverDismiss = useCallback(() => {
     localStorage.setItem('daye_carryover_dismissed', new Date().toISOString().split('T')[0])
   }, [])
-
-  const handleActivateTestMode = useCallback(() => {
-    const getDate = (daysAgo) => {
-      const d = new Date()
-      d.setDate(d.getDate() - daysAgo)
-      return d.toISOString().split('T')[0]
-    }
-
-    const fakeHistory = [
-      { date: getDate(0), energy: 3, mood: 'focused', sleep: 'ok', dayType: 'deep-work', pressure: ['none'], planningStartTime: '09:00', plannedTasks: [] },
-      { date: getDate(1), energy: 3, mood: 'anxious', sleep: 'ok', dayType: 'lots-of-meetings', pressure: ['brand-deal-deadline'], plannedTasks: ['Write the campaign brief', 'Schedule posts for the week'] },
-      { date: getDate(2), energy: 2, mood: 'flat', sleep: 'poor', dayType: 'low-energy-day', pressure: ['consistency-pressure'], plannedTasks: ['Film short-form video', 'Reply to comments'] },
-      { date: getDate(3), energy: 2, mood: 'tired', sleep: 'poor', dayType: 'low-energy-day', pressure: ['none'], plannedTasks: ['Edit podcast episode', 'Community engagement'] },
-      // Gap at day -4 keeps streak at 4
-      { date: getDate(5), energy: 2, mood: 'overwhelmed', sleep: 'terrible', dayType: 'reactive-firefighting', pressure: ['engagement-dropping'], plannedTasks: ['Respond to sponsor outreach', 'Script next video'] },
-      { date: getDate(6), energy: 2, mood: 'flat', sleep: 'poor', dayType: 'low-energy-day', pressure: ['none'], plannedTasks: ['Upload scheduled post', 'Check analytics'] },
-      { date: getDate(7), energy: 2, mood: 'flat', sleep: 'ok', dayType: 'low-energy-day', pressure: ['none'], plannedTasks: ['Review brand deal proposal', 'Draft content calendar'] },
-    ]
-
-    setCheckInHistory(fakeHistory)
-
-    saveCompletionsForDate(getDate(1), ['Schedule posts for the week'])
-    saveCompletionsForDate(getDate(2), ['Reply to comments'])
-    saveCompletionsForDate(getDate(3), ['Edit podcast episode', 'Community engagement'])
-    saveCompletionsForDate(getDate(5), ['Respond to sponsor outreach'])
-    saveCompletionsForDate(getDate(6), ['Upload scheduled post', 'Check analytics'])
-    saveCompletionsForDate(getDate(7), ['Review brand deal proposal', 'Draft content calendar'])
-
-    localStorage.setItem('daye_goal_completions', '6')
-    localStorage.removeItem('daye_carryover_dismissed')
-    localStorage.removeItem('daye_weekly_shown_date')
-
-    setUserProfile((prev) => ({
-      ...(prev || {}),
-      userType: 'self-employed',
-      selfEmployedType: 'content-creator',
-      workType: 'content-creator',
-      goals: ['Grow my audience'],
-      goal: 'Grow my audience',
-      blockers: ['Consistency pressure', 'Algorithm changes'],
-    }))
-  }, [setCheckInHistory, setUserProfile])
 
   // ── Blog routes ─────────────────────────────────────────────────
   if (location.pathname === '/blog') return <BlogIndex />
@@ -581,7 +527,6 @@ export default function App() {
           carryOverTask={carryOverTask}
           onCarryOverAccept={handleCarryOverAccept}
           onCarryOverDismiss={handleCarryOverDismiss}
-          onActivateTestMode={handleActivateTestMode}
           onSubmit={handleCheckIn}
           onViewHistory={() => setScreen(SCREENS.HISTORY)}
           onViewSettings={() => setScreen(SCREENS.SETTINGS)}

@@ -28,7 +28,6 @@ export async function updateUserLastSeen(userId) {
 }
 
 export async function upsertUser({ firstName, email, profile = {} }) {
-  console.log('Supabase: attempting to save user', email)
   const { data, error } = await supabase
     .from('users')
     .upsert(
@@ -38,10 +37,8 @@ export async function upsertUser({ firstName, email, profile = {} }) {
     .select('id, email, first_name, profile')
     .single()
   if (error) {
-    console.log('Supabase: error saving user', error.message)
     throw error
   }
-  console.log('Supabase: user saved successfully', data.id)
   return data
 }
 
@@ -56,7 +53,6 @@ export async function fetchUserByEmail(email) {
 }
 
 export async function savePlan(userId, date, planData) {
-  console.log('Supabase: attempting to save plan for user', userId)
   const { error } = await supabase
     .from('plans')
     .upsert(
@@ -64,10 +60,8 @@ export async function savePlan(userId, date, planData) {
       { onConflict: 'user_id,date' }
     )
   if (error) {
-    console.log('Supabase: error saving plan', error.message)
     throw error
   }
-  console.log('Supabase: plan saved successfully')
 }
 
 export async function fetchPlans(userId) {

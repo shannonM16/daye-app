@@ -260,7 +260,6 @@ Rules:
  * Falls back to the rule-based decisionEngine if anything fails.
  */
 export async function buildPlan(userProfile, checkInData, tasks, meetings = []) {
-  console.log('[daye] buildPlan — meetings passed:', meetings)
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
 
   if (!apiKey) {
@@ -333,7 +332,6 @@ export async function buildPlan(userProfile, checkInData, tasks, meetings = []) 
         )
       )
       if (missingMeetings.length > 0) {
-        console.log('[daye] Inserting missing meeting blocks:', missingMeetings.map(m => m.name))
         for (const m of missingMeetings) {
           timeBlocks.push({ time: `${m.startTime}–${m.endTime}`, activity: `[MEETING] ${m.name}` })
         }

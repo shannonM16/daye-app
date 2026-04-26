@@ -9,7 +9,6 @@ function headers() {
 }
 
 export async function addLoopsContact(email, firstName) {
-  console.log('Loops: adding contact', email)
   try {
     await fetch(BASE + '/contacts/create', {
       method: 'POST',
@@ -22,9 +21,8 @@ export async function addLoopsContact(email, firstName) {
         mailingLists: {},
       }),
     })
-    console.log('Loops: contact added successfully')
-  } catch (err) {
-    console.log('Loops: error adding contact', err)
+  } catch {
+    // fail silently
   }
 }
 
@@ -57,7 +55,6 @@ export async function sendLoopsWelcomeEmail(email, firstName) {
         dataVariables: { firstName },
       }),
     })
-    console.log('Loops: welcome email sent')
   } catch {
     // fail silently
   }
@@ -70,7 +67,6 @@ export async function sendLoopsPlanCreatedEvent(email) {
       headers: headers(),
       body: JSON.stringify({ email, eventName: 'plan_created' }),
     })
-    console.log('Loops: plan created event sent')
   } catch {
     // fail silently
   }

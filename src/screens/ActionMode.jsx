@@ -251,7 +251,6 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
       const userId = localStorage.getItem('daye_user_id')
       if (!userId) return
       const today = new Date().toISOString().split('T')[0]
-      console.log('Supabase sync: timer', action)
       upsertPlanPartial(userId, today, { timer_log: timerLogRef.current }).catch(() => {})
     } catch { /* silently fail */ }
   }
@@ -421,7 +420,6 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
         const userId = localStorage.getItem('daye_user_id')
         if (userId) {
           const allCompleted = [...next, ...stateRef.current.extraChecked]
-          console.log('Supabase sync: task completed', task)
           upsertPlanPartial(userId, today, { completed_tasks: allCompleted }).catch(() => {})
         }
       } catch { /* silently fail */ }
@@ -439,7 +437,6 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
         const userId = localStorage.getItem('daye_user_id')
         if (userId) {
           const allCompleted = [...stateRef.current.checked, ...next]
-          console.log('Supabase sync: task completed', task)
           upsertPlanPartial(userId, today, { completed_tasks: allCompleted }).catch(() => {})
         }
       } catch { /* silently fail */ }
