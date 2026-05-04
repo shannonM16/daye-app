@@ -67,36 +67,50 @@ function MockLetter() {
 
 function MockYearCard() {
   const days = [
-    { label: 'M', fill: 0.9 }, { label: 'T', fill: 1 }, { label: 'W', fill: 0.7 },
-    { label: 'T', fill: 0.5 }, { label: 'F', fill: 0.85 }, { label: 'S', fill: 0.3 }, { label: 'S', fill: 0.2 },
+    { fill: 0.9 }, { fill: 1 }, { fill: 0.7 },
+    { fill: 0.5 }, { fill: 0.85 }, { fill: 0.3 }, { fill: 0.2 },
   ]
 
   return (
     <div style={{
-      background: INK,
+      background: '#1a1a1a',
       borderRadius: '20px',
       padding: '40px 44px',
       maxWidth: '560px',
       margin: '0 auto',
-      boxShadow: '0 12px 60px rgba(26,26,26,0.18)',
+      boxShadow: '0 0 0 1px rgba(201,184,216,0.18), 0 20px 80px rgba(26,26,26,0.3), 0 0 100px rgba(201,184,216,0.06)',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+
+      {/* Lavender radial glow top-right */}
+      <div style={{
+        position: 'absolute', top: '-100px', right: '-80px',
+        width: '320px', height: '320px', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(201,184,216,0.14) 0%, transparent 65%)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
         <div>
-          <p style={{ fontFamily: 'var(--font-sans)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.4)', margin: '0 0 8px 0', fontWeight: 500 }}>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.35)', margin: '0 0 10px 0', fontWeight: 500 }}>
             Q1 2025 · Year in Focus
           </p>
-          <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '26px', fontWeight: 300, color: 'white', margin: 0 }}>Shannon</p>
+          <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '28px', fontWeight: 300, color: 'white', margin: 0, lineHeight: 1 }}>Shannon</p>
         </div>
-        <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '18px', color: 'rgba(255,255,255,0.3)', fontWeight: 300 }}>daye</span>
+        <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '20px', color: 'rgba(201,184,216,0.55)', fontWeight: 300 }}>daye</span>
       </div>
 
+      {/* Decorative lavender accent line */}
+      <div style={{ width: '52px', height: '1.5px', background: `linear-gradient(90deg, ${LAVENDER}, transparent)`, marginTop: '20px', marginBottom: '28px' }} />
+
       {/* Focus heatmap bars */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '32px', alignItems: 'flex-end', height: '60px' }}>
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '28px', alignItems: 'flex-end', height: '56px' }}>
         {Array.from({ length: 13 }, (_, w) =>
           days.map((d, di) => {
             const fill = d.fill * (0.6 + Math.sin(w * 0.8 + di) * 0.4)
-            const height = Math.max(8, fill * 52)
-            const alpha = Math.max(0.15, fill)
+            const height = Math.max(6, fill * 50)
             return (
               <div
                 key={`${w}-${di}`}
@@ -104,7 +118,7 @@ function MockYearCard() {
                   flex: 1,
                   height: `${height}px`,
                   borderRadius: '3px',
-                  background: fill > 0.75 ? LAVENDER : fill > 0.45 ? `rgba(201,184,216,0.5)` : `rgba(255,255,255,0.1)`,
+                  background: fill > 0.75 ? LAVENDER : fill > 0.45 ? `rgba(201,184,216,0.42)` : `rgba(255,255,255,0.08)`,
                   alignSelf: 'flex-end',
                 }}
               />
@@ -113,21 +127,41 @@ function MockYearCard() {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '28px' }}>
+      {/* Primary stats — 4 columns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '10px' }}>
         {[
+          ['83', 'days used'],
           ['47', 'tasks done'],
           ['11', 'day streak'],
           ['Tue', 'best focus day'],
         ].map(([val, label]) => (
-          <div key={label} style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 16px' }}>
-            <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '22px', fontWeight: 300, color: 'white', margin: '0 0 2px 0', lineHeight: 1 }}>{val}</p>
-            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '10px', color: 'rgba(255,255,255,0.4)', margin: 0, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</p>
+          <div key={label} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '10px', padding: '14px 12px' }}>
+            <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '24px', fontWeight: 300, color: 'white', margin: '0 0 5px 0', lineHeight: 1 }}>{val}</p>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '9px', color: 'rgba(255,255,255,0.38)', margin: 0, letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1.3 }}>{label}</p>
           </div>
         ))}
       </div>
 
-      <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '14px', fontWeight: 300, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.6 }}>
-        "Your most common reflection word was <em style={{ color: 'rgba(255,255,255,0.7)' }}>finally</em>. That says everything."
+      {/* Secondary stats — lavender tinted, 3 columns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '28px' }}>
+        {[
+          ['Deep work', 'most used day type'],
+          ['Focused', 'top energy level'],
+          ['Build something', 'top goal worked on'],
+        ].map(([val, label]) => (
+          <div key={label} style={{ background: 'rgba(201,184,216,0.07)', border: '0.5px solid rgba(201,184,216,0.18)', borderRadius: '10px', padding: '13px 12px' }}>
+            <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '13px', fontWeight: 300, color: 'rgba(255,255,255,0.82)', margin: '0 0 5px 0', lineHeight: 1.25 }}>{val}</p>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '9px', color: 'rgba(201,184,216,0.5)', margin: 0, letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1.3 }}>{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Gradient divider */}
+      <div style={{ height: '0.5px', background: `linear-gradient(90deg, rgba(201,184,216,0.45) 0%, transparent 80%)`, marginBottom: '22px' }} />
+
+      {/* Quote */}
+      <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '14px', fontWeight: 300, color: 'rgba(255,255,255,0.42)', margin: 0, lineHeight: 1.65 }}>
+        "Your most common reflection word was <em style={{ color: LAVENDER, fontStyle: 'normal' }}>finally</em>. That says everything."
       </p>
     </div>
   )
@@ -139,13 +173,13 @@ export default function PricingPage({ onStartDay, onSignIn }) {
 
       {/* ── Nav ────────────────────────────────────────────────── */}
       <nav className="landing-nav" style={{ background: LINEN, borderBottom: `0.5px solid ${BORDER}` }}>
-        <div className="landing-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
-          <a href="/" style={{ textDecoration: 'none' }}>
+        <div className="landing-container" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          <a href="/" style={{ textDecoration: 'none', marginRight: 'auto', paddingRight: '48px' }}>
             <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '20px', color: INK, fontWeight: 300 }}>daye</span>
           </a>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <a href="/blog" style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: MUTED, textDecoration: 'none' }}>Blog</a>
-            <a href="/pricing" style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: INK, textDecoration: 'none', fontWeight: 500 }}>Pro</a>
+            <a href="/pricing" style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: LAVENDER, textDecoration: 'none', fontWeight: 600, borderBottom: `1.5px solid rgba(201,184,216,0.5)`, paddingBottom: '1px' }}>Pro</a>
             <button
               onClick={onSignIn}
               style={{ background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: '13px', color: INK, cursor: 'pointer', padding: 0 }}

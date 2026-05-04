@@ -452,9 +452,9 @@ export default function Landing({ onStartDay, onSignIn }) {
 
       {/* ── Fixed nav (desktop only) ─────────────────────────── */}
       <nav className="landing-nav">
-        <div className="landing-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%', gap: '60px' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '20px', color: 'var(--color-ink)', fontWeight: 300 }}>daye</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className="landing-container" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '20px', color: 'var(--color-ink)', fontWeight: 300, marginRight: 'auto', paddingRight: '48px' }}>daye</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <a
               href="/blog"
               style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', textDecoration: 'none' }}
@@ -463,7 +463,7 @@ export default function Landing({ onStartDay, onSignIn }) {
             </a>
             <a
               href="/pricing"
-              style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-ink)', textDecoration: 'none', fontWeight: 500 }}
+              style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: '#c9b8d8', textDecoration: 'none', fontWeight: 600, borderBottom: '1.5px solid rgba(201,184,216,0.5)', paddingBottom: '1px' }}
             >
               Pro
             </a>
