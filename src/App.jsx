@@ -265,7 +265,8 @@ export default function App() {
     }
     syncUserToSupabase(userData, userProfile)
     addLoopsContact(userData.email, userData.firstName)
-    sendLoopsWelcomeEmail(userData.email, userData.firstName)
+    new Promise(resolve => setTimeout(resolve, 2000))
+      .then(() => sendLoopsWelcomeEmail(userData.email, userData.firstName))
     setScreen(SCREENS.ONBOARDING)
   }, [setUser, userProfile])
 
