@@ -461,6 +461,12 @@ export default function Landing({ onStartDay, onSignIn }) {
             >
               Blog
             </a>
+            <a
+              href="/pricing"
+              style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-ink)', textDecoration: 'none', fontWeight: 500 }}
+            >
+              Pro
+            </a>
             <button
               onClick={onSignIn}
               style={{ background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: '13px', color: '#1a1a1a', cursor: 'pointer', padding: 0 }}

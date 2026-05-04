@@ -10,6 +10,7 @@ import { addLoopsContact, updateLoopsContact, sendLoopsWelcomeEmail, sendLoopsPl
 import Landing from './screens/Landing'
 import BlogIndex from './blog/BlogIndex'
 import ArticlePage from './blog/ArticlePage'
+import PricingPage from './screens/PricingPage'
 import SignUp from './screens/SignUp'
 import Onboarding from './screens/Onboarding'
 import OnboardingFiguringItOut from './screens/OnboardingFiguringItOut'
@@ -424,11 +425,19 @@ export default function App() {
     localStorage.setItem('daye_carryover_dismissed', new Date().toISOString().split('T')[0])
   }, [])
 
-  // ── Blog routes ─────────────────────────────────────────────────
+  // ── Public routes ────────────────────────────────────────────────
   if (location.pathname === '/blog') return <BlogIndex />
   if (location.pathname.startsWith('/blog/')) {
     const slug = location.pathname.slice(6)
     return <ArticlePage slug={slug} />
+  }
+  if (location.pathname === '/pricing') {
+    return (
+      <PricingPage
+        onStartDay={() => { window.location.href = '/' }}
+        onSignIn={() => { window.location.href = '/' }}
+      />
+    )
   }
 
   // ── Landing (pre-signup) ─────────────────────────────────────────
