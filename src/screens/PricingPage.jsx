@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 const LAVENDER = '#c9b8d8'
@@ -173,24 +173,204 @@ function MockYearCard() {
   )
 }
 
+function AuthModal({ onClose, onAuthSuccess }) {
+  const [mode, setMode] = useState('signup')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      if (mode === 'signup') {
+        const { data, error: err } = await supabase.auth.signUp({ email, password })
+        if (err) { setError(err.message); setLoading(false); return }
+        if (data.user) onAuthSuccess(data.user)
+      } else {
+        const { data, error: err } = await supabase.auth.signInWithPassword({ email, password })
+        if (err) { setError(err.message); setLoading(false); return }
+        if (data.user) onAuthSuccess(data.user)
+      }
+    } catch {
+      setError('Something went wrong. Please try again.')
+      setLoading(false)
+    }
+  }
+
+  const inputStyle = {
+    width: '100%',
+    background: 'white',
+    border: `1px solid ${BORDER}`,
+    borderRadius: '10px',
+    padding: '12px 14px',
+    fontFamily: 'var(--font-sans)',
+    fontSize: '14px',
+    color: INK,
+    outline: 'none',
+    boxSizing: 'border-box',
+    transition: 'border-color 0.15s',
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(26,26,26,0.35)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '20px',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: LINEN,
+          borderRadius: '20px',
+          boxShadow: '0 24px 80px rgba(26,26,26,0.14), 0 2px 8px rgba(26,26,26,0.06)',
+          padding: '40px 36px 36px',
+          width: '100%',
+          maxWidth: '400px',
+          position: 'relative',
+        }}
+      >
+        {/* X close */}
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute', top: '16px', right: '16px',
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: MUTED, fontSize: '20px', lineHeight: 1,
+            padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            borderRadius: '6px',
+          }}
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+        {/* Heading */}
+        <h2 style={{
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontWeight: 300,
+          fontSize: '28px',
+          color: INK,
+          margin: '0 0 8px 0',
+          lineHeight: 1.15,
+        }}>
+          {mode === 'signup' ? 'Create your account' : 'Welcome back'}
+        </h2>
+        <p style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: '14px',
+          color: MUTED,
+          margin: '0 0 28px 0',
+          lineHeight: 1.5,
+        }}>
+          {mode === 'signup'
+            ? 'Start your 7-day free trial of Daye Pro'
+            : 'Sign in to continue to Daye Pro'}
+        </p>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <input
+            type="email"
+            placeholder="Email address"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setError('') }}
+            required
+            autoFocus
+            style={inputStyle}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); setError('') }}
+            required
+            style={inputStyle}
+          />
+
+          {error && (
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: '#c0392b', margin: '0' }}>
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              background: INK,
+              color: 'white',
+              border: 'none',
+              borderRadius: '10px',
+              padding: '13px 24px',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: loading ? 'default' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+              marginTop: '4px',
+              letterSpacing: '0.01em',
+            }}
+          >
+            {loading ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Sign in'}
+          </button>
+        </form>
+
+        <p style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: '13px',
+          color: MUTED,
+          textAlign: 'center',
+          margin: '20px 0 0 0',
+        }}>
+          {mode === 'signup' ? (
+            <>Already have an account?{' '}
+              <button
+                onClick={() => { setMode('signin'); setError('') }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: INK, fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, padding: 0, textDecoration: 'underline', textUnderlineOffset: '2px' }}
+              >
+                Sign in
+              </button>
+            </>
+          ) : (
+            <>Don't have an account?{' '}
+              <button
+                onClick={() => { setMode('signup'); setError('') }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: INK, fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, padding: 0, textDecoration: 'underline', textUnderlineOffset: '2px' }}
+              >
+                Create one
+              </button>
+            </>
+          )}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function PricingPage({ onStartDay, onSignIn }) {
   const [billing, setBilling] = useState('monthly')
   const [loading, setLoading] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
-  async function handleCheckout() {
+  async function proceedToCheckout(userId) {
     setLoading(true)
     try {
       const priceId = billing === 'annual' ? PRICE_ANNUAL : PRICE_MONTHLY
-
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      const userId = authUser?.id ?? localStorage.getItem('daye_user_id')
-
-      if (!userId) {
-        localStorage.setItem('pendingProPlan', billing)
-        window.location.href = '/'
-        return
-      }
-
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -205,6 +385,29 @@ export default function PricingPage({ onStartDay, onSignIn }) {
     } catch {
       setLoading(false)
     }
+  }
+
+  async function handleCheckout() {
+    setLoading(true)
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      const userId = authUser?.id ?? localStorage.getItem('daye_user_id')
+
+      if (!userId) {
+        setLoading(false)
+        setShowAuthModal(true)
+        return
+      }
+
+      await proceedToCheckout(userId)
+    } catch {
+      setLoading(false)
+    }
+  }
+
+  async function handleAuthSuccess(user) {
+    setShowAuthModal(false)
+    await proceedToCheckout(user.id)
   }
 
   return (
@@ -478,6 +681,13 @@ export default function PricingPage({ onStartDay, onSignIn }) {
           No credit card needed to start. Cancel anytime.
         </p>
       </div>
+
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          onAuthSuccess={handleAuthSuccess}
+        />
+      )}
 
     </div>
   )
