@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 const LAVENDER = '#c9b8d8'
 const BLUSH = '#e8d5c4'
@@ -180,7 +181,16 @@ export default function PricingPage({ onStartDay, onSignIn }) {
     setLoading(true)
     try {
       const priceId = billing === 'annual' ? PRICE_ANNUAL : PRICE_MONTHLY
-      const userId = localStorage.getItem('daye_user_id')
+
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      const userId = authUser?.id ?? localStorage.getItem('daye_user_id')
+
+      if (!userId) {
+        localStorage.setItem('pendingProPlan', billing)
+        window.location.href = '/'
+        return
+      }
+
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

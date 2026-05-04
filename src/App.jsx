@@ -272,13 +272,44 @@ export default function App() {
     setScreen(SCREENS.ONBOARDING)
   }, [setUser, userProfile])
 
-  const handleOnboarding = useCallback((profile) => {
+  const handleOnboarding = useCallback(async (profile) => {
     setUserProfile(profile)
     if (!localStorage.getItem('daye_member_since')) {
       localStorage.setItem('daye_member_since', new Date().toISOString())
     }
     syncUserToSupabase(user, profile)
     if (user?.email) updateLoopsContact(user.email, profile)
+
+    const pendingPlan = localStorage.getItem('pendingProPlan')
+    if (pendingPlan) {
+      localStorage.removeItem('pendingProPlan')
+      try {
+        let userId = localStorage.getItem('daye_user_id')
+        if (!userId && user?.email) {
+          const supaUser = await upsertUser({ firstName: user.firstName || '', email: user.email, profile: profile || {} })
+          userId = supaUser.id
+          localStorage.setItem('daye_user_id', userId)
+        }
+        if (userId) {
+          const priceId = pendingPlan === 'annual'
+            ? 'price_1TTRga2LFIh1Zwra08LHcdn9'
+            : 'price_1TTRgF2LFIh1ZwramSLMYfSK'
+          const res = await fetch('/api/create-checkout-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ priceId, userId }),
+          })
+          const data = await res.json()
+          if (data.url) {
+            window.location.href = data.url
+            return
+          }
+        }
+      } catch {
+        // Fall through to normal flow if checkout fails
+      }
+    }
+
     setScreen(SCREENS.CHECKIN)
   }, [setUserProfile, user])
 
