@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const LAVENDER = '#c9b8d8'
 const BLUSH = '#e8d5c4'
 const SAGE = '#b8c9c4'
@@ -6,6 +8,9 @@ const LINEN = '#f9f7f5'
 const LINEN_DARK = '#f0ede8'
 const MUTED = '#8a8480'
 const BORDER = '#e2ddd8'
+
+const PRICE_MONTHLY = 'price_1TTQr42LFIh1ZwraYktGLcJy'
+const PRICE_ANNUAL = 'price_1TTQrw2LFIh1ZwraHmRSjCQk'
 
 function Check({ color = INK }) {
   return (
@@ -168,6 +173,30 @@ function MockYearCard() {
 }
 
 export default function PricingPage({ onStartDay, onSignIn }) {
+  const [billing, setBilling] = useState('monthly')
+  const [loading, setLoading] = useState(false)
+
+  async function handleCheckout() {
+    setLoading(true)
+    try {
+      const priceId = billing === 'annual' ? PRICE_ANNUAL : PRICE_MONTHLY
+      const userId = localStorage.getItem('daye_user_id')
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId, userId }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setLoading(false)
+      }
+    } catch {
+      setLoading(false)
+    }
+  }
+
   return (
     <div style={{ minHeight: '100dvh', background: LINEN, overflowX: 'hidden' }}>
 
@@ -312,11 +341,45 @@ export default function PricingPage({ onStartDay, onSignIn }) {
                 <p style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: LAVENDER, margin: '0 0 16px 0', fontWeight: 600 }}>
                   Daye Pro
                 </p>
+
+                {/* Billing toggle */}
+                <div style={{ display: 'flex', background: LINEN_DARK, borderRadius: '8px', padding: '3px', marginBottom: '16px', width: 'fit-content', gap: '2px' }}>
+                  {[['monthly', 'Monthly'], ['annual', 'Annual']].map(([value, label]) => (
+                    <button
+                      key={value}
+                      onClick={() => setBilling(value)}
+                      style={{
+                        background: billing === value ? 'white' : 'transparent',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '5px 14px',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '12px',
+                        fontWeight: billing === value ? 600 : 400,
+                        color: billing === value ? INK : MUTED,
+                        cursor: 'pointer',
+                        boxShadow: billing === value ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {label}
+                      {value === 'annual' && billing !== 'annual' && (
+                        <span style={{ background: SAGE, borderRadius: '4px', padding: '1px 5px', fontSize: '9px', fontWeight: 600, color: INK, letterSpacing: '0.04em' }}>
+                          –35%
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
                 <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '32px', fontWeight: 300, color: INK, margin: '0 0 4px 0', lineHeight: 1 }}>
-                  £4.99/month
+                  {billing === 'annual' ? '£39/year' : '£4.99/month'}
                 </p>
                 <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: MUTED, margin: '0 0 12px 0' }}>
-                  or £39/year — save 35%
+                  {billing === 'annual' ? 'Save 35% vs monthly' : 'or £39/year — save 35%'}
                 </p>
                 <p style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', color: MUTED, margin: 0, lineHeight: 1.5 }}>
                   For people who want Daye to truly know them
@@ -338,6 +401,8 @@ export default function PricingPage({ onStartDay, onSignIn }) {
               </ul>
 
               <button
+                onClick={handleCheckout}
+                disabled={loading}
                 style={{
                   width: '100%',
                   background: LAVENDER,
@@ -348,11 +413,12 @@ export default function PricingPage({ onStartDay, onSignIn }) {
                   fontFamily: 'var(--font-sans)',
                   fontSize: '14px',
                   fontWeight: 500,
-                  cursor: 'pointer',
+                  cursor: loading ? 'default' : 'pointer',
                   letterSpacing: '0.01em',
+                  opacity: loading ? 0.7 : 1,
                 }}
               >
-                Start Pro free for 7 days
+                {loading ? 'Redirecting…' : 'Start Pro free for 7 days'}
               </button>
             </div>
 

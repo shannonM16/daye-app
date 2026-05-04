@@ -11,6 +11,7 @@ import Landing from './screens/Landing'
 import BlogIndex from './blog/BlogIndex'
 import ArticlePage from './blog/ArticlePage'
 import PricingPage from './screens/PricingPage'
+import ProSuccess from './screens/ProSuccess'
 import SignUp from './screens/SignUp'
 import Onboarding from './screens/Onboarding'
 import OnboardingFiguringItOut from './screens/OnboardingFiguringItOut'
@@ -438,6 +439,10 @@ export default function App() {
         onSignIn={() => { window.location.href = '/' }}
       />
     )
+  }
+
+  if (location.pathname === '/pro-success') {
+    return <ProSuccess onStartDay={() => { window.location.href = '/' }} />
   }
 
   // ── Landing (pre-signup) ─────────────────────────────────────────

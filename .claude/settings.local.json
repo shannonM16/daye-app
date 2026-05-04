@@ -15,7 +15,8 @@
       "Bash(git push *)",
       "Bash(zip welcome-email.zip index.mjml)",
       "Bash(zip -j welcome-email.zip index.mjml)",
-      "Bash(pkill -f \"vite --port 5174\")"
+      "Bash(pkill -f \"vite --port 5174\")",
+      "Bash(grep -E \"\\\\.\\(js|jsx\\)$\")"
     ]
   }
 }
