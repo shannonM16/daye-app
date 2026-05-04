@@ -9,8 +9,8 @@ const LINEN_DARK = '#f0ede8'
 const MUTED = '#8a8480'
 const BORDER = '#e2ddd8'
 
-const PRICE_MONTHLY = 'price_1TTQr42LFIh1ZwraYktGLcJy'
-const PRICE_ANNUAL = 'price_1TTQrw2LFIh1ZwraHmRSjCQk'
+const PRICE_MONTHLY = 'price_1TTRgF2LFIh1ZwramSLMYfSK'
+const PRICE_ANNUAL = 'price_1TTRga2LFIh1Zwra08LHcdn9'
 
 function Check({ color = INK }) {
   return (
