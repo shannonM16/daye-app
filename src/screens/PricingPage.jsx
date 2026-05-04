@@ -175,6 +175,7 @@ function MockYearCard() {
 
 function AuthModal({ onClose, onAuthSuccess }) {
   const [mode, setMode] = useState('signup')
+  const [firstName, setFirstName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -192,9 +193,20 @@ function AuthModal({ onClose, onAuthSuccess }) {
     setLoading(true)
     try {
       if (mode === 'signup') {
-        const { data, error: err } = await supabase.auth.signUp({ email, password })
+        const { data, error: err } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { first_name: firstName } },
+        })
         if (err) { setError(err.message); setLoading(false); return }
-        if (data.user) onAuthSuccess(data.user)
+        if (data.user) {
+          fetch('/api/loops-create-contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, firstName }),
+          }).catch(() => {})
+          onAuthSuccess(data.user)
+        }
       } else {
         const { data, error: err } = await supabase.auth.signInWithPassword({ email, password })
         if (err) { setError(err.message); setLoading(false); return }
@@ -283,13 +295,24 @@ function AuthModal({ onClose, onAuthSuccess }) {
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {mode === 'signup' && (
+            <input
+              type="text"
+              placeholder="First name"
+              value={firstName}
+              onChange={(e) => { setFirstName(e.target.value); setError('') }}
+              required
+              autoFocus
+              style={inputStyle}
+            />
+          )}
           <input
             type="email"
             placeholder="Email address"
             value={email}
             onChange={(e) => { setEmail(e.target.value); setError('') }}
             required
-            autoFocus
+            autoFocus={mode === 'signin'}
             style={inputStyle}
           />
           <input
@@ -406,7 +429,6 @@ export default function PricingPage({ onStartDay, onSignIn }) {
   }
 
   async function handleAuthSuccess(user) {
-    setShowAuthModal(false)
     await proceedToCheckout(user.id)
   }
 
