@@ -452,7 +452,7 @@ export default function Landing({ onStartDay, onSignIn }) {
 
       {/* ── Fixed nav (desktop only) ─────────────────────────── */}
       <nav className="landing-nav">
-        <div className="landing-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
+        <div className="landing-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%', gap: '60px' }}>
           <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '20px', color: 'var(--color-ink)', fontWeight: 300 }}>daye</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <a
@@ -463,7 +463,7 @@ export default function Landing({ onStartDay, onSignIn }) {
             </a>
             <button
               onClick={onSignIn}
-              style={{ background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', cursor: 'pointer', padding: 0 }}
+              style={{ background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: '13px', color: '#1a1a1a', cursor: 'pointer', padding: 0 }}
             >
               Sign in
             </button>
