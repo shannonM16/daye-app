@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 function AppleLogo() {
   return (
@@ -98,15 +99,13 @@ export default function SignUp({ onComplete }) {
     }, 800)
   }
 
-  const handleGoogle = () => {
+  const handleGoogle = async () => {
     setSocialLoading('google')
-    setTimeout(() => {
-      setSocialLoading(null)
-      setSocialName('')
-      setSocialEmail('')
-      setSocialEmailError(false)
-      setSocialPrompt({ provider: 'google' })
-    }, 800)
+    localStorage.setItem('oauth_redirect_pending', 'true')
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'https://withdaye.com' },
+    })
   }
 
   const handleSocialContinue = () => {

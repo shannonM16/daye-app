@@ -5,6 +5,7 @@ import { buildPlan } from './engine/buildPlan'
 import { calculateStreak } from './utils/patternEngine'
 import { getCompletionsForDate, saveCompletionsForDate } from './utils/completions'
 import { getMeetingsForToday, saveMeetingsForToday } from './utils/timeOptions'
+import { supabase } from './lib/supabase'
 import { upsertUser, fetchUserByEmail, savePlan, fetchPlans, fetchWeeklyWins, upsertPlanPartial, updateUserLastSeen } from './lib/db'
 import { addLoopsContact, updateLoopsContact, sendLoopsWelcomeEmail, sendLoopsPlanCreatedEvent } from './lib/loops'
 import Landing from './screens/Landing'
@@ -249,6 +250,64 @@ export default function App() {
       }
     }
     initFromSupabase()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Google OAuth callback handler ──────────────────────────────────
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event !== 'SIGNED_IN') return
+      if (!localStorage.getItem('oauth_redirect_pending')) return
+      localStorage.removeItem('oauth_redirect_pending')
+
+      const authUser = session?.user
+      if (!authUser?.email) return
+
+      const email = authUser.email
+      const fullName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || ''
+      const firstName = fullName.split(' ')[0] || ''
+
+      try {
+        let dbUser = await fetchUserByEmail(email)
+        const isNew = !dbUser
+
+        if (isNew) {
+          dbUser = await upsertUser({ firstName, email, profile: {} })
+          addLoopsContact(email, firstName)
+          setTimeout(() => sendLoopsWelcomeEmail(email, firstName), 2000)
+          if (!localStorage.getItem('daye_member_since')) {
+            localStorage.setItem('daye_member_since', new Date().toISOString())
+          }
+        }
+
+        localStorage.setItem('daye_user_id', dbUser.id)
+        const resolvedName = dbUser.first_name || firstName
+        setUser({ firstName: resolvedName, email })
+        if (dbUser.profile && Object.keys(dbUser.profile).length > 0) {
+          setUserProfile(dbUser.profile)
+        }
+
+        const pendingPlan = localStorage.getItem('pendingProPlan')
+        if (pendingPlan) {
+          localStorage.removeItem('pendingProPlan')
+          const priceId = pendingPlan === 'annual'
+            ? 'price_1TTRga2LFIh1Zwra08LHcdn9'
+            : 'price_1TTRgF2LFIh1ZwramSLMYfSK'
+          const res = await fetch('/api/create-checkout-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ priceId, userId: dbUser.id }),
+          })
+          const data = await res.json()
+          if (data.url) { window.location.href = data.url; return }
+        }
+
+        const hasProfile = dbUser.profile && Object.keys(dbUser.profile).length > 0
+        setScreen(hasProfile ? SCREENS.CHECKIN : SCREENS.ONBOARDING)
+      } catch {
+        // Fall back gracefully — localStorage flow will handle on next load
+      }
+    })
+    return () => subscription.unsubscribe()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Supabase user sync helper ──────────────────────────────────────
