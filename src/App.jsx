@@ -335,6 +335,29 @@ export default function App() {
     setScreen(SCREENS.ONBOARDING)
   }, [setUser, userProfile])
 
+  const handleEmailNewUser = useCallback(({ firstName, email }) => {
+    setUser({ firstName, email })
+    if (!localStorage.getItem('daye_member_since')) {
+      localStorage.setItem('daye_member_since', new Date().toISOString())
+    }
+    setScreen(SCREENS.ONBOARDING)
+  }, [setUser])
+
+  const handleEmailExistingUser = useCallback(async ({ firstName, email, hasProfile, profile, userId }) => {
+    setUser({ firstName, email })
+    if (hasProfile) setUserProfile(profile)
+    updateUserLastSeen(userId).catch(() => {})
+    try {
+      const plans = await fetchPlans(userId)
+      if (plans.length > 0) setCheckInHistory(plans)
+      const wins = await fetchWeeklyWins(userId)
+      wins.forEach(w => {
+        localStorage.setItem('daye_weekly_win_' + w.week_start, w.win_text)
+      })
+    } catch { /* silently fail */ }
+    setScreen(hasProfile ? SCREENS.CHECKIN : SCREENS.ONBOARDING)
+  }, [setUser, setUserProfile, setCheckInHistory]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleOnboarding = useCallback(async (profile) => {
     setUserProfile(profile)
     if (!localStorage.getItem('daye_member_since')) {
@@ -551,7 +574,7 @@ export default function App() {
 
   // ── Auth / onboarding (no two-column) ────────────────────────────
   if (screen === SCREENS.SIGNUP) {
-    return <SignUp />
+    return <SignUp onNewUser={handleEmailNewUser} onExistingUser={handleEmailExistingUser} />
   }
 
   if (screen === SCREENS.ONBOARDING) {
