@@ -42,7 +42,11 @@ const SCREENS = {
 }
 
 function getInitialScreen() {
-  if (!localStorage.getItem('df_userProfile')) return SCREENS.LANDING
+  if (!localStorage.getItem('df_userProfile')) {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('signup')) return SCREENS.SIGNUP
+    return SCREENS.LANDING
+  }
   return SCREENS.CHECKIN
 }
 
@@ -525,8 +529,8 @@ export default function App() {
   if (location.pathname === '/pricing') {
     return (
       <PricingPage
-        onStartDay={() => { window.location.href = '/' }}
-        onSignIn={() => { window.location.href = '/' }}
+        onStartDay={() => { window.location.href = '/?signup=1' }}
+        onSignIn={() => { window.location.href = '/?signup=1' }}
       />
     )
   }
@@ -547,7 +551,7 @@ export default function App() {
 
   // ── Auth / onboarding (no two-column) ────────────────────────────
   if (screen === SCREENS.SIGNUP) {
-    return <SignUp onComplete={handleSignUp} />
+    return <SignUp />
   }
 
   if (screen === SCREENS.ONBOARDING) {

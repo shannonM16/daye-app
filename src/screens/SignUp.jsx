@@ -1,14 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-function AppleLogo() {
-  return (
-    <svg width="17" height="20" viewBox="0 0 24 24" fill="white">
-      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.32.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.37 2.83zM13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-    </svg>
-  )
-}
-
 function GoogleLogo() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24">
@@ -20,87 +12,11 @@ function GoogleLogo() {
   )
 }
 
-function ProviderBadge({ provider }) {
-  if (provider === 'apple') {
-    return (
-      <div style={{
-        width: '52px',
-        height: '52px',
-        borderRadius: '50%',
-        background: '#1a1a1a',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        margin: '0 auto 20px',
-        flexShrink: 0,
-      }}>
-        <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: '20px', color: 'white', lineHeight: 1 }}>A</span>
-      </div>
-    )
-  }
-  return (
-    <div style={{
-      width: '52px',
-      height: '52px',
-      borderRadius: '50%',
-      background: '#4285F4',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      margin: '0 auto 20px',
-      flexShrink: 0,
-    }}>
-      <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: '22px', color: 'white', lineHeight: 1 }}>G</span>
-    </div>
-  )
-}
-
-function isValidEmail(val) {
-  return val.includes('@') && val.includes('.') && val.indexOf('@') < val.lastIndexOf('.')
-}
-
-export default function SignUp({ onComplete }) {
-  const [firstName, setFirstName] = useState('')
-  const [email, setEmail] = useState('')
-  const [emailError, setEmailError] = useState(false)
-  const [socialLoading, setSocialLoading] = useState(null)
-  const [socialPrompt, setSocialPrompt] = useState(null) // { provider }
-  const [socialName, setSocialName] = useState('')
-  const [socialEmail, setSocialEmail] = useState('')
-  const [socialEmailError, setSocialEmailError] = useState(false)
-
-  // ── Manual form ────────────────────────────────────────────────────
-
-  const canSubmit = firstName.trim().length > 0 && isValidEmail(email)
-
-  const handleSubmit = () => {
-    if (!firstName.trim()) return
-    if (!isValidEmail(email)) {
-      setEmailError(true)
-      return
-    }
-    onComplete({ firstName: firstName.trim(), email: email.trim() })
-  }
-
-  const handleKey = (e) => {
-    if (e.key === 'Enter') handleSubmit()
-  }
-
-  // ── Social login ───────────────────────────────────────────────────
-
-  const handleApple = () => {
-    setSocialLoading('apple')
-    setTimeout(() => {
-      setSocialLoading(null)
-      setSocialName('')
-      setSocialEmail('')
-      setSocialEmailError(false)
-      setSocialPrompt({ provider: 'apple' })
-    }, 800)
-  }
+export default function SignUp() {
+  const [loading, setLoading] = useState(false)
 
   const handleGoogle = async () => {
-    setSocialLoading('google')
+    setLoading(true)
     localStorage.setItem('oauth_redirect_pending', 'true')
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -108,132 +24,12 @@ export default function SignUp({ onComplete }) {
     })
   }
 
-  const handleSocialContinue = () => {
-    if (!socialName.trim()) return
-    if (!isValidEmail(socialEmail)) {
-      setSocialEmailError(true)
-      return
-    }
-    onComplete({ firstName: socialName.trim(), email: socialEmail.trim() })
-  }
-
-  const handleSocialKey = (e) => {
-    if (e.key === 'Enter') handleSocialContinue()
-  }
-
-  // ── Social confirmation screen ─────────────────────────────────────
-
-  if (socialPrompt) {
-    const canSocialSubmit = socialName.trim().length > 0 && isValidEmail(socialEmail)
-
-    return (
-      <div className="screen">
-        <div className="flex-1 overflow-y-auto flex flex-col justify-center" style={{ paddingTop: '24px' }}>
-          <ProviderBadge provider={socialPrompt.provider} />
-
-          <h2 style={{
-            fontFamily: 'var(--font-serif)',
-            fontStyle: 'italic',
-            fontSize: '24px',
-            fontWeight: 400,
-            color: 'var(--color-ink)',
-            textAlign: 'center',
-            marginBottom: '8px',
-            lineHeight: 1.2,
-          }}>
-            Almost there.
-          </h2>
-
-          <p style={{
-            fontFamily: 'var(--font-sans)',
-            fontSize: '13px',
-            color: 'var(--color-muted)',
-            textAlign: 'center',
-            marginBottom: '32px',
-            lineHeight: 1.5,
-          }}>
-            Just confirm a couple of details to personalise your plan.
-          </p>
-
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={socialName}
-              onChange={(e) => {
-                const v = e.target.value
-                setSocialName(v.length === 1 ? v.toUpperCase() : v)
-              }}
-              onKeyDown={handleSocialKey}
-              placeholder="Your first name"
-              className="input-field"
-              autoFocus
-            />
-            <div>
-              <input
-                type="email"
-                value={socialEmail}
-                onChange={(e) => { setSocialEmail(e.target.value); setSocialEmailError(false) }}
-                onKeyDown={handleSocialKey}
-                placeholder="Your email address"
-                className="input-field"
-              />
-              {socialEmailError && (
-                <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', marginTop: '6px' }}>
-                  Please enter a valid email address
-                </p>
-              )}
-            </div>
-          </div>
-
-          <p style={{
-            fontFamily: 'var(--font-sans)',
-            fontSize: '11px',
-            color: 'var(--color-muted)',
-            textAlign: 'center',
-            marginTop: '16px',
-            opacity: 0.7,
-            lineHeight: 1.5,
-          }}>
-            We only use your email to save your plan. No spam, ever.
-          </p>
-        </div>
-
-        <div className="flex-shrink-0 pt-4 space-y-2">
-          <button
-            className="btn-primary"
-            onClick={handleSocialContinue}
-            disabled={!canSocialSubmit}
-          >
-            Start with Daye
-          </button>
-          <button
-            onClick={() => setSocialPrompt(null)}
-            style={{
-              width: '100%',
-              background: 'none',
-              border: 'none',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '13px',
-              color: 'var(--color-muted)',
-              cursor: 'pointer',
-              padding: '8px 0',
-              textAlign: 'center',
-            }}
-          >
-            Use a different method
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // ── Main sign-up screen ────────────────────────────────────────────
-
   return (
     <div className="screen">
-      <div className="flex-1 overflow-y-auto flex flex-col">
+      <div className="flex-1 overflow-y-auto flex flex-col justify-center" style={{ padding: '0 4px' }}>
+
         {/* Wordmark */}
-        <div className="flex flex-col items-center pt-10 pb-8">
+        <div className="flex flex-col items-center mb-10">
           <h1
             style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-ink)' }}
             className="text-[36px] font-light leading-none mb-5"
@@ -243,96 +39,48 @@ export default function SignUp({ onComplete }) {
           <div className="w-10 h-px" style={{ background: 'var(--color-border-dark)' }} />
         </div>
 
-        {/* Tagline */}
-        <p className="text-center text-sm mb-8" style={{ color: 'var(--color-muted)' }}>
-          Your daily focus plan, built around you.
+        {/* Heading */}
+        <h2 style={{
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontSize: '28px',
+          fontWeight: 300,
+          color: 'var(--color-ink)',
+          textAlign: 'center',
+          marginBottom: '12px',
+          lineHeight: 1.2,
+        }}>
+          Let's get started.
+        </h2>
+
+        {/* Subtext */}
+        <p style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: '14px',
+          color: 'var(--color-muted)',
+          textAlign: 'center',
+          lineHeight: 1.6,
+          maxWidth: '300px',
+          margin: '0 auto 40px',
+        }}>
+          Sign in to save your progress and access your plan from any device.
         </p>
 
-        {/* Social login */}
-        <div className="space-y-2.5 mb-6">
-          <button
-            onClick={handleApple}
-            disabled={socialLoading !== null}
-            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-60"
-            style={{ background: 'var(--color-ink)', color: 'var(--color-white)' }}
-          >
-            {socialLoading === 'apple' ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <AppleLogo />
-            )}
-            {socialLoading === 'apple' ? 'Connecting...' : 'Continue with Apple'}
-          </button>
-
-          <button
-            onClick={handleGoogle}
-            disabled={socialLoading !== null}
-            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-60"
-            style={{ background: 'var(--color-white)', color: 'var(--color-ink)', border: '1px solid var(--color-border)' }}
-          >
-            {socialLoading === 'google' ? (
-              <div className="w-4 h-4 border-2 border-stone-200 border-t-stone-600 rounded-full animate-spin" />
-            ) : (
-              <GoogleLogo />
-            )}
-            {socialLoading === 'google' ? 'Connecting...' : 'Continue with Google'}
-          </button>
-
-          <p className="text-center text-xs pt-0.5" style={{ color: 'var(--color-muted)', opacity: 0.7 }}>
-            We only use your email to save your plan. No spam.
-          </p>
-        </div>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex-1 h-px" style={{ background: 'var(--color-border)' }} />
-          <span className="text-[11px] uppercase tracking-widest" style={{ color: 'var(--color-muted)', opacity: 0.5 }}>or</span>
-          <div className="flex-1 h-px" style={{ background: 'var(--color-border)' }} />
-        </div>
-
-        {/* Manual fields */}
-        <div className="space-y-3">
-          <div>
-            <label className="text-[11px] font-medium uppercase tracking-widest block mb-1.5" style={{ color: 'var(--color-muted)' }}>
-              First name
-            </label>
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => {
-                const v = e.target.value
-                setFirstName(v.length === 1 ? v.toUpperCase() : v)
-              }}
-              onKeyDown={handleKey}
-              placeholder="Your first name"
-              className="input-field"
-            />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium uppercase tracking-widest block mb-1.5" style={{ color: 'var(--color-muted)' }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setEmailError(false) }}
-              onKeyDown={handleKey}
-              placeholder="you@example.com"
-              className="input-field"
-            />
-            {emailError && (
-              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', marginTop: '6px' }}>
-                Please enter a valid email address
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-shrink-0 pt-4">
-        <button className="btn-primary" onClick={handleSubmit} disabled={!canSubmit}>
-          Continue
+        {/* Google button */}
+        <button
+          onClick={handleGoogle}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-60"
+          style={{ background: 'var(--color-white)', color: 'var(--color-ink)', border: '1px solid var(--color-border)' }}
+        >
+          {loading ? (
+            <div className="w-4 h-4 border-2 border-stone-200 border-t-stone-600 rounded-full animate-spin" />
+          ) : (
+            <GoogleLogo />
+          )}
+          {loading ? 'Connecting...' : 'Continue with Google'}
         </button>
+
       </div>
     </div>
   )
