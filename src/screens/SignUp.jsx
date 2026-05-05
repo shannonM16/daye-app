@@ -28,6 +28,9 @@ const inputStyle = {
   transition: 'border-color 0.15s',
 }
 
+const PRICE_MONTHLY = 'price_1TTRgF2LFIh1ZwramSLMYfSK'
+const PRICE_ANNUAL = 'price_1TTRga2LFIh1Zwra08LHcdn9'
+
 export default function SignUp({ onNewUser, onExistingUser }) {
   const [mode, setMode] = useState('signin')
   const [firstName, setFirstName] = useState('')
@@ -36,6 +39,26 @@ export default function SignUp({ onNewUser, onExistingUser }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+
+  async function handlePendingProPlan(userId) {
+    const pendingPlan = localStorage.getItem('pendingProPlan')
+    if (!pendingPlan) return false
+    localStorage.removeItem('pendingProPlan')
+    setCheckoutLoading(true)
+    try {
+      const priceId = pendingPlan === 'annual' ? PRICE_ANNUAL : PRICE_MONTHLY
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId, userId }),
+      })
+      const data = await res.json()
+      if (data.url) { window.location.href = data.url; return true }
+    } catch { /* fall through */ }
+    setCheckoutLoading(false)
+    return false
+  }
 
   const handleGoogle = async () => {
     setGoogleLoading(true)
@@ -74,7 +97,8 @@ export default function SignUp({ onNewUser, onExistingUser }) {
           }
           addLoopsContact(trimEmail, trimFirst)
           setTimeout(() => sendLoopsWelcomeEmail(trimEmail, trimFirst), 2000)
-          onNewUser({ firstName: trimFirst, email: trimEmail })
+          const redirected = await handlePendingProPlan(dbUser.id)
+          if (!redirected) onNewUser({ firstName: trimFirst, email: trimEmail })
         }
       } else {
         const { data, error: err } = await supabase.auth.signInWithPassword({
@@ -87,19 +111,23 @@ export default function SignUp({ onNewUser, onExistingUser }) {
           const dbUser = await fetchUserByEmail(trimEmail)
           if (dbUser) {
             localStorage.setItem('daye_user_id', dbUser.id)
-            const hasProfile = !!(dbUser.profile && Object.keys(dbUser.profile).length > 0)
-            onExistingUser({
-              firstName: dbUser.first_name || '',
-              email: trimEmail,
-              hasProfile,
-              profile: dbUser.profile || {},
-              userId: dbUser.id,
-            })
+            const redirected = await handlePendingProPlan(dbUser.id)
+            if (!redirected) {
+              const hasProfile = !!(dbUser.profile && Object.keys(dbUser.profile).length > 0)
+              onExistingUser({
+                firstName: dbUser.first_name || '',
+                email: trimEmail,
+                hasProfile,
+                profile: dbUser.profile || {},
+                userId: dbUser.id,
+              })
+            }
           } else {
             // Auth record exists but no DB record yet — treat as new
             const newDbUser = await upsertUser({ firstName: '', email: trimEmail, profile: {} })
             localStorage.setItem('daye_user_id', newDbUser.id)
-            onNewUser({ firstName: '', email: trimEmail })
+            const redirected = await handlePendingProPlan(newDbUser.id)
+            if (!redirected) onNewUser({ firstName: '', email: trimEmail })
           }
         }
       }
@@ -107,6 +135,16 @@ export default function SignUp({ onNewUser, onExistingUser }) {
       setError('Something went wrong. Please try again.')
       setLoading(false)
     }
+  }
+
+  if (checkoutLoading) {
+    return (
+      <div className="screen" style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '32px', color: 'var(--color-ink)', fontWeight: 300, display: 'block', marginBottom: '32px', textAlign: 'center' }}>daye</span>
+        <div className="animate-pulse" style={{ width: '48px', height: '3px', borderRadius: '2px', background: 'var(--color-lavender)', margin: '0 auto 20px' }} />
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', color: 'var(--color-muted)', textAlign: 'center' }}>Setting up your trial...</p>
+      </div>
+    )
   }
 
   return (

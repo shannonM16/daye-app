@@ -29,6 +29,7 @@ import './index.css'
 const SCREENS = {
   LANDING: 'landing',
   SIGNUP: 'signup',
+  CHECKOUT_LOADING: 'checkout_loading',
   ONBOARDING: 'onboarding',
   FIO_REFLECTION: 'fio_reflection',
   CHECKIN: 'checkin',
@@ -293,6 +294,7 @@ export default function App() {
         const pendingPlan = localStorage.getItem('pendingProPlan')
         if (pendingPlan) {
           localStorage.removeItem('pendingProPlan')
+          setScreen(SCREENS.CHECKOUT_LOADING)
           const priceId = pendingPlan === 'annual'
             ? 'price_1TTRga2LFIh1Zwra08LHcdn9'
             : 'price_1TTRgF2LFIh1ZwramSLMYfSK'
@@ -569,6 +571,16 @@ export default function App() {
         onStartDay={() => setScreen(SCREENS.SIGNUP)}
         onSignIn={() => setScreen(SCREENS.SIGNUP)}
       />
+    )
+  }
+
+  if (screen === SCREENS.CHECKOUT_LOADING) {
+    return (
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--color-linen)' }}>
+        <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '32px', color: 'var(--color-ink)', fontWeight: 300, marginBottom: '32px' }}>daye</span>
+        <div className="animate-pulse" style={{ width: '48px', height: '3px', borderRadius: '2px', background: 'var(--color-lavender)', marginBottom: '20px' }} />
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', color: 'var(--color-muted)' }}>Setting up your trial...</p>
+      </div>
     )
   }
 
