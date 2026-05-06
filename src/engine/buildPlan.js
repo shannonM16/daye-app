@@ -256,43 +256,22 @@ Rules:
 }
 
 /**
- * Calls the Claude API to generate a personalised focus plan.
+ * Calls the serverless /api/generate-plan function to generate a personalised focus plan.
  * Falls back to the rule-based decisionEngine if anything fails.
  */
 export async function buildPlan(userProfile, checkInData, tasks, meetings = []) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-
-  if (!apiKey) {
-    return decisionEngine({ ...(userProfile || {}), ...(checkInData || {}), tasks })
-  }
-
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/api/generate-plan', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        messages: [
-          {
-            role: 'user',
-            content: buildPrompt(userProfile, checkInData, tasks, meetings),
-          },
-        ],
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: buildPrompt(userProfile, checkInData, tasks, meetings) }),
     })
 
     if (!response.ok) throw new Error(`API error ${response.status}`)
 
     const data = await response.json()
-    const raw = data.content?.[0]?.text || ''
+    const raw = data.result || ''
 
-    // Strip markdown code fences if present
     const cleaned = raw
       .replace(/^```(?:json)?\s*/i, '')
       .replace(/\s*```\s*$/, '')

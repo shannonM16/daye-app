@@ -12,27 +12,9 @@ const DIRECTIONS = [
 ]
 
 async function callClaudeForReflection(text) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-  if (!apiKey) throw new Error('No API key')
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 600,
-      messages: [
-        {
-          role: 'user',
-          content: `You are reading a message from someone who is figuring out their next step in life or work. They have shared their situation openly and vulnerably. Your job is to reflect it back to them in a way that makes them feel genuinely understood — not analysed, not diagnosed, just heard.
+  const prompt = `You are reading a message from someone who is figuring out their next step in life or work. They have shared their situation openly and vulnerably. Your job is to reflect it back to them in a way that makes them feel genuinely understood — not analysed, not diagnosed, just heard.
 
 LANGUAGE: Respond in British English throughout. Use British spelling, vocabulary and phrasing. For example use 'organise' not 'organize', 'colour' not 'color', 'practise' not 'practice' when used as a verb, 'realise' not 'realize', 'prioritise' not 'prioritize'.
-
 
 Their situation: "${text}"
 
@@ -43,15 +25,17 @@ Respond with a JSON object — no markdown, no code blocks, just raw JSON:
   "blockers": ["2-3 short strings describing what seems to be in their way. Written with compassion not judgement. eg 'Fear of getting it wrong', 'Financial pressure making it hard to take risks', 'Not knowing where to start'"],
   "suggested_focus": "a warm one-sentence description of what kind of daily focus would help them most. eg 'Small exploratory actions that build momentum without pressure' or 'Gentle progress on one thing at a time, without needing to have it all figured out'",
   "encouragement": "a single short sentence of genuine encouragement — not motivational poster language, something real. eg 'You do not need to have it figured out to start moving.' or 'The fact that you are asking these questions means you are already further along than you think.'"
-}`,
-        },
-      ],
-    }),
+}`
+
+  const response = await fetch('/api/generate-plan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, type: 'reflection' }),
   })
 
   if (!response.ok) throw new Error(`API error ${response.status}`)
   const data = await response.json()
-  const content = data.content?.[0]?.text || ''
+  const content = data.result || ''
   const match = content.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('No JSON in response')
   return JSON.parse(match[0])

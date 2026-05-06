@@ -1,4 +1,5 @@
 import { getRevenueActivityForDate, getMondayOfWeek, getWeeklyWin } from '../utils/completions'
+import { useAuth } from '../context/AuthContext'
 
 const MOOD_LABELS = {
   focused: 'Focused', anxious: 'Anxious', flat: 'Flat', motivated: 'Motivated',
@@ -43,9 +44,18 @@ function formatWeekLabel(mondayStr) {
 }
 
 export default function HistoryScreen({ history = [], userProfile, onBack, onHome }) {
+  const { isPro } = useAuth()
   const sorted = [...history].sort((a, b) => b.date.localeCompare(a.date))
   const isSelfEmployed = userProfile?.userType === 'self-employed'
-  const weeks = groupByWeek(sorted)
+
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const sevenDaysCutoff = sevenDaysAgo.toISOString().split('T')[0]
+
+  const visibleEntries = isPro ? sorted : sorted.filter(e => e.date >= sevenDaysCutoff)
+  const hasHiddenHistory = !isPro && sorted.some(e => e.date < sevenDaysCutoff)
+
+  const weeks = groupByWeek(visibleEntries)
 
   return (
     <div className="screen">
@@ -78,7 +88,11 @@ export default function HistoryScreen({ history = [], userProfile, onBack, onHom
             Your history
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>
-            {sorted.length === 0 ? 'No check-ins yet.' : `${sorted.length} day${sorted.length === 1 ? '' : 's'} logged`}
+            {sorted.length === 0
+              ? 'No check-ins yet.'
+              : isPro
+                ? `${sorted.length} day${sorted.length === 1 ? '' : 's'} logged`
+                : `${visibleEntries.length} day${visibleEntries.length === 1 ? '' : 's'} shown · last 7 days`}
           </p>
         </div>
 
@@ -180,6 +194,55 @@ export default function HistoryScreen({ history = [], userProfile, onBack, onHom
             </div>
           )
         })}
+
+        {hasHiddenHistory && (
+          <div style={{
+            background: 'var(--color-linen)',
+            border: '0.5px solid var(--color-border)',
+            borderRadius: '16px',
+            padding: '28px 24px',
+            textAlign: 'center',
+            marginTop: '8px',
+          }}>
+            <p style={{
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              fontSize: '18px',
+              fontWeight: 300,
+              color: 'var(--color-ink)',
+              margin: '0 0 8px 0',
+              lineHeight: 1.2,
+            }}>
+              This is a Pro feature.
+            </p>
+            <p style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '13px',
+              color: 'var(--color-muted)',
+              lineHeight: 1.6,
+              margin: '0 0 20px 0',
+            }}>
+              Upgrade to see your full 30-day history and track your patterns over time.
+            </p>
+            <button
+              onClick={() => window.location.href = '/pricing'}
+              style={{
+                background: 'var(--color-lavender)',
+                color: 'var(--color-ink)',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '11px 24px',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                letterSpacing: '0.01em',
+              }}
+            >
+              Upgrade to Pro
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

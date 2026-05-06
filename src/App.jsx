@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useStorage } from './hooks/useStorage'
+import { useAuth } from './context/AuthContext'
 import { buildPlan } from './engine/buildPlan'
 import { calculateStreak } from './utils/patternEngine'
 import { getCompletionsForDate, saveCompletionsForDate } from './utils/completions'
@@ -13,7 +14,7 @@ import BlogIndex from './blog/BlogIndex'
 import ArticlePage from './blog/ArticlePage'
 import PricingPage from './screens/PricingPage'
 import ProSuccess from './screens/ProSuccess'
-import SignUp from './screens/SignUp'
+import AuthModal from './components/AuthModal'
 import Onboarding from './screens/Onboarding'
 import OnboardingFiguringItOut from './screens/OnboardingFiguringItOut'
 import CheckIn from './screens/CheckIn'
@@ -44,8 +45,6 @@ const SCREENS = {
 
 function getInitialScreen() {
   if (!localStorage.getItem('df_userProfile')) {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('signup')) return SCREENS.SIGNUP
     return SCREENS.LANDING
   }
   return SCREENS.CHECKIN
@@ -178,6 +177,7 @@ function RightPanel({ screen, user, userProfile, checkInData, liveSelectedTasks 
 
 export default function App() {
   const location = useLocation()
+  const { showAuthModal, updateNavUser, updateIsPro } = useAuth()
   const [user, setUser] = useStorage('df_user', null)
   const [userProfile, setUserProfile] = useStorage('df_userProfile', null)
   const [userTasks, setUserTasks] = useStorage('df_userTasks', [])
@@ -206,8 +206,8 @@ export default function App() {
 
         if (supaUser) {
           localStorage.setItem('daye_user_id', supaUser.id)
-          // SYNC 8: session tracking
           updateUserLastSeen(supaUser.id).catch(() => {})
+          updateIsPro(supaUser.is_pro === true)
           setUser({ firstName: supaUser.first_name, email: supaUser.email })
           if (supaUser.profile && Object.keys(supaUser.profile).length > 0) {
             setUserProfile(supaUser.profile)
@@ -287,6 +287,8 @@ export default function App() {
         localStorage.setItem('daye_user_id', dbUser.id)
         const resolvedName = dbUser.first_name || firstName
         setUser({ firstName: resolvedName, email })
+        updateNavUser({ firstName: resolvedName, email })
+        updateIsPro(dbUser.is_pro === true)
         if (dbUser.profile && Object.keys(dbUser.profile).length > 0) {
           setUserProfile(dbUser.profile)
         }
@@ -345,9 +347,10 @@ export default function App() {
     setScreen(SCREENS.ONBOARDING)
   }, [setUser])
 
-  const handleEmailExistingUser = useCallback(async ({ firstName, email, hasProfile, profile, userId }) => {
+  const handleEmailExistingUser = useCallback(async ({ firstName, email, hasProfile, profile, userId, isPro: userIsPro }) => {
     setUser({ firstName, email })
     if (hasProfile) setUserProfile(profile)
+    updateIsPro(userIsPro === true)
     updateUserLastSeen(userId).catch(() => {})
     try {
       const plans = await fetchPlans(userId)
@@ -553,10 +556,13 @@ export default function App() {
   }
   if (location.pathname === '/pricing') {
     return (
-      <PricingPage
-        onStartDay={() => { window.location.href = '/?signup=1' }}
-        onSignIn={() => { window.location.href = '/?signup=1' }}
-      />
+      <>
+        <PricingPage
+          onStartDay={() => showAuthModal('signup')}
+          onSignIn={() => showAuthModal('signin')}
+        />
+        <AuthModal onNewUser={handleEmailNewUser} onExistingUser={handleEmailExistingUser} />
+      </>
     )
   }
 
@@ -567,10 +573,13 @@ export default function App() {
   // ── Landing (pre-signup) ─────────────────────────────────────────
   if (screen === SCREENS.LANDING) {
     return (
-      <Landing
-        onStartDay={() => setScreen(SCREENS.SIGNUP)}
-        onSignIn={() => setScreen(SCREENS.SIGNUP)}
-      />
+      <>
+        <Landing
+          onStartDay={() => showAuthModal('signup')}
+          onSignIn={() => showAuthModal('signin')}
+        />
+        <AuthModal onNewUser={handleEmailNewUser} onExistingUser={handleEmailExistingUser} />
+      </>
     )
   }
 
@@ -584,16 +593,12 @@ export default function App() {
     )
   }
 
-  // ── Auth / onboarding (no two-column) ────────────────────────────
-  if (screen === SCREENS.SIGNUP) {
-    return <SignUp onNewUser={handleEmailNewUser} onExistingUser={handleEmailExistingUser} />
-  }
-
+  // ── Onboarding (post-auth) ────────────────────────────────────────
   if (screen === SCREENS.ONBOARDING) {
     return (
       <Onboarding
         onComplete={handleOnboarding}
-        onBack={() => setScreen(SCREENS.SIGNUP)}
+        onBack={() => setScreen(SCREENS.LANDING)}
       />
     )
   }

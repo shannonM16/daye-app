@@ -318,43 +318,28 @@ function Spinner() {
 }
 
 async function parseTasksWithAI(text, userProfile) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-  if (!apiKey) throw new Error('No API key configured')
-
   const fnLabel = Array.isArray(userProfile.jobFunctions)
     ? userProfile.jobFunctions[0]
     : (userProfile.jobFunction || userProfile.userType)
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
-      messages: [
-        {
-          role: 'user',
-          content: `Extract a concise task list from this work day description. Respond in British English throughout — use British spelling, vocabulary and phrasing (e.g. 'organise' not 'organize', 'colour' not 'color').
+  const prompt = `Extract a concise task list from this work day description. Respond in British English throughout — use British spelling, vocabulary and phrasing (e.g. 'organise' not 'organize', 'colour' not 'color').
 
 User context: ${fnLabel}, goal: ${userProfile.goal || 'general productivity'}
 
 Their day: "${text}"
 
 Return ONLY a JSON array of 3–6 short task strings (max 8 words each). No explanation, no markdown, just the raw JSON array.
-Example: ["Finish the board deck", "1:1 with manager", "Clear email backlog"]`,
-        },
-      ],
-    }),
+Example: ["Finish the board deck", "1:1 with manager", "Clear email backlog"]`
+
+  const response = await fetch('/api/generate-plan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, type: 'tasks' }),
   })
 
   if (!response.ok) throw new Error(`API error ${response.status}`)
   const data = await response.json()
-  const content = data.content?.[0]?.text || ''
+  const content = data.result || ''
   const match = content.match(/\[[\s\S]*\]/)
   if (!match) throw new Error('No JSON array in response')
   return JSON.parse(match[0])

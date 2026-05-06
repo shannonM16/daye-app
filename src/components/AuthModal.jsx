@@ -54,17 +54,20 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
     }
   }, [isModalOpen, initialMode])
 
-  async function handlePendingProPlan(userId) {
+  async function handlePendingProPlan() {
     const pendingPlan = localStorage.getItem('pendingProPlan')
     if (!pendingPlan) return false
-    localStorage.removeItem('pendingProPlan')
+    // Set loading before any await so it batches with hideAuthModal()
     setCheckoutLoading(true)
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user?.id) { setCheckoutLoading(false); return false }
+      localStorage.removeItem('pendingProPlan')
       const priceId = pendingPlan === 'annual' ? PRICE_ANNUAL : PRICE_MONTHLY
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, userId }),
+        body: JSON.stringify({ priceId, userId: user.id }),
       })
       const data = await res.json()
       if (data.url) { window.location.href = data.url; return true }
@@ -115,7 +118,7 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
           setTimeout(() => sendLoopsWelcomeEmail(trimEmail, trimFirst), 2000)
           updateNavUser({ firstName: trimFirst, email: trimEmail })
           hideAuthModal()
-          const redirected = await handlePendingProPlan(dbUser.id)
+          const redirected = await handlePendingProPlan()
           if (!redirected) onNewUser({ firstName: trimFirst, email: trimEmail })
         }
       } else {
@@ -131,7 +134,7 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
             localStorage.setItem('daye_user_id', dbUser.id)
             updateNavUser({ firstName: dbUser.first_name || '', email: trimEmail })
             hideAuthModal()
-            const redirected = await handlePendingProPlan(dbUser.id)
+            const redirected = await handlePendingProPlan()
             if (!redirected) {
               const hasProfile = !!(dbUser.profile && Object.keys(dbUser.profile).length > 0)
               onExistingUser({
@@ -140,6 +143,7 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
                 hasProfile,
                 profile: dbUser.profile || {},
                 userId: dbUser.id,
+                isPro: dbUser.is_pro === true,
               })
             }
           } else {
@@ -147,7 +151,7 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
             localStorage.setItem('daye_user_id', newDbUser.id)
             updateNavUser({ firstName: '', email: trimEmail })
             hideAuthModal()
-            const redirected = await handlePendingProPlan(newDbUser.id)
+            const redirected = await handlePendingProPlan()
             if (!redirected) onNewUser({ firstName: '', email: trimEmail })
           }
         }

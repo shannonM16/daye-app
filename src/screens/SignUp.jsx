@@ -120,6 +120,7 @@ export default function SignUp({ onNewUser, onExistingUser }) {
                 hasProfile,
                 profile: dbUser.profile || {},
                 userId: dbUser.id,
+                isPro: dbUser.is_pro === true,
               })
             }
           } else {

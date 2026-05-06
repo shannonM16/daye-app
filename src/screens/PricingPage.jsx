@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
 const LAVENDER = '#c9b8d8'
 const BLUSH = '#e8d5c4'
@@ -174,42 +175,35 @@ function MockYearCard() {
 }
 
 export default function PricingPage({ onStartDay, onSignIn }) {
+  const { showAuthModal } = useAuth()
   const [billing, setBilling] = useState('monthly')
   const [loading, setLoading] = useState(false)
-
-  async function proceedToCheckout(userId) {
-    setLoading(true)
-    try {
-      const priceId = billing === 'annual' ? PRICE_ANNUAL : PRICE_MONTHLY
-      const res = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, userId }),
-      })
-      const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        setLoading(false)
-      }
-    } catch {
-      setLoading(false)
-    }
-  }
 
   async function handleCheckout() {
     setLoading(true)
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      const userId = authUser?.id ?? localStorage.getItem('daye_user_id')
+      const { data: { session } } = await supabase.auth.getSession()
 
-      if (!userId) {
+      if (session?.user?.id) {
+        // Logged in — go straight to Stripe
+        const priceId = billing === 'annual' ? PRICE_ANNUAL : PRICE_MONTHLY
+        const res = await fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ priceId, userId: session.user.id }),
+        })
+        const data = await res.json()
+        if (data.url) {
+          window.location.href = data.url
+        } else {
+          setLoading(false)
+        }
+      } else {
+        // Not logged in — store plan and show auth modal
         localStorage.setItem('pendingProPlan', billing)
-        window.location.href = '/?signup=1'
-        return
+        setLoading(false)
+        showAuthModal('signup')
       }
-
-      await proceedToCheckout(userId)
     } catch {
       setLoading(false)
     }
@@ -228,14 +222,14 @@ export default function PricingPage({ onStartDay, onSignIn }) {
             <a href="/blog" style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: MUTED, textDecoration: 'none' }}>Blog</a>
             <a href="/pricing" style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: LAVENDER, textDecoration: 'none', fontWeight: 600, borderBottom: `1.5px solid rgba(201,184,216,0.5)`, paddingBottom: '1px' }}>Pro</a>
             <button
-              onClick={onSignIn}
+              onClick={() => showAuthModal('signin')}
               style={{ background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: '13px', color: INK, cursor: 'pointer', padding: 0 }}
             >
               Sign in
             </button>
             <div style={{ width: '1px', height: '20px', background: BORDER, flexShrink: 0 }} />
             <button
-              onClick={onStartDay}
+              onClick={() => showAuthModal('signup')}
               style={{ background: INK, color: 'white', border: 'none', borderRadius: '8px', padding: '8px 20px', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
             >
               Start free
@@ -306,7 +300,7 @@ export default function PricingPage({ onStartDay, onSignIn }) {
               </ul>
 
               <button
-                onClick={onStartDay}
+                onClick={() => showAuthModal('signup')}
                 style={{
                   width: '100%',
                   background: INK,

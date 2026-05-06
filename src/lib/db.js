@@ -45,7 +45,7 @@ export async function upsertUser({ firstName, email, profile = {} }) {
 export async function fetchUserByEmail(email) {
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, first_name, profile')
+    .select('id, email, first_name, profile, is_pro')
     .eq('email', email)
     .maybeSingle()
   if (error) throw error
