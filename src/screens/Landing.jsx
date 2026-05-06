@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import NavAuthButton from '../components/NavAuthButton'
 
 // ── Demo animation constants ──────────────────────────────────────
 const DEMO_TEXT = 'Also need to finish the Q2 report by 3pm'
@@ -467,12 +468,7 @@ export default function Landing({ onStartDay, onSignIn }) {
             >
               Pro
             </a>
-            <button
-              onClick={onSignIn}
-              style={{ background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: '13px', color: '#1a1a1a', cursor: 'pointer', padding: 0 }}
-            >
-              Sign in
-            </button>
+            <NavAuthButton onSignIn={onSignIn} />
             <div style={{ width: '1px', height: '20px', background: 'var(--color-border)', flexShrink: 0 }} />
             <button
               onClick={onStartDay}

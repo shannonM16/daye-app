@@ -200,46 +200,46 @@ export default function HistoryScreen({ history = [], userProfile, onBack, onHom
             background: 'var(--color-linen)',
             border: '0.5px solid var(--color-border)',
             borderRadius: '16px',
-            padding: '28px 24px',
+            padding: '32px 28px',
             textAlign: 'center',
             marginTop: '8px',
           }}>
             <p style={{
               fontFamily: 'var(--font-serif)',
               fontStyle: 'italic',
-              fontSize: '18px',
+              fontSize: '22px',
               fontWeight: 300,
               color: 'var(--color-ink)',
-              margin: '0 0 8px 0',
+              margin: '0 0 12px 0',
               lineHeight: 1.2,
             }}>
-              This is a Pro feature.
+              Unlock Daye Pro
             </p>
             <p style={{
               fontFamily: 'var(--font-sans)',
-              fontSize: '13px',
+              fontSize: '14px',
               color: 'var(--color-muted)',
-              lineHeight: 1.6,
-              margin: '0 0 20px 0',
+              lineHeight: 1.65,
+              margin: '0 0 24px 0',
             }}>
-              Upgrade to see your full 30-day history and track your patterns over time.
+              See your full history and track patterns over time.
             </p>
             <button
               onClick={() => window.location.href = '/pricing'}
               style={{
-                background: 'var(--color-lavender)',
-                color: 'var(--color-ink)',
+                background: 'var(--color-ink)',
+                color: 'white',
                 border: 'none',
                 borderRadius: '10px',
-                padding: '11px 24px',
+                padding: '12px 28px',
                 fontFamily: 'var(--font-sans)',
-                fontSize: '13px',
+                fontSize: '14px',
                 fontWeight: 500,
                 cursor: 'pointer',
                 letterSpacing: '0.01em',
               }}
             >
-              Upgrade to Pro
+              See Pro plans
             </button>
           </div>
         )}

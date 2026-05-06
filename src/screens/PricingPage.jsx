@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import NavAuthButton from '../components/NavAuthButton'
 
 const LAVENDER = '#c9b8d8'
 const BLUSH = '#e8d5c4'
@@ -221,12 +222,7 @@ export default function PricingPage({ onStartDay, onSignIn }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <a href="/blog" style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: MUTED, textDecoration: 'none' }}>Blog</a>
             <a href="/pricing" style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: LAVENDER, textDecoration: 'none', fontWeight: 600, borderBottom: `1.5px solid rgba(201,184,216,0.5)`, paddingBottom: '1px' }}>Pro</a>
-            <button
-              onClick={() => showAuthModal('signin')}
-              style={{ background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: '13px', color: INK, cursor: 'pointer', padding: 0 }}
-            >
-              Sign in
-            </button>
+            <NavAuthButton />
             <div style={{ width: '1px', height: '20px', background: BORDER, flexShrink: 0 }} />
             <button
               onClick={() => showAuthModal('signup')}

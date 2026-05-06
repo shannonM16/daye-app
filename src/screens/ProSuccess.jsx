@@ -1,3 +1,7 @@
+import { useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
+
 const INK = '#1a1a1a'
 const LINEN = '#f9f7f5'
 const MUTED = '#8a8480'
@@ -5,6 +9,25 @@ const LAVENDER = '#c9b8d8'
 const BORDER = '#e2ddd8'
 
 export default function ProSuccess({ onStartDay }) {
+  const { updateIsPro } = useAuth()
+
+  useEffect(() => {
+    async function markPro() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user?.email) {
+          await supabase.from('users').update({ is_pro: true }).eq('email', user.email)
+        }
+        const localUserId = localStorage.getItem('daye_user_id')
+        if (localUserId && !user?.email) {
+          await supabase.from('users').update({ is_pro: true }).eq('id', localUserId)
+        }
+        updateIsPro(true)
+      } catch { /* webhook is the primary mechanism — silently ignore */ }
+    }
+    markPro()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div style={{
       minHeight: '100dvh',

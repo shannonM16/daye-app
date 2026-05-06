@@ -55,7 +55,7 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
   }, [isModalOpen, initialMode])
 
   async function handlePendingProPlan() {
-    const pendingPlan = localStorage.getItem('pendingProPlan')
+    const pendingPlan = localStorage.getItem('pendingProPlan') || sessionStorage.getItem('pendingProPlan')
     if (!pendingPlan) return false
     // Set loading before any await so it batches with hideAuthModal()
     setCheckoutLoading(true)
@@ -63,6 +63,7 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user?.id) { setCheckoutLoading(false); return false }
       localStorage.removeItem('pendingProPlan')
+      sessionStorage.removeItem('pendingProPlan')
       const priceId = pendingPlan === 'annual' ? PRICE_ANNUAL : PRICE_MONTHLY
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
@@ -80,6 +81,9 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
     setGoogleLoading(true)
     localStorage.setItem('oauth_redirect_pending', 'true')
     const pendingPlan = localStorage.getItem('pendingProPlan')
+    if (pendingPlan) {
+      sessionStorage.setItem('pendingProPlan', pendingPlan)
+    }
     const redirectTo = pendingPlan
       ? `https://withdaye.com?pendingProPlan=${pendingPlan}`
       : 'https://withdaye.com'
