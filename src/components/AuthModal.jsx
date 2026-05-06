@@ -79,9 +79,13 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
   const handleGoogle = async () => {
     setGoogleLoading(true)
     localStorage.setItem('oauth_redirect_pending', 'true')
+    const pendingPlan = localStorage.getItem('pendingProPlan')
+    const redirectTo = pendingPlan
+      ? `https://withdaye.com?pendingProPlan=${pendingPlan}`
+      : 'https://withdaye.com'
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: 'https://withdaye.com' },
+      options: { redirectTo },
     })
   }
 

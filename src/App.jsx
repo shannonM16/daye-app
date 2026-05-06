@@ -261,7 +261,10 @@ export default function App() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event !== 'SIGNED_IN') return
-      if (!localStorage.getItem('oauth_redirect_pending')) return
+      // In incognito, localStorage may be cleared across the OAuth redirect.
+      // Fall back to the ?pendingProPlan= URL param embedded in the redirectTo URL.
+      const urlPendingPlan = new URLSearchParams(window.location.search).get('pendingProPlan')
+      if (!localStorage.getItem('oauth_redirect_pending') && !urlPendingPlan) return
       localStorage.removeItem('oauth_redirect_pending')
 
       const authUser = session?.user
@@ -293,9 +296,12 @@ export default function App() {
           setUserProfile(dbUser.profile)
         }
 
-        const pendingPlan = localStorage.getItem('pendingProPlan')
+        const pendingPlan = localStorage.getItem('pendingProPlan') || urlPendingPlan
         if (pendingPlan) {
           localStorage.removeItem('pendingProPlan')
+          const cleanUrl = new URL(window.location.href)
+          cleanUrl.searchParams.delete('pendingProPlan')
+          window.history.replaceState({}, '', cleanUrl.toString())
           setScreen(SCREENS.CHECKOUT_LOADING)
           const priceId = pendingPlan === 'annual'
             ? 'price_1TTRga2LFIh1Zwra08LHcdn9'
