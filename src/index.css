@@ -605,6 +605,10 @@
   }
 }
 
+/* Mobile hamburger nav */
+.mobile-nav-wrapper { display: flex; align-items: center; justify-content: space-between; padding-top: 28px; }
+@media (min-width: 768px) { .mobile-nav-wrapper { display: none; } }
+
 /* Blog */
 .blog-grid {
   display: grid;

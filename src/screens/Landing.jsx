@@ -1,6 +1,73 @@
 import { useState, useEffect, useRef } from 'react'
 import NavAuthButton from '../components/NavAuthButton'
 
+function MobileNav({ onStartDay, onSignIn }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <div className="mobile-nav-wrapper">
+        <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '18px', color: 'var(--color-ink)', fontWeight: 300 }}>daye</span>
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Open menu"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+        >
+          <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
+            <path d="M0 1h22M0 8h22M0 15h22" stroke="var(--color-ink)" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      {open && (
+        <div style={{ position: 'fixed', inset: 0, background: 'white', zIndex: 200, display: 'flex', flexDirection: 'column', padding: '28px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px' }}>
+            <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '18px', color: 'var(--color-ink)', fontWeight: 300 }}>daye</span>
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Close menu"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M3 3l12 12M15 3L3 15" stroke="var(--color-ink)" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+          <nav style={{ display: 'flex', flexDirection: 'column' }}>
+            <a
+              href="/blog"
+              onClick={() => setOpen(false)}
+              style={{ fontFamily: 'var(--font-sans)', fontSize: '18px', color: 'var(--color-ink)', textDecoration: 'none', padding: '16px 0', borderBottom: '0.5px solid var(--color-border)' }}
+            >
+              Blog
+            </a>
+            <a
+              href="/pricing"
+              onClick={() => setOpen(false)}
+              style={{ fontFamily: 'var(--font-sans)', fontSize: '18px', color: '#c9b8d8', textDecoration: 'none', padding: '16px 0', borderBottom: '0.5px solid var(--color-border)', fontWeight: 600 }}
+            >
+              Pro
+            </a>
+            <button
+              onClick={() => { setOpen(false); onSignIn() }}
+              style={{ fontFamily: 'var(--font-sans)', fontSize: '18px', color: 'var(--color-ink)', background: 'none', border: 'none', borderBottom: '0.5px solid var(--color-border)', cursor: 'pointer', textAlign: 'left', padding: '16px 0' }}
+            >
+              Sign in
+            </button>
+          </nav>
+          <div style={{ marginTop: 'auto', paddingTop: '32px' }}>
+            <button
+              onClick={() => { setOpen(false); onStartDay() }}
+              style={{ width: '100%', background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '14px 28px', fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 500, cursor: 'pointer' }}
+            >
+              Start free
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // ── Demo animation constants ──────────────────────────────────────
 const DEMO_TEXT = 'Also need to finish the Q2 report by 3pm'
 const CHAR_MS = 38
@@ -454,7 +521,7 @@ export default function Landing({ onStartDay, onSignIn }) {
       {/* ── Fixed nav (desktop only) ─────────────────────────── */}
       <nav className="landing-nav">
         <div className="landing-container" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '20px', color: 'var(--color-ink)', fontWeight: 300, marginRight: 'auto', paddingRight: '48px' }}>daye</span>
+          <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '20px', color: 'var(--color-ink)', fontWeight: 300, marginRight: 'auto', paddingRight: '80px' }}>daye</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <a
               href="/blog"
@@ -484,10 +551,8 @@ export default function Landing({ onStartDay, onSignIn }) {
       <section style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
         <div className="landing-container" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
 
-          {/* Mobile wordmark */}
-          <div className="landing-mobile-only" style={{ paddingTop: '28px' }}>
-            <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '18px', color: 'var(--color-ink)', fontWeight: 300 }}>daye</span>
-          </div>
+          {/* Mobile nav */}
+          <MobileNav onStartDay={onStartDay} onSignIn={onSignIn} />
 
           {/* Desktop nav spacer */}
           <div className="landing-desktop-only" style={{ height: '80px' }} />

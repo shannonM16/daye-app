@@ -1,5 +1,3 @@
-const BASE = 'https://app.loops.so/api/v1'
-
 function headers() {
   return {
     'Content-Type': 'application/json',
@@ -26,7 +24,7 @@ export async function addLoopsContact(email, firstName) {
 
 export async function updateLoopsContact(email, profile) {
   try {
-    await fetch(BASE + '/contacts/update', {
+    await fetch('/api/loops-update-contact', {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({
@@ -60,7 +58,7 @@ export async function sendLoopsWelcomeEmail(email, firstName) {
 
 export async function sendLoopsPlanCreatedEvent(email) {
   try {
-    await fetch(BASE + '/events/send', {
+    await fetch('/api/loops-send-event', {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({ email, eventName: 'plan_created' }),

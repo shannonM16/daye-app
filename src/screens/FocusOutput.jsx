@@ -110,7 +110,7 @@ function ShareCard({ firstName, dayLabel, dayName, displayPriorities, goalAlignm
       )}
 
       {/* Plan title + day badge */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
         <p style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontStyle: 'italic',
@@ -626,8 +626,8 @@ export default function FocusOutput({
           </h1>
           {dayLabel && (
             <span
-              className="text-[11px] font-medium px-2.5 py-1 rounded-full inline-block mt-2"
-              style={{ background: 'var(--color-linen-dark)', color: 'var(--color-muted)', border: '0.5px solid var(--color-border)' }}
+              className="text-[11px] font-medium px-2.5 py-1 rounded-full mt-2"
+              style={{ display: 'block', width: 'fit-content', background: 'var(--color-linen-dark)', color: 'var(--color-muted)', border: '0.5px solid var(--color-border)' }}
             >
               {dayLabel}
             </span>
