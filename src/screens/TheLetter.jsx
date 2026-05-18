@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import UpgradePrompt from '../components/UpgradePrompt'
+import HoverNav from '../components/HoverNav'
 
 const INK = '#1a1a1a'
 const LINEN = '#f9f7f5'
@@ -90,6 +91,7 @@ export default function TheLetter({ user }) {
 
   return (
     <div style={{ minHeight: '100dvh', background: LINEN }}>
+      <HoverNav />
       {/* Nav */}
       <nav style={{ height: '56px', borderBottom: `0.5px solid ${BORDER}`, display: 'flex', alignItems: 'center', padding: '0 24px', background: LINEN }}>
         <a href="/" style={{ textDecoration: 'none', marginRight: 'auto' }}>

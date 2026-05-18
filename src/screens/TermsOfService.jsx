@@ -1,3 +1,5 @@
+import Footer from '../components/Footer'
+
 const INK = '#1a1a1a'
 const LINEN = '#f9f7f5'
 const MUTED = '#8a8480'
@@ -133,12 +135,8 @@ export default function TermsOfService() {
           <P><a href="mailto:hello@withdaye.com" style={{ color: INK, fontWeight: 500 }}>hello@withdaye.com</a></P>
         </Section>
 
-        {/* Footer */}
-        <div style={{ borderTop: `0.5px solid ${BORDER}`, paddingTop: '32px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-          <a href="/privacy-policy" style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: MUTED, textDecoration: 'none' }}>Privacy Policy</a>
-          <a href="/" style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: MUTED, textDecoration: 'none' }}>Back to Daye</a>
-        </div>
       </div>
+      <Footer />
     </div>
   )
 }

@@ -209,6 +209,18 @@
   .desktop-app-right { display: flex; }
 }
 
+/* ─── Hover nav (authenticated app screens, desktop only) ──────── */
+
+.hover-nav {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hover-nav {
+    display: flex;
+  }
+}
+
 /* ─── Loading screen ────────────────────────────────────────────── */
 
 .loading-screen-wrap {

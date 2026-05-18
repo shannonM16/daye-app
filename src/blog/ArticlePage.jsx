@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { articles } from './articles'
 import ArticleCard from './ArticleCard'
+import Footer from '../components/Footer'
 
 function BodyBlock({ block }) {
   if (block.type === 'subheading') {
@@ -232,6 +233,7 @@ export default function ArticlePage({ slug }) {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

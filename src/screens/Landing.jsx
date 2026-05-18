@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import NavAuthButton from '../components/NavAuthButton'
+import Footer from '../components/Footer'
 
 function MobileNav({ onStartDay, onSignIn }) {
   const [open, setOpen] = useState(false)
@@ -768,6 +769,8 @@ export default function Landing({ onStartDay, onSignIn }) {
           </p>
         </div>
       </section>
+
+      <Footer />
 
     </div>
   )

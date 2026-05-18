@@ -11,6 +11,7 @@ import { supabase } from './lib/supabase'
 import { upsertUser, fetchUserByEmail, savePlan, fetchPlans, fetchWeeklyWins, upsertPlanPartial, updateUserLastSeen } from './lib/db'
 import { addLoopsContact, updateLoopsContact, sendLoopsWelcomeEmail, sendLoopsPlanCreatedEvent, trackPlanGenerated } from './lib/loops'
 import { identifyUser, trackEvent } from './lib/posthog'
+import HoverNav from './components/HoverNav'
 import Landing from './screens/Landing'
 import PrivacyPolicy from './screens/PrivacyPolicy'
 import TermsOfService from './screens/TermsOfService'
@@ -648,79 +649,99 @@ export default function App() {
   // ── Onboarding (post-auth) ────────────────────────────────────────
   if (screen === SCREENS.ONBOARDING) {
     return (
-      <Onboarding
-        onComplete={handleOnboarding}
-        onBack={() => setScreen(SCREENS.LANDING)}
-      />
+      <>
+        <HoverNav />
+        <Onboarding
+          onComplete={handleOnboarding}
+          onBack={() => setScreen(SCREENS.LANDING)}
+        />
+      </>
     )
   }
 
   if (screen === SCREENS.FIO_REFLECTION) {
     return (
-      <OnboardingFiguringItOut
-        onComplete={(data) => {
-          const updated = { ...(userProfile || {}), ...data }
-          setUserProfile(updated)
-          syncUserToSupabase(user, updated)
-          setScreen(SCREENS.CHECKIN)
-        }}
-        onBack={() => setScreen(SCREENS.CHECKIN)}
-      />
+      <>
+        <HoverNav />
+        <OnboardingFiguringItOut
+          onComplete={(data) => {
+            const updated = { ...(userProfile || {}), ...data }
+            setUserProfile(updated)
+            syncUserToSupabase(user, updated)
+            setScreen(SCREENS.CHECKIN)
+          }}
+          onBack={() => setScreen(SCREENS.CHECKIN)}
+        />
+      </>
     )
   }
 
   // ── Focus output & action: full width ────────────────────────────
   if (screen === SCREENS.LOADING) {
-    return <LoadingScreen />
+    return (
+      <>
+        <HoverNav />
+        <LoadingScreen />
+      </>
+    )
   }
 
   if (screen === SCREENS.OUTPUT && plan) {
     return (
-      <FocusOutput
-        plan={plan}
-        userTasks={userTasks}
-        user={user}
-        userProfile={userProfile}
-        checkInData={checkInData}
-        meetings={meetings}
-        history={checkInHistory || []}
-        streakCount={streakCount}
-        extraTasks={extraTasks}
-        onExtraTasksChange={setExtraTasks}
-        onStartAction={() => setScreen(SCREENS.ACTION)}
-        onReset={handleReset}
-        onBack={() => setScreen(SCREENS.TASK_INPUT)}
-        onHome={() => setScreen(SCREENS.CHECKIN)}
-      />
+      <>
+        <HoverNav />
+        <FocusOutput
+          plan={plan}
+          userTasks={userTasks}
+          user={user}
+          userProfile={userProfile}
+          checkInData={checkInData}
+          meetings={meetings}
+          history={checkInHistory || []}
+          streakCount={streakCount}
+          extraTasks={extraTasks}
+          onExtraTasksChange={setExtraTasks}
+          onStartAction={() => setScreen(SCREENS.ACTION)}
+          onReset={handleReset}
+          onBack={() => setScreen(SCREENS.TASK_INPUT)}
+          onHome={() => setScreen(SCREENS.CHECKIN)}
+        />
+      </>
     )
   }
 
   if (screen === SCREENS.ACTION && plan) {
     return (
-      <ActionMode
-        priorities={plan.priorities}
-        prioritySubtitles={plan.prioritySubtitles}
-        userTasks={userTasks}
-        extraTasks={extraTasks}
-        checkInData={checkInData}
-        userProfile={userProfile}
-        meetings={meetings}
-        dayName={plan.dayName}
-        onBack={() => setScreen(SCREENS.OUTPUT)}
-        onHome={() => setScreen(SCREENS.CHECKIN)}
-        onAddMeeting={handleAddMeetingFromTimer}
-        onEndOfDayReflection={() => setScreen(SCREENS.EOD_REFLECTION)}
-      />
+      <>
+        <HoverNav />
+        <ActionMode
+          priorities={plan.priorities}
+          prioritySubtitles={plan.prioritySubtitles}
+          userTasks={userTasks}
+          extraTasks={extraTasks}
+          checkInData={checkInData}
+          userProfile={userProfile}
+          meetings={meetings}
+          dayName={plan.dayName}
+          onBack={() => setScreen(SCREENS.OUTPUT)}
+          onHome={() => setScreen(SCREENS.CHECKIN)}
+          onAddMeeting={handleAddMeetingFromTimer}
+          onEndOfDayReflection={() => setScreen(SCREENS.EOD_REFLECTION)}
+        />
+      </>
     )
   }
 
   if (screen === SCREENS.EOD_REFLECTION) {
     return (
-      <EndOfDayReflection
-        user={user}
-        onComplete={() => setScreen(SCREENS.CHECKIN)}
-        onHome={() => setScreen(SCREENS.CHECKIN)}
-      />
+      <>
+        <HoverNav />
+        <EndOfDayReflection
+          user={user}
+          onComplete={() => setScreen(SCREENS.CHECKIN)}
+          onHome={() => setScreen(SCREENS.CHECKIN)}
+        />
+      </>
     )
   }
 
@@ -827,6 +848,7 @@ export default function App() {
 
   return (
     <>
+      <HoverNav />
       {isOffline && (
         <div style={{
           position: 'fixed',

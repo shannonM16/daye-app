@@ -1,5 +1,6 @@
 import { articles } from './articles'
 import ArticleCard from './ArticleCard'
+import Footer from '../components/Footer'
 
 export default function BlogIndex() {
   return (
@@ -70,6 +71,7 @@ export default function BlogIndex() {
           ))}
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import NavAuthButton from '../components/NavAuthButton'
 import { trackProUpgradeClicked } from '../lib/loops'
+import Footer from '../components/Footer'
 
 const LAVENDER = '#c9b8d8'
 const BLUSH = '#e8d5c4'
@@ -488,16 +489,7 @@ export default function PricingPage({ onStartDay, onSignIn }) {
         </div>
       </section>
 
-      {/* ── Footer line ────────────────────────────────────────── */}
-      <div style={{ borderTop: `0.5px solid ${BORDER}`, padding: '32px 0', textAlign: 'center' }}>
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: MUTED, margin: '0 0 12px 0' }}>
-          No credit card needed to start. Cancel anytime.
-        </p>
-        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
-          <a href="/privacy-policy" style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: MUTED, textDecoration: 'none' }}>Privacy Policy</a>
-          <a href="/terms" style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: MUTED, textDecoration: 'none' }}>Terms of Service</a>
-        </div>
-      </div>
+      <Footer />
 
     </div>
   )
