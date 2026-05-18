@@ -383,11 +383,11 @@ function DemoSection() {
 }
 
 const FAQ_ITEMS = [
-  { q: 'Is Daye free to use?', a: 'Yes — Daye is free to get started. You get a full daily focus plan every morning, 7-day history, and all four user journeys. We will be introducing Daye Pro in the future with advanced features like full AI personalisation, calendar sync, and weekly insights. Early users will get a special rate.' },
+  { q: 'Is Daye free?', a: 'Yes, the core app is free forever. Daye Pro (£4.99/month) unlocks advanced features like full history, pattern insights, and priority support.' },
+  { q: 'Does it work on iPhone?', a: 'Yes, add it to your home screen from Safari for the full app experience. Open Safari, tap the share icon, and select "Add to Home Screen". A dedicated App Store app is coming soon.' },
+  { q: 'Is my data private?', a: 'Yes, your data is stored securely and never sold or shared. The only external service your information touches is the AI model that generates your plan — and only the details relevant to planning are sent.' },
   { q: 'How is this different from a to-do list or Notion?', a: 'Notion and to-do lists store everything you might do. Daye decides what you should do today based on who you are, how you feel, and what actually matters. It is a decision, not a list. You open it in the morning and close it with a clear mandate — not more things to organise.' },
-  { q: 'Does it work on my phone?', a: 'Yes — Daye is designed mobile-first and works beautifully on iPhone and Android in your browser. You can add it to your home screen for a native app feel. A dedicated App Store app is coming soon.' },
   { q: 'How does the AI part work?', a: 'When you build your plan, Daye sends your profile, energy level, mood, and tasks to Claude — a leading AI model — which generates a personalised plan written specifically for you. It reads your role, your goal, and your current state to decide what matters most today. Each plan is unique.' },
-  { q: 'Is my data private?', a: 'Your data is stored locally on your device and used only to generate your daily plan. We do not sell your data or show you ads. The only external service your information touches is the AI model that generates your plan, and only the details relevant to planning are sent.' },
   { q: 'How long does it take each morning?', a: 'Under 60 seconds for most people. Three taps for your energy and mood, select your tasks or type a sentence, and your plan is ready. The goal is to make the decision faster than thinking about it yourself.' },
   { q: 'Can I change my profile later?', a: 'Yes — tap the profile icon on your home screen to update your role, goals, blockers or any other details at any time. Your plan gets smarter the more accurately your profile reflects your real situation.' },
   { q: 'What if the plan does not feel right?', a: 'You can go back and adjust your inputs at any time. The plan is a starting point — you know your day better than any AI. Use it as a guide, not a rule. We are always improving the AI based on feedback.' },
@@ -585,7 +585,7 @@ export default function Landing({ onStartDay, onSignIn }) {
                     onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85' }}
                     onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
                   >
-                    Start your day
+                    Start free
                   </button>
                   <button
                     onClick={scrollToHowItWorks}

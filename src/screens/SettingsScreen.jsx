@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getCustomChips, getAllCustomChips, removeCustomChip, saveCustomChip } from '../utils/customChips'
+import { useAuth } from '../context/AuthContext'
 
 // ─── Option data (mirrored from onboarding files) ─────────────────────────────
 
@@ -488,13 +489,22 @@ export default function SettingsScreen({
   user, userProfile, history, streakCount, bestStreak, onSaveUser, onSaveProfile, onClearAll, onBack, onHome,
 }) {
   const profile = userProfile || {}
+  const { isPro } = useAuth()
 
   const [firstName, setFirstName] = useState(user?.firstName || '')
   const [email, setEmail] = useState(user?.email || '')
   const [activeModal, setActiveModal] = useState(null)
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [portalError, setPortalError] = useState('')
 
   const [reminderTime, setReminderTime] = useState(
     () => localStorage.getItem('daye_reminder_time') || '08:00'
+  )
+  const [weekStart, setWeekStart] = useState(
+    () => localStorage.getItem('daye_week_start') || 'monday'
+  )
+  const [focusBlockLength, setFocusBlockLength] = useState(
+    () => localStorage.getItem('daye_focus_block_length') || '25'
   )
 
   const [showClearConfirm, setShowClearConfirm] = useState(false)
@@ -508,6 +518,29 @@ export default function SettingsScreen({
   const handleSaveUser = () => {
     if (!firstName.trim()) return
     onSaveUser({ ...user, firstName: firstName.trim(), email: email.trim() })
+  }
+
+  const handleManageSubscription = async () => {
+    const userId = localStorage.getItem('daye_user_id')
+    if (!userId) return
+    setPortalLoading(true)
+    setPortalError('')
+    try {
+      const res = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setPortalError('Could not open billing portal. Please try again.')
+      }
+    } catch {
+      setPortalError('Something went wrong. Please try again.')
+    }
+    setPortalLoading(false)
   }
 
   const handleSaveReminderTime = (val) => {
@@ -750,6 +783,56 @@ export default function SettingsScreen({
             <p className="text-xs mt-1.5" style={{ color: 'var(--color-muted)' }}>In-app reminder only for now.</p>
           </div>
 
+          <div className="mb-4">
+            <label className="text-[11px] font-medium uppercase tracking-widest block mb-2" style={{ color: 'var(--color-muted)' }}>
+              Week starts on
+            </label>
+            <div className="flex gap-2">
+              {[{ val: 'monday', label: 'Monday' }, { val: 'sunday', label: 'Sunday' }].map(({ val, label }) => (
+                <button
+                  key={val}
+                  onClick={() => { setWeekStart(val); localStorage.setItem('daye_week_start', val) }}
+                  className="px-4 py-1.5 rounded-full text-sm font-medium transition-all active:scale-95"
+                  style={{
+                    border: '0.5px solid',
+                    borderColor: weekStart === val ? 'var(--color-ink)' : 'var(--color-border)',
+                    background: weekStart === val ? 'var(--color-ink)' : 'var(--color-white)',
+                    color: weekStart === val ? 'var(--color-white)' : 'var(--color-ink)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '13px',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="text-[11px] font-medium uppercase tracking-widest block mb-2" style={{ color: 'var(--color-muted)' }}>
+              Default focus block
+            </label>
+            <div className="flex gap-2">
+              {[{ val: '25', label: '25 min' }, { val: '50', label: '50 min' }].map(({ val, label }) => (
+                <button
+                  key={val}
+                  onClick={() => { setFocusBlockLength(val); localStorage.setItem('daye_focus_block_length', val) }}
+                  className="px-4 py-1.5 rounded-full text-sm font-medium transition-all active:scale-95"
+                  style={{
+                    border: '0.5px solid',
+                    borderColor: focusBlockLength === val ? 'var(--color-ink)' : 'var(--color-border)',
+                    background: focusBlockLength === val ? 'var(--color-ink)' : 'var(--color-white)',
+                    color: focusBlockLength === val ? 'var(--color-white)' : 'var(--color-ink)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '13px',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             {showClearConfirm ? (
               <div className="rounded-2xl p-4" style={{ border: '1px solid var(--color-border-dark)', background: 'var(--color-white)' }}>
@@ -779,7 +862,81 @@ export default function SettingsScreen({
           </div>
         </div>
 
-        {/* ── Section 6: ABOUT ── */}
+        {/* ── Section 6: SUBSCRIPTION ── */}
+        <div className="mb-6">
+          <SLabel>Subscription</SLabel>
+          <div className="rounded-2xl px-4 py-4" style={{ background: 'var(--color-white)', border: '1px solid var(--color-border)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+                  {isPro ? 'Daye Pro' : 'Free plan'}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
+                  {isPro ? 'All features unlocked' : 'Core features included'}
+                </p>
+              </div>
+              <span
+                className="text-[11px] font-medium px-2.5 py-1 rounded-full"
+                style={{
+                  background: isPro ? 'var(--color-lavender)' : 'var(--color-linen-dark)',
+                  color: isPro ? '#5a3f7a' : 'var(--color-muted)',
+                  border: `0.5px solid ${isPro ? '#c9b8d8' : 'var(--color-border)'}`,
+                }}
+              >
+                {isPro ? 'Pro' : 'Free'}
+              </span>
+            </div>
+
+            {isPro ? (
+              <>
+                <button
+                  onClick={handleManageSubscription}
+                  disabled={portalLoading}
+                  className="w-full py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 disabled:opacity-60"
+                  style={{ background: 'var(--color-ink)', color: 'white', border: 'none', cursor: 'pointer' }}
+                >
+                  {portalLoading ? 'Opening portal...' : 'Manage subscription'}
+                </button>
+                {portalError && (
+                  <p className="text-xs mt-2 text-center" style={{ color: '#c0392b' }}>{portalError}</p>
+                )}
+              </>
+            ) : (
+              <button
+                onClick={() => window.location.href = '/pricing'}
+                className="w-full py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95"
+                style={{ background: 'var(--color-lavender)', color: '#3d2459', border: 'none', cursor: 'pointer' }}
+              >
+                Upgrade to Pro
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ── Section 7: THE LETTER (Pro only) ── */}
+        {isPro && (
+          <div className="mb-6">
+            <SLabel>Pro features</SLabel>
+            <a
+              href="/letter"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: 'var(--color-white)', border: '1px solid var(--color-lavender)',
+                borderRadius: '16px', padding: '16px 18px', textDecoration: 'none',
+              }}
+            >
+              <div>
+                <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '16px', color: 'var(--color-ink)', margin: '0 0 2px 0' }}>The Letter</p>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', margin: 0 }}>Your quarterly personal letter</p>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: 'var(--color-muted)' }}>
+                <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </a>
+          </div>
+        )}
+
+        {/* ── Section 8: ABOUT ── */}
         <div className="mb-8">
           <SLabel>About</SLabel>
           <div className="rounded-2xl px-5 py-4 text-center space-y-2" style={{ background: 'var(--color-white)', border: '1px solid var(--color-border)' }}>
@@ -790,6 +947,10 @@ export default function SettingsScreen({
             <p className="text-xs leading-relaxed" style={{ color: 'var(--color-muted)' }}>
               Made with care for people who want to do their best work.
             </p>
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', paddingTop: '4px' }}>
+              <a href="/privacy-policy" style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)', textDecoration: 'none' }}>Privacy Policy</a>
+              <a href="/terms" style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)', textDecoration: 'none' }}>Terms of Service</a>
+            </div>
           </div>
         </div>
       </div>

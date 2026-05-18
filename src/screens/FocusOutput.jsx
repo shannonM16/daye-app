@@ -109,33 +109,35 @@ function ShareCard({ firstName, dayLabel, dayName, displayPriorities, goalAlignm
         </p>
       )}
 
-      {/* Plan title + day badge */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
+      {/* Plan title + day badge — chip always on its own line */}
+      <div style={{ marginBottom: '14px' }}>
         <p style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontStyle: 'italic',
           fontSize: '26px',
           color: '#1a1a1a',
-          margin: 0,
+          margin: '0 0 6px 0',
           fontWeight: 400,
           lineHeight: 1.2,
         }}>
           {firstName ? `${firstName}'s plan.` : 'Your plan.'}
         </p>
         {dayLabel && (
-          <span style={{
-            fontFamily: "'DM Sans', system-ui, sans-serif",
-            fontSize: '10px',
-            fontWeight: 500,
-            backgroundColor: '#f0ede8',
-            border: '0.5px solid #e2ddd8',
-            borderRadius: '20px',
-            padding: '3px 9px',
-            color: '#8a8480',
-            flexShrink: 0,
-          }}>
-            {dayLabel}
-          </span>
+          <div>
+            <span style={{
+              fontFamily: "'DM Sans', system-ui, sans-serif",
+              fontSize: '10px',
+              fontWeight: 500,
+              backgroundColor: '#f0ede8',
+              border: '0.5px solid #e2ddd8',
+              borderRadius: '20px',
+              padding: '3px 9px',
+              color: '#8a8480',
+              display: 'inline-block',
+            }}>
+              {dayLabel}
+            </span>
+          </div>
         )}
       </div>
 
@@ -286,7 +288,7 @@ function ShareSheet({ open, onClose, cardBlobUrl, cardFilename, cardGenerating }
   }
 
   const handleTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('My focus plan for today, built with Daye — withdaye.com')}`, '_blank')
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('My focus plan for today via @withdaye — withdaye.com')}`, '_blank')
   }
 
   const handleInstagram = () => {
@@ -625,12 +627,14 @@ export default function FocusOutput({
             {firstName ? `${firstName}'s plan.` : 'Your plan.'}
           </h1>
           {dayLabel && (
-            <span
-              className="text-[11px] font-medium px-2.5 py-1 rounded-full mt-2"
-              style={{ display: 'block', width: 'fit-content', background: 'var(--color-linen-dark)', color: 'var(--color-muted)', border: '0.5px solid var(--color-border)' }}
-            >
-              {dayLabel}
-            </span>
+            <div style={{ marginTop: '8px' }}>
+              <span
+                className="text-[11px] font-medium px-2.5 py-1 rounded-full"
+                style={{ display: 'inline-block', background: 'var(--color-linen-dark)', color: 'var(--color-muted)', border: '0.5px solid var(--color-border)' }}
+              >
+                {dayLabel}
+              </span>
+            </div>
           )}
         </div>
 
@@ -648,6 +652,13 @@ export default function FocusOutput({
 
             <div className="card">
               <SectionLabel>Focus on</SectionLabel>
+              {displayPriorities.length === 0 ? (
+                <div style={{ padding: '12px 0' }}>
+                  <p className="text-sm italic" style={{ color: 'var(--color-muted)', lineHeight: 1.5 }}>
+                    No tasks yet. Add something below to get started — even one thing is enough.
+                  </p>
+                </div>
+              ) : (
               <div className="space-y-2">
                 {displayPriorities.map((p, i) => {
                   const subtitle = prioritySubtitles?.[i]
@@ -659,6 +670,7 @@ export default function FocusOutput({
                   )
                 })}
               </div>
+              )}
             </div>
 
             <div>

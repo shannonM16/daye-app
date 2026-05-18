@@ -16,7 +16,11 @@
       "Bash(zip welcome-email.zip index.mjml)",
       "Bash(zip -j welcome-email.zip index.mjml)",
       "Bash(pkill -f \"vite --port 5174\")",
-      "Bash(grep -E \"\\\\.\\(js|jsx\\)$\")"
+      "Bash(grep -E \"\\\\.\\(js|jsx\\)$\")",
+      "Bash(sudo chmod -R 777 /Users/shannonmacaulay/.npm/_cacache)",
+      "Read(//Users/shannonmacaulay/.npm/_cacache/content-v2/sha512/d4/**)",
+      "Bash(rm -rf \"/Users/shannonmacaulay/.npm/_cacache/content-v2/sha512/d4/82\")",
+      "Bash(npm cache *)"
     ]
   }
 }

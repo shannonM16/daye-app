@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getInsight, getWeeklyMomentumData } from '../utils/patternEngine'
 import { getCustomChips, saveCustomChip, removeCustomChip } from '../utils/customChips'
 import { getGoalCompletionCount, getMondayOfWeek, saveWeeklyWin } from '../utils/completions'
+import { useAuth } from '../context/AuthContext'
 
 const MOOD_OPTIONS = [
   { id: 'focused', label: 'Focused' },
@@ -515,6 +516,8 @@ function CustomChipArea({ screenKey, customChips, onAddChip, onRemoveChip, editM
 }
 
 export default function CheckIn({ user, userProfile, initialValues, history = [], streakCount = 0, carryOverTask, onCarryOverAccept, onCarryOverDismiss, onSubmit, onViewHistory, onViewSettings, onHome, onRetakeReflection }) {
+  const { isPro } = useAuth()
+  const [showStreakUpsell, setShowStreakUpsell] = useState(false)
   const isFiguringItOut = userProfile?.userType === 'figuring-it-out'
   const selfEmployedType = userProfile?.selfEmployedType || userProfile?.workType || null
   const pressureOptions = getPressureOptions(
@@ -788,9 +791,9 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
           {streakCount >= 2 && (
             <div
               className="flex items-center gap-2 px-3 py-2 rounded-full self-start"
-              style={{ background: 'var(--color-linen)', border: '0.5px solid var(--color-border)', display: 'inline-flex' }}
+              style={{ background: 'var(--color-linen)', border: '0.5px solid var(--color-border)', display: 'inline-flex', fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-ink)' }}
             >
-              <span className="text-sm" style={{ color: 'var(--color-ink)' }}>{streakCount} day streak</span>
+              {streakCount} day streak
             </div>
           )}
         </div>
@@ -976,7 +979,34 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
 
         {step === 1 && (
           <>
-            {/* Feature 1: Carry-over card */}
+            {/* Onboarding drop-off nudge */}
+            {!userProfile?.userType && onRetakeReflection && (
+              <div style={{
+                background: 'var(--color-blush)', borderRadius: '12px', padding: '14px 16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+              }}>
+                <div>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, color: 'var(--color-ink)', margin: '0 0 2px 0' }}>
+                    You're almost set up
+                  </p>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', margin: 0 }}>
+                    Finish your focus profile to get a personalised plan.
+                  </p>
+                </div>
+                <button
+                  onClick={onRetakeReflection}
+                  style={{
+                    background: 'var(--color-ink)', color: 'white', border: 'none',
+                    borderRadius: '20px', padding: '6px 14px', flexShrink: 0,
+                    fontFamily: 'var(--font-sans)', fontSize: '12px', fontWeight: 500, cursor: 'pointer',
+                  }}
+                >
+                  Continue →
+                </button>
+              </div>
+            )}
+
+          {/* Feature 1: Carry-over card */}
             {carryOverTask && !carryOverDismissedLocal && (
               <div style={{
                 background: 'var(--color-blush)',
@@ -1007,11 +1037,66 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
             )}
 
             {streakCount >= 2 && (
+              <div style={{ display: 'inline-flex', flexDirection: 'column', gap: '6px' }}>
+                <button
+                  onClick={() => !isPro && streakCount >= 5 && setShowStreakUpsell(true)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    padding: '6px 12px', borderRadius: '20px',
+                    background: 'var(--color-linen)', border: '0.5px solid var(--color-border)',
+                    cursor: !isPro && streakCount >= 5 ? 'pointer' : 'default',
+                    fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-ink)',
+                  }}
+                >
+                  <span>{streakCount} day streak</span>
+                </button>
+                {!isPro && streakCount >= 5 && (
+                  <button
+                    onClick={() => setShowStreakUpsell(true)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                      fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)',
+                      textAlign: 'left', lineHeight: 1.4,
+                    }}
+                  >
+                    Pro members get milestone celebrations and streak insights →
+                  </button>
+                )}
+              </div>
+            )}
+            {showStreakUpsell && (
               <div
-                className="flex items-center gap-2 px-3 py-2 rounded-full self-start"
-                style={{ background: 'var(--color-linen)', border: '0.5px solid var(--color-border)', display: 'inline-flex' }}
+                style={{
+                  background: 'var(--color-white)', border: '1px solid var(--color-lavender)',
+                  borderRadius: '16px', padding: '16px 18px',
+                  boxShadow: '0 4px 20px rgba(201,184,216,0.2)',
+                }}
               >
-                <span className="text-sm" style={{ color: 'var(--color-ink)' }}>{streakCount} day streak</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, color: 'var(--color-ink)', margin: 0 }}>
+                    {streakCount}-day streak — you're on a roll
+                  </p>
+                  <button
+                    onClick={() => setShowStreakUpsell(false)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-muted)', padding: 0, fontSize: '16px', lineHeight: 1 }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', margin: '0 0 14px 0', lineHeight: 1.5 }}>
+                  Pro members get milestone messages, streak insights, and a year-in-focus summary.
+                </p>
+                <a
+                  href="/pricing"
+                  style={{
+                    display: 'inline-block', background: 'var(--color-lavender)', color: 'var(--color-ink)',
+                    border: 'none', borderRadius: '8px', padding: '8px 16px',
+                    fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500,
+                    textDecoration: 'none', cursor: 'pointer',
+                  }}
+                >
+                  See Daye Pro
+                </a>
               </div>
             )}
 

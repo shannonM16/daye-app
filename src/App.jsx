@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+import * as Sentry from '@sentry/react'
 import { useStorage } from './hooks/useStorage'
 import { useAuth } from './context/AuthContext'
 import { buildPlan } from './engine/buildPlan'
@@ -8,8 +9,12 @@ import { getCompletionsForDate, saveCompletionsForDate } from './utils/completio
 import { getMeetingsForToday, saveMeetingsForToday } from './utils/timeOptions'
 import { supabase } from './lib/supabase'
 import { upsertUser, fetchUserByEmail, savePlan, fetchPlans, fetchWeeklyWins, upsertPlanPartial, updateUserLastSeen } from './lib/db'
-import { addLoopsContact, updateLoopsContact, sendLoopsWelcomeEmail, sendLoopsPlanCreatedEvent } from './lib/loops'
+import { addLoopsContact, updateLoopsContact, sendLoopsWelcomeEmail, sendLoopsPlanCreatedEvent, trackPlanGenerated } from './lib/loops'
+import { identifyUser, trackEvent } from './lib/posthog'
 import Landing from './screens/Landing'
+import PrivacyPolicy from './screens/PrivacyPolicy'
+import TermsOfService from './screens/TermsOfService'
+import TheLetter from './screens/TheLetter'
 import BlogIndex from './blog/BlogIndex'
 import ArticlePage from './blog/ArticlePage'
 import PricingPage from './screens/PricingPage'
@@ -25,6 +30,7 @@ import ActionMode from './screens/ActionMode'
 import LoadingScreen from './screens/LoadingScreen'
 import HistoryScreen from './screens/HistoryScreen'
 import SettingsScreen from './screens/SettingsScreen'
+import EndOfDayReflection from './screens/EndOfDayReflection'
 import './index.css'
 
 const SCREENS = {
@@ -41,6 +47,7 @@ const SCREENS = {
   ACTION: 'action',
   HISTORY: 'history',
   SETTINGS: 'settings',
+  EOD_REFLECTION: 'eod_reflection',
 }
 
 function getInitialScreen() {
@@ -183,13 +190,34 @@ export default function App() {
   const [userTasks, setUserTasks] = useStorage('df_userTasks', [])
   const [extraTasks, setExtraTasks] = useStorage('df_extraTasks', [])
   const [checkInHistory, setCheckInHistory] = useStorage('df_checkInHistory', [])
-  const [plan, setPlan] = useState(null)
+  const [plan, setPlan] = useState(() => {
+    try {
+      const raw = localStorage.getItem('daye_last_plan')
+      if (!raw) return null
+      const { plan: cached, date } = JSON.parse(raw)
+      const today = new Date().toISOString().split('T')[0]
+      return date === today ? cached : null
+    } catch { return null }
+  })
   const [checkInData, setCheckInData] = useState(null)
   const [meetings, setMeetings] = useState([])
   const [liveSelectedTasks, setLiveSelectedTasks] = useState([])
   const [pendingTaskSelection, setPendingTaskSelection] = useState([])
   const [taskFreeText, setTaskFreeText] = useState('')
   const [screen, setScreen] = useState(getInitialScreen)
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+
+  // Offline detection
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   // ── Supabase init: load from DB on mount, run migration if needed ──
   useEffect(() => {
@@ -208,6 +236,8 @@ export default function App() {
           localStorage.setItem('daye_user_id', supaUser.id)
           updateUserLastSeen(supaUser.id).catch(() => {})
           updateIsPro(supaUser.is_pro === true)
+          Sentry.setUser({ id: supaUser.id, email: supaUser.email })
+          identifyUser(supaUser.id, supaUser.email)
           setUser({ firstName: supaUser.first_name, email: supaUser.email })
           if (supaUser.profile && Object.keys(supaUser.profile).length > 0) {
             setUserProfile(supaUser.profile)
@@ -286,7 +316,7 @@ export default function App() {
         if (isNew) {
           dbUser = await upsertUser({ firstName, email, profile: {} })
           addLoopsContact(email, firstName)
-          setTimeout(() => sendLoopsWelcomeEmail(email, firstName), 2000)
+          setTimeout(() => sendLoopsWelcomeEmail(email, firstName), 3000)
           if (!localStorage.getItem('daye_member_since')) {
             localStorage.setItem('daye_member_since', new Date().toISOString())
           }
@@ -346,7 +376,7 @@ export default function App() {
     }
     syncUserToSupabase(userData, userProfile)
     addLoopsContact(userData.email, userData.firstName)
-    new Promise(resolve => setTimeout(resolve, 2000))
+    new Promise(resolve => setTimeout(resolve, 3000))
       .then(() => sendLoopsWelcomeEmail(userData.email, userData.firstName))
     setScreen(SCREENS.ONBOARDING)
   }, [setUser, userProfile])
@@ -413,6 +443,7 @@ export default function App() {
       }
     }
 
+    trackEvent('onboarding_completed', { userType: profile.userType })
     setScreen(SCREENS.CHECKIN)
   }, [setUserProfile, user])
 
@@ -427,6 +458,7 @@ export default function App() {
   }, [setUserProfile, user])
 
   const handleCheckIn = useCallback((data) => {
+    trackEvent('checkin_completed', { energy: data.energy, mood: data.mood, dayType: data.dayType })
     setCheckInData(data)
     setLiveSelectedTasks([])
     setPendingTaskSelection([])
@@ -466,6 +498,7 @@ export default function App() {
     )
     setPlan(result)
     const today = new Date().toISOString().split('T')[0]
+    try { localStorage.setItem('daye_last_plan', JSON.stringify({ plan: result, date: today })) } catch { /* ignore */ }
     const planEntry = { date: today, ...checkInData, plannedTasks: tasks }
     setCheckInHistory((prev) =>
       (prev || []).map((h) => h.date === today ? { ...h, plannedTasks: tasks } : h)
@@ -474,9 +507,13 @@ export default function App() {
     if (userId) {
       savePlan(userId, today, planEntry).catch(() => {})
     }
-    if (user?.email && !localStorage.getItem('daye_plan_created_sent')) {
-      sendLoopsPlanCreatedEvent(user.email)
-      localStorage.setItem('daye_plan_created_sent', 'true')
+    if (user?.email) {
+      trackEvent('plan_generated')
+      trackPlanGenerated(user.email).catch(() => {})
+      if (!localStorage.getItem('daye_plan_created_sent')) {
+        sendLoopsPlanCreatedEvent(user.email)
+        localStorage.setItem('daye_plan_created_sent', 'true')
+      }
     }
     setScreen(SCREENS.OUTPUT)
   }, [userProfile, checkInData, user, meetings, setUserTasks, setExtraTasks, setCheckInHistory])
@@ -524,7 +561,7 @@ export default function App() {
     setPlan(null)
     setCheckInData(null)
     setLiveSelectedTasks([])
-    ;['daye_member_since', 'daye_best_streak', 'daye_reminder_time', 'daye_install_dismissed', 'daye_custom_chips', 'daye_user_id'].forEach(
+    ;['daye_member_since', 'daye_best_streak', 'daye_reminder_time', 'daye_install_dismissed', 'daye_custom_chips', 'daye_user_id', 'daye_last_plan'].forEach(
       (k) => localStorage.removeItem(k)
     )
     setScreen(SCREENS.LANDING)
@@ -561,6 +598,9 @@ export default function App() {
   }, [])
 
   // ── Public routes ────────────────────────────────────────────────
+  if (location.pathname === '/privacy-policy') return <PrivacyPolicy />
+  if (location.pathname === '/terms') return <TermsOfService />
+  if (location.pathname === '/letter') return <TheLetter user={user} />
   if (location.pathname === '/blog') return <BlogIndex />
   if (location.pathname.startsWith('/blog/')) {
     const slug = location.pathname.slice(6)
@@ -669,7 +709,17 @@ export default function App() {
         onBack={() => setScreen(SCREENS.OUTPUT)}
         onHome={() => setScreen(SCREENS.CHECKIN)}
         onAddMeeting={handleAddMeetingFromTimer}
-        onEndOfDayReflection={() => setScreen(SCREENS.CHECKIN)}
+        onEndOfDayReflection={() => setScreen(SCREENS.EOD_REFLECTION)}
+      />
+    )
+  }
+
+  if (screen === SCREENS.EOD_REFLECTION) {
+    return (
+      <EndOfDayReflection
+        user={user}
+        onComplete={() => setScreen(SCREENS.CHECKIN)}
+        onHome={() => setScreen(SCREENS.CHECKIN)}
       />
     )
   }
@@ -691,7 +741,7 @@ export default function App() {
           onViewHistory={() => setScreen(SCREENS.HISTORY)}
           onViewSettings={() => setScreen(SCREENS.SETTINGS)}
           onHome={() => setScreen(SCREENS.CHECKIN)}
-          onRetakeReflection={() => setScreen(SCREENS.FIO_REFLECTION)}
+          onRetakeReflection={() => setScreen(userProfile?.userType ? SCREENS.FIO_REFLECTION : SCREENS.ONBOARDING)}
         />
       )
     }
@@ -776,21 +826,52 @@ export default function App() {
   const showRightPanel = rightPanelScreens.includes(screen)
 
   return (
-    <div className="desktop-app-wrapper">
-      <div className="desktop-app-left">
-        {renderSignedInContent()}
-      </div>
-      {showRightPanel && (
-        <div className="desktop-app-right">
-          <RightPanel
-            screen={screen}
-            user={user}
-            userProfile={userProfile}
-            checkInData={checkInData}
-            liveSelectedTasks={liveSelectedTasks}
-          />
+    <>
+      {isOffline && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          background: '#1a1a1a',
+          color: 'white',
+          fontFamily: 'var(--font-sans)',
+          fontSize: '13px',
+          textAlign: 'center',
+          padding: '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+        }}>
+          <span>You're offline — your last plan is still available</span>
+          {plan && (
+            <button
+              onClick={() => setScreen(SCREENS.OUTPUT)}
+              style={{ color: 'white', background: 'none', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '6px', padding: '2px 10px', fontSize: '12px', cursor: 'pointer', flexShrink: 0 }}
+            >
+              View plan
+            </button>
+          )}
         </div>
       )}
-    </div>
+      <div className="desktop-app-wrapper" style={isOffline ? { paddingTop: '36px' } : {}}>
+        <div className="desktop-app-left">
+          {renderSignedInContent()}
+        </div>
+        {showRightPanel && (
+          <div className="desktop-app-right">
+            <RightPanel
+              screen={screen}
+              user={user}
+              userProfile={userProfile}
+              checkInData={checkInData}
+              liveSelectedTasks={liveSelectedTasks}
+            />
+          </div>
+        )}
+      </div>
+    </>
   )
 }

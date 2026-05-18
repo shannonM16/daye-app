@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { trackEvent } from '../lib/posthog'
 import { deduplicateTasks } from '../engine/deduplicateTasks'
 import { saveCompletionsForDate, taskMatchesGoal, incrementGoalCompletionCount, getGoalToastContent } from '../utils/completions'
 import { getAutoEndTime, getNextMeeting, getTodayMeetings } from '../utils/timeOptions'
@@ -257,6 +258,7 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
 
   const handleStartPause = () => {
     const isStarting = !running
+    if (isStarting) trackEvent('timer_started')
     setRunning((r) => !r)
     logTimerEvent(isStarting ? 'start' : 'pause')
   }

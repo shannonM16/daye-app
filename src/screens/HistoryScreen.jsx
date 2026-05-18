@@ -1,5 +1,6 @@
-import { getRevenueActivityForDate, getMondayOfWeek, getWeeklyWin } from '../utils/completions'
+import { getRevenueActivityForDate, getMondayOfWeek, getWeeklyWin, getCompletionsForDate } from '../utils/completions'
 import { useAuth } from '../context/AuthContext'
+import { getInsight } from '../utils/patternEngine'
 
 const MOOD_LABELS = {
   focused: 'Focused', anxious: 'Anxious', flat: 'Flat', motivated: 'Motivated',
@@ -47,6 +48,7 @@ export default function HistoryScreen({ history = [], userProfile, onBack, onHom
   const { isPro } = useAuth()
   const sorted = [...history].sort((a, b) => b.date.localeCompare(a.date))
   const isSelfEmployed = userProfile?.userType === 'self-employed'
+  const patternInsight = sorted.length >= 7 ? getInsight(sorted) : null
 
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
@@ -95,6 +97,16 @@ export default function HistoryScreen({ history = [], userProfile, onBack, onHom
                 : `${visibleEntries.length} day${visibleEntries.length === 1 ? '' : 's'} shown · last 7 days`}
           </p>
         </div>
+
+        {patternInsight && (
+          <div
+            className="rounded-2xl px-4 py-3"
+            style={{ background: 'var(--color-white)', border: '1px solid var(--color-border)', borderLeft: '3px solid var(--color-lavender)' }}
+          >
+            <p className="text-[11px] font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--color-muted)' }}>Pattern</p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink)' }}>{patternInsight}</p>
+          </div>
+        )}
 
         {weeks.map(({ monday, days }) => {
           const weeklyWin = getWeeklyWin(monday)
@@ -169,6 +181,18 @@ export default function HistoryScreen({ history = [], userProfile, onBack, onHom
                             Sleep: {SLEEP_LABELS[entry.sleep] || entry.sleep}
                           </span>
                         )}
+
+                        {(() => {
+                          const tasks = entry.plannedTasks || []
+                          if (tasks.length === 0) return null
+                          const done = getCompletionsForDate(entry.date)
+                          const completedCount = tasks.filter(t => done.includes(t)).length
+                          return (
+                            <span className="text-xs" style={{ color: completedCount === tasks.length ? 'var(--color-sage)' : 'var(--color-muted)' }}>
+                              {completedCount}/{tasks.length} tasks
+                            </span>
+                          )
+                        })()}
                       </div>
                     </div>
                   )
@@ -197,41 +221,51 @@ export default function HistoryScreen({ history = [], userProfile, onBack, onHom
 
         {hasHiddenHistory && (
           <div style={{
-            background: 'var(--color-linen)',
-            border: '0.5px solid var(--color-border)',
+            background: 'var(--color-white)',
+            border: '1px solid var(--color-lavender)',
             borderRadius: '16px',
-            padding: '32px 28px',
-            textAlign: 'center',
+            padding: '28px 24px',
             marginTop: '8px',
           }}>
             <p style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '11px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: 'var(--color-muted)',
+              fontWeight: 500,
+              margin: '0 0 10px 0',
+            }}>
+              Daye Pro
+            </p>
+            <p style={{
               fontFamily: 'var(--font-serif)',
               fontStyle: 'italic',
-              fontSize: '22px',
+              fontSize: '20px',
               fontWeight: 300,
               color: 'var(--color-ink)',
-              margin: '0 0 12px 0',
-              lineHeight: 1.2,
+              margin: '0 0 10px 0',
+              lineHeight: 1.25,
             }}>
-              Unlock Daye Pro
+              You've reached 7 days of history.
             </p>
             <p style={{
               fontFamily: 'var(--font-sans)',
               fontSize: '14px',
               color: 'var(--color-muted)',
               lineHeight: 1.65,
-              margin: '0 0 24px 0',
+              margin: '0 0 20px 0',
             }}>
-              See your full history and track patterns over time.
+              Pro members keep 30 days of history and get weekly pattern insights to understand how they really work.
             </p>
             <button
               onClick={() => window.location.href = '/pricing'}
               style={{
-                background: 'var(--color-ink)',
-                color: 'white',
+                background: 'var(--color-lavender)',
+                color: 'var(--color-ink)',
                 border: 'none',
                 borderRadius: '10px',
-                padding: '12px 28px',
+                padding: '11px 24px',
                 fontFamily: 'var(--font-sans)',
                 fontSize: '14px',
                 fontWeight: 500,
@@ -239,7 +273,7 @@ export default function HistoryScreen({ history = [], userProfile, onBack, onHom
                 letterSpacing: '0.01em',
               }}
             >
-              See Pro plans
+              Upgrade to Pro
             </button>
           </div>
         )}

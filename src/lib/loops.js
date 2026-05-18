@@ -67,3 +67,36 @@ export async function sendLoopsPlanCreatedEvent(email) {
     // fail silently
   }
 }
+
+async function sendLoopsEvent(email, eventName, eventProperties = {}) {
+  if (!email) return
+  try {
+    await fetch('/api/loops-send-event', {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ email, eventName, eventProperties }),
+    })
+  } catch {
+    // fail silently
+  }
+}
+
+export async function trackPlanGenerated(email) {
+  return sendLoopsEvent(email, 'plan_generated')
+}
+
+export async function trackPlanCompleted(email) {
+  return sendLoopsEvent(email, 'plan_completed')
+}
+
+export async function trackReflectionCompleted(email) {
+  return sendLoopsEvent(email, 'reflection_completed')
+}
+
+export async function trackProUpgradeClicked(email) {
+  return sendLoopsEvent(email, 'pro_upgrade_clicked')
+}
+
+export async function trackProTrialStarted(email) {
+  return sendLoopsEvent(email, 'pro_trial_started')
+}

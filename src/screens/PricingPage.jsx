@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import NavAuthButton from '../components/NavAuthButton'
+import { trackProUpgradeClicked } from '../lib/loops'
 
 const LAVENDER = '#c9b8d8'
 const BLUSH = '#e8d5c4'
@@ -182,6 +183,14 @@ export default function PricingPage({ onStartDay, onSignIn }) {
 
   async function handleCheckout() {
     setLoading(true)
+    // Track upgrade click
+    try {
+      const { data: { session: trackSession } } = await supabase.auth.getSession()
+      if (trackSession?.user?.email) {
+        trackProUpgradeClicked(trackSession.user.email).catch(() => {})
+      }
+    } catch { /* ignore */ }
+
     try {
       const { data: { session } } = await supabase.auth.getSession()
 
@@ -280,9 +289,13 @@ export default function PricingPage({ onStartDay, onSignIn }) {
                 <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '32px', fontWeight: 300, color: INK, margin: '0 0 8px 0', lineHeight: 1 }}>
                   Free, always
                 </p>
-                <p style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', color: MUTED, margin: 0, lineHeight: 1.5 }}>
-                  Everything you need to focus every day
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', color: MUTED, margin: '0 0 12px 0', lineHeight: 1.5 }}>
+                  A complete daily focus tool — no credit card, no trial, no catch.
                 </p>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: LINEN_DARK, borderRadius: '20px', padding: '4px 12px' }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: SAGE, flexShrink: 0 }} />
+                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: MUTED, fontWeight: 500 }}>Free forever — no credit card required</span>
+                </div>
               </div>
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
@@ -293,6 +306,7 @@ export default function PricingPage({ onStartDay, onSignIn }) {
                 <FeatureItem>7-day history</FeatureItem>
                 <FeatureItem>End of day reflection</FeatureItem>
                 <FeatureItem>Carry-over from yesterday</FeatureItem>
+                <FeatureItem>Day streak</FeatureItem>
               </ul>
 
               <button
@@ -313,6 +327,9 @@ export default function PricingPage({ onStartDay, onSignIn }) {
               >
                 Start free
               </button>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: MUTED, textAlign: 'center', margin: '10px 0 0 0' }}>
+                No credit card. No time limit. Free forever.
+              </p>
             </div>
 
             {/* PRO CARD */}
@@ -473,9 +490,13 @@ export default function PricingPage({ onStartDay, onSignIn }) {
 
       {/* ── Footer line ────────────────────────────────────────── */}
       <div style={{ borderTop: `0.5px solid ${BORDER}`, padding: '32px 0', textAlign: 'center' }}>
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: MUTED, margin: 0 }}>
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: MUTED, margin: '0 0 12px 0' }}>
           No credit card needed to start. Cancel anytime.
         </p>
+        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+          <a href="/privacy-policy" style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: MUTED, textDecoration: 'none' }}>Privacy Policy</a>
+          <a href="/terms" style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: MUTED, textDecoration: 'none' }}>Terms of Service</a>
+        </div>
       </div>
 
     </div>

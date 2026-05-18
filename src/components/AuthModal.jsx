@@ -25,7 +25,7 @@ const inputStyle = {
   borderRadius: '10px',
   padding: '12px 14px',
   fontFamily: 'var(--font-sans)',
-  fontSize: '14px',
+  fontSize: '16px',
   color: 'var(--color-ink)',
   outline: 'none',
   boxSizing: 'border-box',
@@ -37,6 +37,7 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
   const [firstName, setFirstName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -51,8 +52,12 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
       setFirstName('')
       setEmail('')
       setPassword('')
+      setConfirmPassword('')
     }
   }, [isModalOpen, initialMode])
+
+  const passwordsMatch = mode !== 'signup' || !confirmPassword || password === confirmPassword
+  const confirmTouched = confirmPassword.length > 0
 
   async function handlePendingProPlan() {
     const pendingPlan = localStorage.getItem('pendingProPlan') || sessionStorage.getItem('pendingProPlan')
@@ -106,6 +111,12 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
     e.preventDefault()
     setError('')
     setLoading(true)
+    if (mode === 'signup' && password !== confirmPassword) {
+      setError("Passwords don't match")
+      setLoading(false)
+      return
+    }
+
     try {
       if (mode === 'signup') {
         const { data, error: err } = await supabase.auth.signUp({
@@ -123,7 +134,7 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
             localStorage.setItem('daye_member_since', new Date().toISOString())
           }
           addLoopsContact(trimEmail, trimFirst)
-          setTimeout(() => sendLoopsWelcomeEmail(trimEmail, trimFirst), 2000)
+          setTimeout(() => sendLoopsWelcomeEmail(trimEmail, trimFirst), 3000)
           updateNavUser({ firstName: trimFirst, email: trimEmail })
           hideAuthModal()
           const redirected = await handlePendingProPlan()
@@ -243,31 +254,66 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
           {mode === 'signup' && (
             <input
               type="text"
+              name="given-name"
               placeholder="First name"
               value={firstName}
-              onChange={e => { setFirstName(e.target.value); setError('') }}
+              onChange={e => {
+                const v = e.target.value
+                setFirstName(v.charAt(0).toUpperCase() + v.slice(1))
+                setError('')
+              }}
               required
               autoFocus
+              autoCapitalize="words"
+              autoComplete="given-name"
               style={inputStyle}
             />
           )}
           <input
             type="email"
+            name="email"
             placeholder="Email address"
             value={email}
             onChange={e => { setEmail(e.target.value); setError('') }}
             required
             autoFocus={mode === 'signin'}
+            autoComplete="email"
             style={inputStyle}
           />
           <input
             type="password"
+            name="password"
             placeholder="Password"
             value={password}
             onChange={e => { setPassword(e.target.value); setError('') }}
             required
+            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             style={inputStyle}
           />
+          {mode === 'signup' && (
+            <div style={{ position: 'relative' }}>
+              <input
+                type="password"
+                name="confirm-password"
+                placeholder="Confirm password"
+                value={confirmPassword}
+                onChange={e => { setConfirmPassword(e.target.value); setError('') }}
+                required
+                autoComplete="new-password"
+                style={{
+                  ...inputStyle,
+                  borderColor: confirmTouched ? (passwordsMatch ? '#22c55e' : '#c0392b') : 'var(--color-border)',
+                  paddingRight: confirmTouched ? '36px' : '14px',
+                }}
+              />
+              {confirmTouched && passwordsMatch && (
+                <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#22c55e', fontSize: '14px', pointerEvents: 'none' }}>✓</span>
+              )}
+              {confirmTouched && !passwordsMatch && (
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: '#c0392b', margin: '4px 0 0', lineHeight: 1.4 }}>Passwords don't match</p>
+              )}
+            </div>
+          )}
 
           {mode === 'signin' && (
             resetSent ? (
@@ -291,8 +337,8 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
 
           <button
             type="submit"
-            disabled={loading || googleLoading}
-            style={{ width: '100%', background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '13px 24px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, cursor: loading || googleLoading ? 'default' : 'pointer', opacity: loading || googleLoading ? 0.7 : 1, marginTop: '2px', letterSpacing: '0.01em' }}
+            disabled={loading || googleLoading || (mode === 'signup' && confirmTouched && !passwordsMatch)}
+            style={{ width: '100%', background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '13px 24px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, cursor: (loading || googleLoading) ? 'default' : 'pointer', opacity: (loading || googleLoading || (mode === 'signup' && confirmTouched && !passwordsMatch)) ? 0.7 : 1, marginTop: '2px', letterSpacing: '0.01em' }}
           >
             {loading ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Sign in'}
           </button>
@@ -302,14 +348,14 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
         <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', textAlign: 'center', marginTop: '20px', marginBottom: 0 }}>
           {mode === 'signin' ? (
             <>Don't have an account?{' '}
-              <button type="button" onClick={() => { setMode('signup'); setError(''); setResetSent(false) }}
+              <button type="button" onClick={() => { setMode('signup'); setError(''); setResetSent(false); setConfirmPassword('') }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-ink)', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, padding: 0, textDecoration: 'underline', textUnderlineOffset: '2px' }}>
                 Create one
               </button>
             </>
           ) : (
             <>Already have an account?{' '}
-              <button type="button" onClick={() => { setMode('signin'); setError('') }}
+              <button type="button" onClick={() => { setMode('signin'); setError(''); setConfirmPassword('') }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-ink)', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, padding: 0, textDecoration: 'underline', textUnderlineOffset: '2px' }}>
                 Sign in
               </button>

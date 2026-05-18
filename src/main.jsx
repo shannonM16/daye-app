@@ -2,9 +2,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
+import { initPostHog } from './lib/posthog'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
+
+initPostHog()
 
 if (import.meta.env.MODE !== 'development') {
   Sentry.init({

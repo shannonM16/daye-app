@@ -54,9 +54,23 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' })
   }
 
-  const { prompt } = req.body || {}
+  const { prompt, userId, isPro } = req.body || {}
   if (!prompt) {
     return res.status(400).json({ error: 'prompt is required' })
+  }
+
+  // Rate limit: free users max 3 plans per day
+  if (userId && !isPro) {
+    const today = new Date().toISOString().split('T')[0]
+    const rateLimitKey = `rate_${userId}_${today}`
+    // Use a simple in-memory store — works per serverless instance
+    // For production persistence, this would use Redis or Supabase
+    if (!global._planCounts) global._planCounts = {}
+    const count = global._planCounts[rateLimitKey] || 0
+    if (count >= 3) {
+      return res.status(429).json({ error: 'Daily plan limit reached. Upgrade to Pro for unlimited plans.', rateLimited: true })
+    }
+    global._planCounts[rateLimitKey] = count + 1
   }
 
   try {

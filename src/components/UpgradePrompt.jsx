@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { trackEvent } from '../lib/posthog'
 
 const PRICE_MONTHLY = 'price_1TTRgF2LFIh1ZwramSLMYfSK'
 
@@ -7,7 +8,10 @@ export default function UpgradePrompt({ description = 'Upgrade to Daye Pro to un
   const { navUser, showAuthModal } = useAuth()
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => { trackEvent('upgrade_prompt_viewed') }, [])
+
   const handleUpgrade = async () => {
+    trackEvent('upgrade_clicked')
     localStorage.setItem('pendingProPlan', 'monthly')
     sessionStorage.setItem('pendingProPlan', 'monthly')
 
