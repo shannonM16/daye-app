@@ -6,10 +6,11 @@ function headers() {
 
 export async function addLoopsContact(email, firstName) {
   try {
-    await fetch('/api/loops-create-contact', {
+    await fetch('/api/loops', {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({
+        action: 'create-contact',
         email,
         firstName,
         source: 'withdaye.com',
@@ -24,10 +25,11 @@ export async function addLoopsContact(email, firstName) {
 
 export async function updateLoopsContact(email, profile) {
   try {
-    await fetch('/api/loops-update-contact', {
+    await fetch('/api/loops', {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({
+        action: 'update-contact',
         email,
         userType: profile.userType,
         jobFunction: profile.jobFunction,
@@ -42,10 +44,11 @@ export async function updateLoopsContact(email, profile) {
 
 export async function sendLoopsWelcomeEmail(email, firstName) {
   try {
-    await fetch('/api/loops-send-transactional', {
+    await fetch('/api/loops', {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({
+        action: 'send-transactional',
         transactionalId: 'cmofmfsae06yl0i192a6abtul',
         email,
         dataVariables: { firstName },
@@ -58,10 +61,10 @@ export async function sendLoopsWelcomeEmail(email, firstName) {
 
 export async function sendLoopsPlanCreatedEvent(email) {
   try {
-    await fetch('/api/loops-send-event', {
+    await fetch('/api/loops', {
       method: 'POST',
       headers: headers(),
-      body: JSON.stringify({ email, eventName: 'plan_created' }),
+      body: JSON.stringify({ action: 'send-event', email, eventName: 'plan_created' }),
     })
   } catch {
     // fail silently
@@ -71,10 +74,10 @@ export async function sendLoopsPlanCreatedEvent(email) {
 async function sendLoopsEvent(email, eventName, eventProperties = {}) {
   if (!email) return
   try {
-    await fetch('/api/loops-send-event', {
+    await fetch('/api/loops', {
       method: 'POST',
       headers: headers(),
-      body: JSON.stringify({ email, eventName, eventProperties }),
+      body: JSON.stringify({ action: 'send-event', email, eventName, eventProperties }),
     })
   } catch {
     // fail silently
