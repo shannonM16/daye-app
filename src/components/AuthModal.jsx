@@ -102,7 +102,7 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
     if (!email.trim()) { setError('Enter your email first'); return }
     setError('')
     await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: 'https://withdaye.com',
+      redirectTo: 'https://withdaye.com/reset-password',
     })
     setResetSent(true)
   }

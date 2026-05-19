@@ -32,6 +32,7 @@ import LoadingScreen from './screens/LoadingScreen'
 import HistoryScreen from './screens/HistoryScreen'
 import SettingsScreen from './screens/SettingsScreen'
 import EndOfDayReflection from './screens/EndOfDayReflection'
+import ResetPassword from './screens/ResetPassword'
 import './index.css'
 
 const SCREENS = {
@@ -599,6 +600,7 @@ export default function App() {
   }, [])
 
   // ── Public routes ────────────────────────────────────────────────
+  if (location.pathname === '/reset-password') return <ResetPassword />
   if (location.pathname === '/privacy-policy') return <PrivacyPolicy />
   if (location.pathname === '/terms') return <TermsOfService />
   if (location.pathname === '/letter') return <TheLetter user={user} />
