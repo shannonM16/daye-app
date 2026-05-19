@@ -33,6 +33,7 @@ const inputStyle = {
 
 export default function AuthModal({ onNewUser, onExistingUser }) {
   const { isModalOpen, initialMode, hideAuthModal, updateNavUser } = useAuth()
+  // mode: 'signin' | 'signup' | 'forgot' | 'code'
   const [mode, setMode] = useState('signin')
   const [firstName, setFirstName] = useState('')
   const [email, setEmail] = useState('')
@@ -42,27 +43,27 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
-  const [resetSent, setResetSent] = useState(false)
+  const [resetCode, setResetCode] = useState('')
+  const [resetLoading, setResetLoading] = useState(false)
 
   useEffect(() => {
     if (isModalOpen) {
       setMode(initialMode)
       setError('')
-      setResetSent(false)
       setFirstName('')
       setEmail('')
       setPassword('')
       setConfirmPassword('')
+      setResetCode('')
     }
   }, [isModalOpen, initialMode])
 
-  const passwordsMatch = mode !== 'signup' || !confirmPassword || password === confirmPassword
   const confirmTouched = confirmPassword.length > 0
+  const passwordsMatch = !confirmPassword || password === confirmPassword
 
   async function handlePendingProPlan() {
     const pendingPlan = localStorage.getItem('pendingProPlan') || sessionStorage.getItem('pendingProPlan')
     if (!pendingPlan) return false
-    // Set loading before any await so it batches with hideAuthModal()
     setCheckoutLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -86,25 +87,82 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
     setGoogleLoading(true)
     localStorage.setItem('oauth_redirect_pending', 'true')
     const pendingPlan = localStorage.getItem('pendingProPlan')
-    if (pendingPlan) {
-      sessionStorage.setItem('pendingProPlan', pendingPlan)
-    }
+    if (pendingPlan) sessionStorage.setItem('pendingProPlan', pendingPlan)
     const redirectTo = pendingPlan
       ? `https://withdaye.com?pendingProPlan=${pendingPlan}`
       : 'https://withdaye.com'
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    })
+    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } })
   }
 
-  const handleForgotPassword = async () => {
-    if (!email.trim()) { setError('Enter your email first'); return }
+  const handleSendCode = async () => {
+    if (!email.trim()) { setError('Enter your email address'); return }
     setError('')
-    await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: 'https://withdaye.com/reset-password',
-    })
-    setResetSent(true)
+    setResetLoading(true)
+    try {
+      const res = await fetch('/api/send-reset-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Something went wrong'); setResetLoading(false); return }
+      setResetCode('')
+      setPassword('')
+      setConfirmPassword('')
+      setMode('code')
+    } catch {
+      setError('Something went wrong. Please try again.')
+    }
+    setResetLoading(false)
+  }
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault()
+    if (resetCode.length !== 6) { setError('Enter the 6-digit code from your email'); return }
+    if (password.length < 8) { setError('Password must be at least 8 characters'); return }
+    if (password !== confirmPassword) { setError("Passwords don't match"); return }
+    setError('')
+    setResetLoading(true)
+    try {
+      const res = await fetch('/api/verify-reset-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), code: resetCode.trim(), newPassword: password }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Invalid or expired code'); setResetLoading(false); return }
+
+      // Auto sign in with the new password
+      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      })
+      if (signInErr || !signInData.user) {
+        setError('Password updated — please sign in.')
+        setMode('signin')
+        setResetLoading(false)
+        return
+      }
+
+      const trimEmail = email.trim()
+      const dbUser = await fetchUserByEmail(trimEmail)
+      if (dbUser) {
+        localStorage.setItem('daye_user_id', dbUser.id)
+        updateNavUser({ firstName: dbUser.first_name || '', email: trimEmail })
+        hideAuthModal()
+        const redirected = await handlePendingProPlan()
+        if (!redirected) {
+          const hasProfile = !!(dbUser.profile && Object.keys(dbUser.profile).length > 0)
+          onExistingUser({ firstName: dbUser.first_name || '', email: trimEmail, hasProfile, profile: dbUser.profile || {}, userId: dbUser.id, isPro: dbUser.is_pro === true })
+        }
+      } else {
+        hideAuthModal()
+        onNewUser({ firstName: '', email: trimEmail })
+      }
+    } catch {
+      setError('Something went wrong. Please try again.')
+    }
+    setResetLoading(false)
   }
 
   const handleSubmit = async (e) => {
@@ -156,14 +214,7 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
             const redirected = await handlePendingProPlan()
             if (!redirected) {
               const hasProfile = !!(dbUser.profile && Object.keys(dbUser.profile).length > 0)
-              onExistingUser({
-                firstName: dbUser.first_name || '',
-                email: trimEmail,
-                hasProfile,
-                profile: dbUser.profile || {},
-                userId: dbUser.id,
-                isPro: dbUser.is_pro === true,
-              })
+              onExistingUser({ firstName: dbUser.first_name || '', email: trimEmail, hasProfile, profile: dbUser.profile || {}, userId: dbUser.id, isPro: dbUser.is_pro === true })
             }
           } else {
             const newDbUser = await upsertUser({ firstName: '', email: trimEmail, profile: {} })
@@ -193,6 +244,20 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
 
   if (!isModalOpen) return null
 
+  const headings = {
+    signup: 'Create your account.',
+    signin: 'Welcome back.',
+    forgot: 'Reset your password.',
+    code: 'Check your email.',
+  }
+
+  const subtexts = {
+    signup: 'Sign up to save your progress and access your plan from any device.',
+    signin: 'Sign in to continue.',
+    forgot: "Enter your email and we'll send a 6-digit code.",
+    code: `We've sent a code to ${email}. Enter it below along with your new password.`,
+  }
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(26,26,26,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
@@ -218,87 +283,184 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
           <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '28px', color: 'var(--color-ink)', fontWeight: 300 }}>daye</span>
         </div>
 
-        {/* Heading */}
+        {/* Heading + subtext */}
         <h2 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '22px', fontWeight: 300, color: 'var(--color-ink)', textAlign: 'center', margin: '0 0 6px', lineHeight: 1.2 }}>
-          {mode === 'signup' ? 'Create your account.' : 'Welcome back.'}
+          {headings[mode]}
         </h2>
         <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', textAlign: 'center', margin: '0 0 24px', lineHeight: 1.5 }}>
-          {mode === 'signup'
-            ? 'Sign up to save your progress and access your plan from any device.'
-            : 'Sign in to continue.'}
+          {subtexts[mode]}
         </p>
 
-        {/* Google */}
-        <button
-          type="button"
-          onClick={handleGoogle}
-          disabled={googleLoading || loading}
-          className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-60"
-          style={{ background: 'white', color: 'var(--color-ink)', border: '1px solid var(--color-border)', marginBottom: '16px' }}
-        >
-          {googleLoading
-            ? <div className="w-4 h-4 border-2 border-stone-200 border-t-stone-600 rounded-full animate-spin" />
-            : <GoogleLogo />}
-          {googleLoading ? 'Connecting...' : 'Continue with Google'}
-        </button>
+        {/* Google + divider (signin/signup only) */}
+        {(mode === 'signin' || mode === 'signup') && (
+          <>
+            <button
+              type="button"
+              onClick={handleGoogle}
+              disabled={googleLoading || loading}
+              className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-60"
+              style={{ background: 'white', color: 'var(--color-ink)', border: '1px solid var(--color-border)', marginBottom: '16px' }}
+            >
+              {googleLoading
+                ? <div className="w-4 h-4 border-2 border-stone-200 border-t-stone-600 rounded-full animate-spin" />
+                : <GoogleLogo />}
+              {googleLoading ? 'Connecting...' : 'Continue with Google'}
+            </button>
 
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-          <div style={{ flex: 1, height: '1px', background: 'var(--color-border)' }} />
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.6 }}>or</span>
-          <div style={{ flex: 1, height: '1px', background: 'var(--color-border)' }} />
-        </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ flex: 1, height: '1px', background: 'var(--color-border)' }} />
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.6 }}>or</span>
+              <div style={{ flex: 1, height: '1px', background: 'var(--color-border)' }} />
+            </div>
+          </>
+        )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {mode === 'signup' && (
+        {/* Signin / Signup form */}
+        {(mode === 'signin' || mode === 'signup') && (
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {mode === 'signup' && (
+              <input
+                type="text"
+                name="given-name"
+                placeholder="First name"
+                value={firstName}
+                onChange={e => {
+                  const v = e.target.value
+                  setFirstName(v.charAt(0).toUpperCase() + v.slice(1))
+                  setError('')
+                }}
+                required
+                autoFocus
+                autoCapitalize="words"
+                autoComplete="given-name"
+                style={inputStyle}
+              />
+            )}
             <input
-              type="text"
-              name="given-name"
-              placeholder="First name"
-              value={firstName}
-              onChange={e => {
-                const v = e.target.value
-                setFirstName(v.charAt(0).toUpperCase() + v.slice(1))
-                setError('')
-              }}
+              type="email"
+              name="email"
+              placeholder="Email address"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setError('') }}
               required
-              autoFocus
-              autoCapitalize="words"
-              autoComplete="given-name"
+              autoFocus={mode === 'signin'}
+              autoComplete="email"
               style={inputStyle}
             />
-          )}
-          <input
-            type="email"
-            name="email"
-            placeholder="Email address"
-            value={email}
-            onChange={e => { setEmail(e.target.value); setError('') }}
-            required
-            autoFocus={mode === 'signin'}
-            autoComplete="email"
-            style={inputStyle}
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => { setPassword(e.target.value); setError('') }}
-            required
-            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            style={inputStyle}
-          />
-          {mode === 'signup' && (
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={password}
+              onChange={e => { setPassword(e.target.value); setError('') }}
+              required
+              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+              style={inputStyle}
+            />
+            {mode === 'signup' && (
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="password"
+                  name="confirm-password"
+                  placeholder="Confirm password"
+                  value={confirmPassword}
+                  onChange={e => { setConfirmPassword(e.target.value); setError('') }}
+                  required
+                  autoComplete="new-password"
+                  style={{
+                    ...inputStyle,
+                    borderColor: confirmTouched ? (passwordsMatch ? '#22c55e' : '#c0392b') : 'var(--color-border)',
+                    paddingRight: confirmTouched ? '36px' : '14px',
+                  }}
+                />
+                {confirmTouched && passwordsMatch && (
+                  <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#22c55e', fontSize: '14px', pointerEvents: 'none' }}>✓</span>
+                )}
+                {confirmTouched && !passwordsMatch && (
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: '#c0392b', margin: '4px 0 0', lineHeight: 1.4 }}>Passwords don't match</p>
+                )}
+              </div>
+            )}
+
+            {mode === 'signin' && (
+              <button
+                type="button"
+                onClick={() => { setMode('forgot'); setError('') }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', textAlign: 'left', padding: 0, textDecoration: 'underline', textUnderlineOffset: '2px' }}
+              >
+                Forgot password?
+              </button>
+            )}
+
+            {error && (
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: '#c0392b', margin: 0 }}>{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || googleLoading || (mode === 'signup' && confirmTouched && !passwordsMatch)}
+              style={{ width: '100%', background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '13px 24px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, cursor: (loading || googleLoading) ? 'default' : 'pointer', opacity: (loading || googleLoading || (mode === 'signup' && confirmTouched && !passwordsMatch)) ? 0.7 : 1, marginTop: '2px', letterSpacing: '0.01em' }}
+            >
+              {loading ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Sign in'}
+            </button>
+          </form>
+        )}
+
+        {/* Forgot password — step 1: enter email */}
+        {mode === 'forgot' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setError('') }}
+              autoFocus
+              autoComplete="email"
+              style={inputStyle}
+            />
+            {error && (
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: '#c0392b', margin: 0 }}>{error}</p>
+            )}
+            <button
+              type="button"
+              onClick={handleSendCode}
+              disabled={resetLoading}
+              style={{ width: '100%', background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '13px 24px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, cursor: resetLoading ? 'default' : 'pointer', opacity: resetLoading ? 0.7 : 1, letterSpacing: '0.01em' }}
+            >
+              {resetLoading ? 'Sending…' : 'Send code'}
+            </button>
+          </div>
+        )}
+
+        {/* Reset password — step 2: enter code + new password */}
+        {mode === 'code' && (
+          <form onSubmit={handleVerifyCode} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              placeholder="6-digit code"
+              value={resetCode}
+              onChange={e => { setResetCode(e.target.value.replace(/\D/g, '')); setError('') }}
+              autoFocus
+              autoComplete="one-time-code"
+              style={{ ...inputStyle, letterSpacing: '0.2em', textAlign: 'center', fontSize: '22px' }}
+            />
+            <input
+              type="password"
+              placeholder="New password"
+              value={password}
+              onChange={e => { setPassword(e.target.value); setError('') }}
+              autoComplete="new-password"
+              style={inputStyle}
+            />
             <div style={{ position: 'relative' }}>
               <input
                 type="password"
-                name="confirm-password"
-                placeholder="Confirm password"
+                placeholder="Confirm new password"
                 value={confirmPassword}
                 onChange={e => { setConfirmPassword(e.target.value); setError('') }}
-                required
                 autoComplete="new-password"
                 style={{
                   ...inputStyle,
@@ -313,55 +475,63 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
                 <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: '#c0392b', margin: '4px 0 0', lineHeight: 1.4 }}>Passwords don't match</p>
               )}
             </div>
-          )}
 
-          {mode === 'signin' && (
-            resetSent ? (
-              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', margin: 0 }}>
-                Check your inbox for a password reset link.
-              </p>
+            {error && (
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: '#c0392b', margin: 0 }}>{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={resetLoading || (confirmTouched && !passwordsMatch)}
+              style={{ width: '100%', background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '13px 24px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, cursor: resetLoading ? 'default' : 'pointer', opacity: (resetLoading || (confirmTouched && !passwordsMatch)) ? 0.7 : 1, letterSpacing: '0.01em' }}
+            >
+              {resetLoading ? 'Verifying…' : 'Verify & sign in'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSendCode}
+              disabled={resetLoading}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', textAlign: 'center', padding: '4px 0 0', textDecoration: 'underline', textUnderlineOffset: '2px' }}
+            >
+              Send a new code
+            </button>
+          </form>
+        )}
+
+        {/* Back to sign in (forgot / code modes) */}
+        {(mode === 'forgot' || mode === 'code') && (
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', textAlign: 'center', marginTop: '20px', marginBottom: 0 }}>
+            <button
+              type="button"
+              onClick={() => { setMode('signin'); setError(''); setResetCode(''); setPassword(''); setConfirmPassword('') }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-ink)', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, padding: 0, textDecoration: 'underline', textUnderlineOffset: '2px' }}
+            >
+              Back to sign in
+            </button>
+          </p>
+        )}
+
+        {/* Mode toggle (signin / signup) */}
+        {(mode === 'signin' || mode === 'signup') && (
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', textAlign: 'center', marginTop: '20px', marginBottom: 0 }}>
+            {mode === 'signin' ? (
+              <>Don't have an account?{' '}
+                <button type="button" onClick={() => { setMode('signup'); setError(''); setConfirmPassword('') }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-ink)', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, padding: 0, textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                  Create one
+                </button>
+              </>
             ) : (
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '12px', color: 'var(--color-muted)', textAlign: 'left', padding: 0, textDecoration: 'underline', textUnderlineOffset: '2px' }}
-              >
-                Forgot password?
-              </button>
-            )
-          )}
-
-          {error && (
-            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: '#c0392b', margin: 0 }}>{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || googleLoading || (mode === 'signup' && confirmTouched && !passwordsMatch)}
-            style={{ width: '100%', background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '13px 24px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, cursor: (loading || googleLoading) ? 'default' : 'pointer', opacity: (loading || googleLoading || (mode === 'signup' && confirmTouched && !passwordsMatch)) ? 0.7 : 1, marginTop: '2px', letterSpacing: '0.01em' }}
-          >
-            {loading ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Sign in'}
-          </button>
-        </form>
-
-        {/* Mode toggle */}
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', textAlign: 'center', marginTop: '20px', marginBottom: 0 }}>
-          {mode === 'signin' ? (
-            <>Don't have an account?{' '}
-              <button type="button" onClick={() => { setMode('signup'); setError(''); setResetSent(false); setConfirmPassword('') }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-ink)', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, padding: 0, textDecoration: 'underline', textUnderlineOffset: '2px' }}>
-                Create one
-              </button>
-            </>
-          ) : (
-            <>Already have an account?{' '}
-              <button type="button" onClick={() => { setMode('signin'); setError(''); setConfirmPassword('') }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-ink)', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, padding: 0, textDecoration: 'underline', textUnderlineOffset: '2px' }}>
-                Sign in
-              </button>
-            </>
-          )}
-        </p>
+              <>Already have an account?{' '}
+                <button type="button" onClick={() => { setMode('signin'); setError(''); setConfirmPassword('') }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-ink)', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, padding: 0, textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                  Sign in
+                </button>
+              </>
+            )}
+          </p>
+        )}
       </div>
     </div>
   )

@@ -37,26 +37,8 @@ export default function ResetPassword() {
         .then(({ error: err }) => {
           setStatus(err ? 'invalid' : 'form')
         })
-      return
-    }
-
-    // Hash-based flow: Supabase appends #access_token=...&type=recovery
-    const hash = window.location.hash
-    if (!hash.includes('access_token')) {
+    } else {
       setStatus('invalid')
-      return
-    }
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setStatus('form')
-    })
-
-    // Fallback if the auth state change doesn't fire within 4 seconds
-    const fallback = setTimeout(() => setStatus('invalid'), 4000)
-
-    return () => {
-      subscription.unsubscribe()
-      clearTimeout(fallback)
     }
   }, [])
 
