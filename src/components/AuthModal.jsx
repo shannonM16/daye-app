@@ -95,22 +95,34 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
   }
 
   const handleSendCode = async () => {
+    console.log('[handleSendCode] fired, email:', email)
     if (!email.trim()) { setError('Enter your email address'); return }
     setError('')
     setResetLoading(true)
     try {
+      const payload = { email: email.trim() }
+      console.log('[handleSendCode] calling /api/send-reset-code with payload:', payload)
       const res = await fetch('/api/send-reset-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify(payload),
       })
+      console.log('[handleSendCode] response status:', res.status)
       const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Something went wrong'); setResetLoading(false); return }
+      console.log('[handleSendCode] response body:', data)
+      if (!res.ok) {
+        console.error('[handleSendCode] error from server:', data)
+        setError(data.error || 'Something went wrong')
+        setResetLoading(false)
+        return
+      }
+      console.log('[handleSendCode] success — switching to code entry mode')
       setResetCode('')
       setPassword('')
       setConfirmPassword('')
       setMode('code')
-    } catch {
+    } catch (err) {
+      console.error('[handleSendCode] fetch threw:', err)
       setError('Something went wrong. Please try again.')
     }
     setResetLoading(false)

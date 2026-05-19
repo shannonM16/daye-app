@@ -221,6 +221,17 @@ export default function App() {
     }
   }, [])
 
+  // Open forgot-password modal when redirected from the old /reset-password route
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('resetPassword') === '1') {
+      const clean = new URL(window.location.href)
+      clean.searchParams.delete('resetPassword')
+      window.history.replaceState({}, '', clean.toString())
+      showAuthModal('forgot')
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Supabase init: load from DB on mount, run migration if needed ──
   useEffect(() => {
     async function initFromSupabase() {
