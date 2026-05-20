@@ -23,15 +23,19 @@ export default async function handler(req, res) {
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const supabase = createClient(supabaseUrl, supabaseKey)
 
+  const now = new Date().toISOString()
   const { data: rows, error: lookupError } = await supabase
     .from('password_reset_codes')
-    .select('id, expires_at')
+    .select('*')
     .eq('email', normalised)
     .eq('code', code.trim())
     .eq('used', false)
+    .gt('expires_at', now)
     .order('created_at', { ascending: false })
     .limit(1)
 
+  console.log('[verify-reset-code] query time (now):', now)
+  console.log('[verify-reset-code] row found:', rows?.length > 0)
   console.log('[verify-reset-code] lookup rows:', JSON.stringify(rows))
   console.log('[verify-reset-code] lookup error:', lookupError ? JSON.stringify(lookupError) : null)
 
@@ -41,9 +45,7 @@ export default async function handler(req, res) {
   }
 
   const record = rows[0]
-  if (new Date(record.expires_at) < new Date()) {
-    return res.status(400).json({ error: 'Code has expired — request a new one' })
-  }
+  console.log('[verify-reset-code] record expires_at:', record.expires_at, '| now:', now, '| valid:', record.expires_at > now)
 
   // Find auth user by email
   const { data: usersData, error: listError } = await supabase.auth.admin.listUsers({
