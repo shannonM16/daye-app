@@ -27,14 +27,14 @@ export async function updateUserLastSeen(userId) {
   if (error) throw error
 }
 
-export async function upsertUser({ firstName, email, profile = {} }) {
+export async function upsertUser({ firstName, email }) {
   const { data, error } = await supabase
     .from('users')
     .upsert(
-      { email, first_name: firstName, profile, updated_at: new Date().toISOString() },
+      { email, first_name: firstName },
       { onConflict: 'email' }
     )
-    .select('id, email, first_name, profile')
+    .select('id, email, first_name, is_pro')
     .single()
   if (error) {
     throw error
@@ -45,7 +45,7 @@ export async function upsertUser({ firstName, email, profile = {} }) {
 export async function fetchUserByEmail(email) {
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, first_name, profile, is_pro')
+    .select('id, email, first_name, is_pro')
     .eq('email', email)
     .maybeSingle()
   if (error) throw error
@@ -55,7 +55,7 @@ export async function fetchUserByEmail(email) {
 export async function fetchUserById(id) {
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, first_name, profile, is_pro')
+    .select('id, email, first_name, is_pro')
     .eq('id', id)
     .maybeSingle()
   if (error) throw error
