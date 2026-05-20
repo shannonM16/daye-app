@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const supabase = createClient(supabaseUrl, supabaseKey)
 
-  const code = String(crypto.randomInt(100000, 999999))
+  const code = String(Math.floor(100000 + Math.random() * 900000))
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
   console.log('[send-reset-code] generated code length:', code.length, '| expires:', expiresAt)
 
