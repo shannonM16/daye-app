@@ -34,7 +34,7 @@ export async function upsertUser({ firstName, email }) {
       { email, first_name: firstName },
       { onConflict: 'email' }
     )
-    .select('id, email, first_name, is_pro')
+    .select('id, email, first_name, user_type')
     .single()
   if (error) {
     throw error
@@ -45,7 +45,7 @@ export async function upsertUser({ firstName, email }) {
 export async function fetchUserByEmail(email) {
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, first_name, is_pro')
+    .select('id, email, first_name, user_type')
     .eq('email', email)
     .maybeSingle()
   if (error) throw error
@@ -55,7 +55,7 @@ export async function fetchUserByEmail(email) {
 export async function fetchUserById(id) {
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, first_name, is_pro')
+    .select('id, email, first_name, user_type')
     .eq('id', id)
     .maybeSingle()
   if (error) throw error
