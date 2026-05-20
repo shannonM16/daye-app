@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 
-export default function NavAuthButton({ onSignIn, textColor = '#1a1a1a' }) {
+export default function NavAuthButton({ onSignIn, onViewSettings, textColor = '#1a1a1a' }) {
   const { navUser, signOut, showAuthModal } = useAuth()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -51,7 +51,7 @@ export default function NavAuthButton({ onSignIn, textColor = '#1a1a1a' }) {
           minWidth: '160px', overflow: 'hidden', zIndex: 500,
         }}>
           <button
-            onClick={() => { setOpen(false); window.location.href = '/' }}
+            onClick={() => { setOpen(false); onViewSettings ? onViewSettings() : window.location.href = '/' }}
             style={{
               display: 'block', width: '100%', textAlign: 'left',
               background: 'none', border: 'none', padding: '12px 16px',
@@ -59,7 +59,7 @@ export default function NavAuthButton({ onSignIn, textColor = '#1a1a1a' }) {
               color: 'var(--color-ink)', cursor: 'pointer',
             }}
           >
-            My account
+            Settings
           </button>
           <div style={{ height: '0.5px', background: 'var(--color-border)' }} />
           <button

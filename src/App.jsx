@@ -663,7 +663,7 @@ export default function App() {
   if (screen === SCREENS.ONBOARDING) {
     return (
       <>
-        <HoverNav />
+        <HoverNav onViewSettings={() => setScreen(SCREENS.SETTINGS)} />
         <Onboarding
           onComplete={handleOnboarding}
           onBack={() => setScreen(SCREENS.LANDING)}
@@ -675,7 +675,7 @@ export default function App() {
   if (screen === SCREENS.FIO_REFLECTION) {
     return (
       <>
-        <HoverNav />
+        <HoverNav onViewSettings={() => setScreen(SCREENS.SETTINGS)} />
         <OnboardingFiguringItOut
           onComplete={(data) => {
             const updated = { ...(userProfile || {}), ...data }
@@ -693,7 +693,7 @@ export default function App() {
   if (screen === SCREENS.LOADING) {
     return (
       <>
-        <HoverNav />
+        <HoverNav onViewSettings={() => setScreen(SCREENS.SETTINGS)} />
         <LoadingScreen />
       </>
     )
@@ -702,7 +702,7 @@ export default function App() {
   if (screen === SCREENS.OUTPUT && plan) {
     return (
       <>
-        <HoverNav />
+        <HoverNav onViewSettings={() => setScreen(SCREENS.SETTINGS)} />
         <FocusOutput
           plan={plan}
           userTasks={userTasks}
@@ -726,7 +726,7 @@ export default function App() {
   if (screen === SCREENS.ACTION && plan) {
     return (
       <>
-        <HoverNav />
+        <HoverNav onViewSettings={() => setScreen(SCREENS.SETTINGS)} />
         <ActionMode
           priorities={plan.priorities}
           prioritySubtitles={plan.prioritySubtitles}
@@ -748,7 +748,7 @@ export default function App() {
   if (screen === SCREENS.EOD_REFLECTION) {
     return (
       <>
-        <HoverNav />
+        <HoverNav onViewSettings={() => setScreen(SCREENS.SETTINGS)} />
         <EndOfDayReflection
           user={user}
           onComplete={() => setScreen(SCREENS.CHECKIN)}
@@ -861,7 +861,7 @@ export default function App() {
 
   return (
     <>
-      <HoverNav />
+      <HoverNav onViewSettings={() => setScreen(SCREENS.SETTINGS)} />
       {isOffline && (
         <div style={{
           position: 'fixed',

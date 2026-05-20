@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import NavAuthButton from './NavAuthButton'
 
-export default function HoverNav() {
+export default function HoverNav({ onViewSettings }) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function HoverNav() {
         >
           Pro
         </a>
-        <NavAuthButton />
+        <NavAuthButton onViewSettings={onViewSettings} />
       </div>
     </nav>
   )
