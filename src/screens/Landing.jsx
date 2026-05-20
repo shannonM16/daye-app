@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import NavAuthButton from '../components/NavAuthButton'
 import Footer from '../components/Footer'
+import { useAuth } from '../context/AuthContext'
 
-function MobileNav({ onStartDay, onSignIn }) {
+function MobileNav({ onStartDay, onSignIn, onOpenApp, navUser }) {
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -48,19 +49,21 @@ function MobileNav({ onStartDay, onSignIn }) {
             >
               Pro
             </a>
-            <button
-              onClick={() => { setOpen(false); onSignIn() }}
-              style={{ fontFamily: 'var(--font-sans)', fontSize: '18px', color: 'var(--color-ink)', background: 'none', border: 'none', borderBottom: '0.5px solid var(--color-border)', cursor: 'pointer', textAlign: 'left', padding: '16px 0' }}
-            >
-              Sign in
-            </button>
+            {!navUser && (
+              <button
+                onClick={() => { setOpen(false); onSignIn() }}
+                style={{ fontFamily: 'var(--font-sans)', fontSize: '18px', color: 'var(--color-ink)', background: 'none', border: 'none', borderBottom: '0.5px solid var(--color-border)', cursor: 'pointer', textAlign: 'left', padding: '16px 0' }}
+              >
+                Sign in
+              </button>
+            )}
           </nav>
           <div style={{ marginTop: 'auto', paddingTop: '32px' }}>
             <button
-              onClick={() => { setOpen(false); onStartDay() }}
+              onClick={() => { setOpen(false); navUser ? onOpenApp() : onStartDay() }}
               style={{ width: '100%', background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '14px 28px', fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 500, cursor: 'pointer' }}
             >
-              Start free
+              {navUser ? 'Open Daye' : 'Start free'}
             </button>
           </div>
         </div>
@@ -511,7 +514,8 @@ function MockPlanCard() {
   )
 }
 
-export default function Landing({ onStartDay, onSignIn, onViewSettings }) {
+export default function Landing({ onStartDay, onSignIn, onViewSettings, onOpenApp }) {
+  const { navUser, isPro } = useAuth()
   const scrollToHowItWorks = () => {
     document.getElementById('landing-how-it-works')?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -539,10 +543,10 @@ export default function Landing({ onStartDay, onSignIn, onViewSettings }) {
             <NavAuthButton onSignIn={onSignIn} onViewSettings={onViewSettings} />
             <div style={{ width: '1px', height: '20px', background: 'var(--color-border)', flexShrink: 0 }} />
             <button
-              onClick={onStartDay}
+              onClick={navUser ? onOpenApp : onStartDay}
               style={{ background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 20px', fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
             >
-              Start free
+              {navUser ? 'Open Daye' : 'Start free'}
             </button>
           </div>
         </div>
@@ -553,7 +557,7 @@ export default function Landing({ onStartDay, onSignIn, onViewSettings }) {
         <div className="landing-container" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
 
           {/* Mobile nav */}
-          <MobileNav onStartDay={onStartDay} onSignIn={onSignIn} />
+          <MobileNav onStartDay={onStartDay} onSignIn={onSignIn} onOpenApp={onOpenApp} navUser={navUser} />
 
           {/* Desktop nav spacer */}
           <div className="landing-desktop-only" style={{ height: '80px' }} />
@@ -579,27 +583,47 @@ export default function Landing({ onStartDay, onSignIn, onViewSettings }) {
               </p>
 
               <div className="hero-anim hero-anim-delay-4">
-                <div className="hero-buttons" style={{ marginBottom: '16px' }}>
-                  <button
-                    onClick={onStartDay}
-                    style={{ background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '14px 28px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', transition: 'opacity 0.15s' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
-                  >
-                    Start free
-                  </button>
-                  <button
-                    onClick={scrollToHowItWorks}
-                    style={{ background: 'white', color: 'var(--color-ink)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '14px 28px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 400, cursor: 'pointer', transition: 'border-color 0.15s' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-border-dark)' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)' }}
-                  >
-                    See how it works
-                  </button>
-                </div>
-                <p style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)', margin: 0 }}>
-                  Free to start · No credit card needed
-                </p>
+                {navUser ? (
+                  <div style={{ marginBottom: '16px' }}>
+                    <button
+                      onClick={onOpenApp}
+                      style={{ background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '14px 28px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', transition: 'opacity 0.15s' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
+                    >
+                      Open Daye
+                    </button>
+                    {!isPro && (
+                      <p style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)', margin: '12px 0 0' }}>
+                        <a href="/pricing" style={{ color: 'var(--color-lavender)', textDecoration: 'none', fontWeight: 500 }}>Upgrade to Pro</a> · Unlock all features
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="hero-buttons" style={{ marginBottom: '16px' }}>
+                    <button
+                      onClick={onStartDay}
+                      style={{ background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '14px 28px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', transition: 'opacity 0.15s' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
+                    >
+                      Start free
+                    </button>
+                    <button
+                      onClick={scrollToHowItWorks}
+                      style={{ background: 'white', color: 'var(--color-ink)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '14px 28px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 400, cursor: 'pointer', transition: 'border-color 0.15s' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-border-dark)' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)' }}
+                    >
+                      See how it works
+                    </button>
+                  </div>
+                )}
+                {!navUser && (
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'var(--color-muted)', margin: 0 }}>
+                    Free to start · No credit card needed
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -751,21 +775,21 @@ export default function Landing({ onStartDay, onSignIn, onViewSettings }) {
       <section style={{ background: 'var(--color-ink)', padding: '100px 0' }}>
         <div className="landing-container" style={{ textAlign: 'center' }}>
           <h2 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 300, color: 'white', lineHeight: 1.2, margin: '0 0 16px 0' }} className="landing-cta-headline">
-            Ready to start your day with intention?
+            {navUser ? 'Your day is waiting.' : 'Ready to start your day with intention?'}
           </h2>
           <p style={{ fontFamily: 'var(--font-sans)', fontSize: '15px', color: 'white', opacity: 0.6, margin: '0 0 40px 0' }}>
-            Join Daye. It takes 2 minutes and it's free.
+            {navUser ? (isPro ? 'You\'re on Daye Pro. Open the app to build your plan.' : 'Open the app and build your focus plan for today.') : 'Join Daye. It takes 2 minutes and it\'s free.'}
           </p>
           <button
-            onClick={onStartDay}
+            onClick={navUser ? onOpenApp : onStartDay}
             style={{ background: 'white', color: 'var(--color-ink)', border: 'none', borderRadius: '10px', padding: '16px 36px', fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 500, cursor: 'pointer', display: 'block', margin: '0 auto 24px', transition: 'opacity 0.15s' }}
             onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9' }}
             onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
           >
-            Start your day
+            {navUser ? 'Open Daye' : 'Start your day'}
           </button>
           <p style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', color: 'white', opacity: 0.4, margin: 0 }}>
-            withdaye.com · Free forever · No credit card
+            {navUser ? (isPro ? 'Daye Pro · All features unlocked' : 'withdaye.com · Free plan') : 'withdaye.com · Free forever · No credit card'}
           </p>
         </div>
       </section>

@@ -654,6 +654,7 @@ export default function App() {
           onStartDay={() => showAuthModal('signup')}
           onSignIn={() => showAuthModal('signin')}
           onViewSettings={() => setScreen(SCREENS.SETTINGS)}
+          onOpenApp={() => setScreen(SCREENS.CHECKIN)}
         />
         <AuthModal onNewUser={handleEmailNewUser} onExistingUser={handleEmailExistingUser} />
       </>
