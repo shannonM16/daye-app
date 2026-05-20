@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { upsertUser, fetchUserByEmail } from '../lib/db'
+import { upsertUser, fetchUserByEmail, fetchUserById } from '../lib/db'
 import { addLoopsContact, sendLoopsWelcomeEmail } from '../lib/loops'
 import { useAuth } from '../context/AuthContext'
 
@@ -161,8 +161,8 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
       }
 
       const trimEmail = email.trim()
-      console.log('[handleVerifyCode] fetching dbUser for:', trimEmail)
-      const dbUser = await fetchUserByEmail(trimEmail)
+      console.log('[handleVerifyCode] fetching dbUser by id:', signInData.user.id)
+      const dbUser = await fetchUserById(signInData.user.id)
       console.log('[handleVerifyCode] dbUser:', dbUser?.id ?? 'not found')
       if (dbUser) {
         localStorage.setItem('daye_user_id', dbUser.id)

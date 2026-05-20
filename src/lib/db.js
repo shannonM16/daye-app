@@ -52,6 +52,16 @@ export async function fetchUserByEmail(email) {
   return data
 }
 
+export async function fetchUserById(id) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, email, first_name, profile, is_pro')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
 export async function savePlan(userId, date, planData) {
   const { error } = await supabase
     .from('plans')
