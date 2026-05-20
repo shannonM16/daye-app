@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   const loopsPayload = {
     transactionalId: process.env.LOOPS_RESET_CODE_ID,
     email: normalised,
-    dataVariables: { code },
+    dataVariables: { resetCode: code },
   }
   console.log('[send-reset-code] loops payload:', JSON.stringify(loopsPayload))
 
