@@ -17,7 +17,9 @@ export default async function handler(req, res) {
   console.log('[send-reset-code] SUPABASE_SERVICE_ROLE_KEY defined:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
 
   const normalised = email.toLowerCase().trim()
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabase = createClient(supabaseUrl, supabaseKey)
 
   const code = String(crypto.randomInt(100000, 999999))
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
