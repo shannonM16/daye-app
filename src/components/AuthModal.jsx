@@ -147,7 +147,7 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
       if (!res.ok) { setError(data.error || 'Invalid or expired code'); setResetLoading(false); return }
 
       // Auto sign in with the new password
-      console.log('[handleVerifyCode] attempting signInWithPassword')
+      console.log('[handleVerifyCode] attempting signInWithPassword with email:', email.trim())
       const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
