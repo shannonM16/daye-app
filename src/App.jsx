@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
 import { useStorage } from './hooks/useStorage'
 import { useAuth } from './context/AuthContext'
@@ -186,6 +186,7 @@ function RightPanel({ screen, user, userProfile, checkInData, liveSelectedTasks 
 
 export default function App() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { showAuthModal, updateNavUser, updateIsPro } = useAuth()
   const [user, setUser] = useStorage('df_user', null)
   const [userProfile, setUserProfile] = useStorage('df_userProfile', null)
@@ -611,6 +612,15 @@ export default function App() {
   }, [])
 
   // ── Public routes ────────────────────────────────────────────────
+  if (location.pathname === '/settings') {
+    if (user) {
+      navigate('/', { replace: true })
+      setScreen(SCREENS.SETTINGS)
+      return null
+    }
+    navigate('/', { replace: true })
+    return null
+  }
   if (location.pathname === '/reset-password') return <ResetPassword />
   if (location.pathname === '/privacy-policy') return <PrivacyPolicy />
   if (location.pathname === '/terms') return <TermsOfService />
@@ -643,6 +653,7 @@ export default function App() {
         <Landing
           onStartDay={() => showAuthModal('signup')}
           onSignIn={() => showAuthModal('signin')}
+          onViewSettings={() => setScreen(SCREENS.SETTINGS)}
         />
         <AuthModal onNewUser={handleEmailNewUser} onExistingUser={handleEmailExistingUser} />
       </>

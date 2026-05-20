@@ -511,7 +511,7 @@ function MockPlanCard() {
   )
 }
 
-export default function Landing({ onStartDay, onSignIn }) {
+export default function Landing({ onStartDay, onSignIn, onViewSettings }) {
   const scrollToHowItWorks = () => {
     document.getElementById('landing-how-it-works')?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -536,7 +536,7 @@ export default function Landing({ onStartDay, onSignIn }) {
             >
               Pro
             </a>
-            <NavAuthButton onSignIn={onSignIn} />
+            <NavAuthButton onSignIn={onSignIn} onViewSettings={onViewSettings} />
             <div style={{ width: '1px', height: '20px', background: 'var(--color-border)', flexShrink: 0 }} />
             <button
               onClick={onStartDay}
