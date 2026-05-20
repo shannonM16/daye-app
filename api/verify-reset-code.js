@@ -47,27 +47,30 @@ export default async function handler(req, res) {
   const record = rows[0]
   console.log('[verify-reset-code] record expires_at:', record.expires_at, '| now:', now, '| valid:', record.expires_at > now)
 
-  // Find auth user by email
-  const { data: usersData, error: listError } = await supabase.auth.admin.listUsers({
-    filter: normalised,
-    page: 1,
-    perPage: 10,
-  })
-  if (listError) {
-    console.error('verify-reset-code listUsers error:', listError)
-    return res.status(500).json({ error: 'Failed to find account' })
-  }
+  // Find user ID from users table
+  console.log('[verify-reset-code] looking up user by email:', normalised)
+  const { data: profileData, error: profileError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('email', normalised)
+    .single()
 
-  const user = usersData?.users?.find(u => u.email?.toLowerCase() === normalised)
-  if (!user) {
+  console.log('[verify-reset-code] profileData:', JSON.stringify(profileData))
+  console.log('[verify-reset-code] profileError:', profileError ? JSON.stringify(profileError) : null)
+
+  if (profileError || !profileData) {
     return res.status(400).json({ error: 'No account found for this email' })
   }
 
-  const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
+  const userId = profileData.id
+  console.log('[verify-reset-code] userId found:', userId)
+
+  console.log('[verify-reset-code] calling updateUserById')
+  const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
     password: newPassword,
   })
+  console.log('[verify-reset-code] updateError:', updateError ? JSON.stringify(updateError) : null)
   if (updateError) {
-    console.error('verify-reset-code updateUser error:', updateError)
     return res.status(500).json({ error: 'Failed to update password' })
   }
 
