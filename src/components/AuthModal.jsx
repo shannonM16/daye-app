@@ -141,14 +141,18 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), code: resetCode.trim(), newPassword: password }),
       })
+      console.log('[handleVerifyCode] response status:', res.status)
       const data = await res.json()
+      console.log('[handleVerifyCode] response body:', data)
       if (!res.ok) { setError(data.error || 'Invalid or expired code'); setResetLoading(false); return }
 
       // Auto sign in with the new password
+      console.log('[handleVerifyCode] attempting signInWithPassword')
       const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       })
+      console.log('[handleVerifyCode] signIn result:', { user: signInData?.user?.email, error: signInErr?.message })
       if (signInErr || !signInData.user) {
         setError('Password updated — please sign in.')
         setMode('signin')
@@ -157,7 +161,9 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
       }
 
       const trimEmail = email.trim()
+      console.log('[handleVerifyCode] fetching dbUser for:', trimEmail)
       const dbUser = await fetchUserByEmail(trimEmail)
+      console.log('[handleVerifyCode] dbUser:', dbUser?.id ?? 'not found')
       if (dbUser) {
         localStorage.setItem('daye_user_id', dbUser.id)
         updateNavUser({ firstName: dbUser.first_name || '', email: trimEmail })
@@ -171,7 +177,8 @@ export default function AuthModal({ onNewUser, onExistingUser }) {
         hideAuthModal()
         onNewUser({ firstName: '', email: trimEmail })
       }
-    } catch {
+    } catch (err) {
+      console.error('[handleVerifyCode] caught error:', err)
       setError('Something went wrong. Please try again.')
     }
     setResetLoading(false)
