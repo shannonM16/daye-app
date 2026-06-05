@@ -184,6 +184,35 @@ function RightPanel({ screen, user, userProfile, checkInData, liveSelectedTasks 
 
 // ── Main app ───────────────────────────────────────────────────────
 
+
+
+
+
+
+function getDailyPlanCount() {
+  try {
+    const raw = localStorage.getItem('daye_daily_plan_count')
+    if (!raw) return { count: 0, date: '' }
+    return JSON.parse(raw)
+  } catch { return { count: 0, date: '' } }
+}
+
+function incrementDailyPlanCount() {
+  const today = new Date().toISOString().split('T')[0]
+  const current = getDailyPlanCount()
+  const count = current.date === today ? current.count + 1 : 1
+  localStorage.setItem('daye_daily_plan_count', JSON.stringify({ count, date: today }))
+  return count
+}
+
+function checkDailyPlanLimit(isPro) {
+  if (isPro) return true
+  const today = new Date().toISOString().split('T')[0]
+  const { count, date } = getDailyPlanCount()
+  if (date !== today) return true
+  return count < 3
+}
+
 export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -962,7 +991,7 @@ export default function App() {
           justifyContent: 'center',
           gap: '12px',
         }}>
-          <span>You're offline — your last plan is still available</span>
+          <span>You&apos;re offline — your last plan is still available</span>
           {plan && (
             <button
               onClick={() => setScreen(SCREENS.OUTPUT)}
@@ -989,29 +1018,8 @@ export default function App() {
           </div>
         )}
 
-        function getDailyPlanCount() {
-  try {
-    const raw = localStorage.getItem('daye_daily_plan_count')
-    if (!raw) return { count: 0, date: '' }
-    return JSON.parse(raw)
-  } catch { return { count: 0, date: '' } }
-}
 
-function incrementDailyPlanCount() {
-  const today = new Date().toISOString().split('T')[0]
-  const current = getDailyPlanCount()
-  const count = current.date === today ? current.count + 1 : 1
-  localStorage.setItem('daye_daily_plan_count', JSON.stringify({ count, date: today }))
-  return count
-}
 
-function checkDailyPlanLimit(isPro) {
-  if (isPro) return true
-  const today = new Date().toISOString().split('T')[0]
-  const { count, date } = getDailyPlanCount()
-  if (date !== today) return true
-  return count < 3
-}
       </div>
     </>
   )
