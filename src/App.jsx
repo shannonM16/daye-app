@@ -581,6 +581,48 @@ export default function App() {
     setScreen(SCREENS.LANDING)
   }, [setUser, setUserProfile, setUserTasks, setExtraTasks, setCheckInHistory])
 
+  const handleTaskInput = useCallback(async (tasks) => {
+  if (!checkDailyPlanLimit(isPro)) {
+    setShowPlanLimitModal(true)
+    return
+  }
+
+  setUserTasks(tasks)
+  setExtraTasks([])
+  setScreen(SCREENS.LOADING)
+  const storedMeetings = getMeetingsForToday()
+  const freshMeetings = storedMeetings.length > 0 ? storedMeetings : meetings
+  const result = await buildPlan(
+    { ...(userProfile || {}), firstName: user?.firstName },
+    checkInData,
+    tasks,
+    freshMeetings
+  )
+  setPlan(result)
+
+  incrementDailyPlanCount()
+
+  const today = new Date().toISOString().split('T')[0]
+  try { localStorage.setItem('daye_last_plan', JSON.stringify({ plan: result, date: today })) } catch { /* ignore */ }
+  const planEntry = { date: today, ...checkInData, plannedTasks: tasks }
+  setCheckInHistory((prev) =>
+    (prev || []).map((h) => h.date === today ? { ...h, plannedTasks: tasks } : h)
+  )
+  const userId = localStorage.getItem('daye_user_id')
+  if (userId) {
+    savePlan(userId, today, planEntry).catch(() => {})
+  }
+  if (user?.email) {
+    trackEvent('plan_generated')
+    trackPlanGenerated(user.email).catch(() => {})
+    if (!localStorage.getItem('daye_plan_created_sent')) {
+      sendLoopsPlanCreatedEvent(user.email)
+      localStorage.setItem('daye_plan_created_sent', 'true')
+    }
+  }
+  setScreen(SCREENS.OUTPUT)
+}, [userProfile, checkInData, user, meetings, isPro, setUserTasks, setExtraTasks, setCheckInHistory])
+
   const streakCount = calculateStreak(checkInHistory)
   const currentBest = parseInt(localStorage.getItem('daye_best_streak') || '0')
   if (streakCount > currentBest) {
@@ -645,7 +687,35 @@ export default function App() {
   if (location.pathname === '/pro-success') {
     return <ProSuccess onStartDay={() => { window.location.href = '/' }} />
   }
-
+{showPlanLimitModal && (
+  <div style={{
+    position: 'fixed', inset: 0, background: 'rgba(26,26,26,0.6)',
+    zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: '24px', backdropFilter: 'blur(4px)',
+  }} onClick={() => setShowPlanLimitModal(false)}>
+    <div style={{
+      background: 'var(--color-linen)', borderRadius: '20px',
+      padding: '40px 36px', maxWidth: '420px', width: '100%',
+      boxShadow: '0 24px 64px rgba(26,26,26,0.2)',
+    }} onClick={e => e.stopPropagation()}>
+      <p style={{ fontFamily: 'var(--font-sans)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--color-muted)', marginBottom: '16px', fontWeight: 500 }}>
+        Free plan
+      </p>
+      <h2 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 300, fontSize: '28px', color: 'var(--color-ink)', lineHeight: 1.2, marginBottom: '16px' }}>
+        You've used your 3 plans for today.
+      </h2>
+      <p style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', color: 'var(--color-muted)', lineHeight: 1.65, marginBottom: '32px' }}>
+        Free Daye includes 3 focus plans per day. Upgrade to Pro for unlimited plans, plus The Letter, The Year in Focus, and weekly insights.
+      </p>
+      <a href="/pricing" style={{ display: 'block', width: '100%', background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '14px 24px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', textAlign: 'center', textDecoration: 'none', marginBottom: '12px' }}>
+        Upgrade to Pro
+      </a>
+      <button onClick={() => setShowPlanLimitModal(false)} style={{ width: '100%', background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', cursor: 'pointer', padding: '8px' }}>
+        Come back tomorrow
+      </button>
+    </div>
+  </div>
+)}
   // ── Landing (pre-signup) ─────────────────────────────────────────
   if (screen === SCREENS.LANDING) {
     return (
@@ -918,6 +988,30 @@ export default function App() {
             />
           </div>
         )}
+
+        function getDailyPlanCount() {
+  try {
+    const raw = localStorage.getItem('daye_daily_plan_count')
+    if (!raw) return { count: 0, date: '' }
+    return JSON.parse(raw)
+  } catch { return { count: 0, date: '' } }
+}
+
+function incrementDailyPlanCount() {
+  const today = new Date().toISOString().split('T')[0]
+  const current = getDailyPlanCount()
+  const count = current.date === today ? current.count + 1 : 1
+  localStorage.setItem('daye_daily_plan_count', JSON.stringify({ count, date: today }))
+  return count
+}
+
+function checkDailyPlanLimit(isPro) {
+  if (isPro) return true
+  const today = new Date().toISOString().split('T')[0]
+  const { count, date } = getDailyPlanCount()
+  if (date !== today) return true
+  return count < 3
+}
       </div>
     </>
   )
