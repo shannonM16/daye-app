@@ -527,39 +527,6 @@ export default function App() {
     setScreen(SCREENS.TASK_INPUT)
   }, [])
 
-  const handleTaskInput = useCallback(async (tasks) => {
-    setUserTasks(tasks)
-    setExtraTasks([])
-    setScreen(SCREENS.LOADING)
-    const storedMeetings = getMeetingsForToday()
-    const freshMeetings = storedMeetings.length > 0 ? storedMeetings : meetings
-    const result = await buildPlan(
-      { ...(userProfile || {}), firstName: user?.firstName },
-      checkInData,
-      tasks,
-      freshMeetings
-    )
-    setPlan(result)
-    const today = new Date().toISOString().split('T')[0]
-    try { localStorage.setItem('daye_last_plan', JSON.stringify({ plan: result, date: today })) } catch { /* ignore */ }
-    const planEntry = { date: today, ...checkInData, plannedTasks: tasks }
-    setCheckInHistory((prev) =>
-      (prev || []).map((h) => h.date === today ? { ...h, plannedTasks: tasks } : h)
-    )
-    const userId = localStorage.getItem('daye_user_id')
-    if (userId) {
-      savePlan(userId, today, planEntry).catch(() => {})
-    }
-    if (user?.email) {
-      trackEvent('plan_generated')
-      trackPlanGenerated(user.email).catch(() => {})
-      if (!localStorage.getItem('daye_plan_created_sent')) {
-        sendLoopsPlanCreatedEvent(user.email)
-        localStorage.setItem('daye_plan_created_sent', 'true')
-      }
-    }
-    setScreen(SCREENS.OUTPUT)
-  }, [userProfile, checkInData, user, meetings, setUserTasks, setExtraTasks, setCheckInHistory])
 
   const handleAddMeetingFromTimer = useCallback(async (meeting) => {
     const updatedMeetings = [...meetings, meeting]
