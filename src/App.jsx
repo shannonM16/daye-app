@@ -216,7 +216,7 @@ function checkDailyPlanLimit(isPro) {
 export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { showAuthModal, updateNavUser, updateIsPro } = useAuth()
+  const { showAuthModal, updateNavUser, updateIsPro, isPro } = useAuth()
   const [user, setUser] = useStorage('df_user', null)
   const [userProfile, setUserProfile] = useStorage('df_userProfile', null)
   const [userTasks, setUserTasks] = useStorage('df_userTasks', [])
