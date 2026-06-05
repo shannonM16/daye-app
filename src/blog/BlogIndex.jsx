@@ -62,8 +62,69 @@ const css = `
     background-size: 200px 200px;
     pointer-events: none; z-index: 999; opacity: 0.7;
   }
+
+  /* ── Nav ── */
+  .blog-nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 50;
+    height: 64px;
+    display: flex; align-items: center;
+    padding: 0 48px;
+    transition: background 0.35s, backdrop-filter 0.35s, border-bottom 0.35s;
+  }
+  .blog-nav.scrolled {
+    background: rgba(249,247,245,0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 0.5px solid rgba(28,28,26,0.08);
+  }
+  .blog-nav-inner {
+    width: 100%; max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .blog-nav-logo {
+    font-family: var(--font-serif, 'Cormorant Garamond', serif);
+    font-style: italic; font-weight: 300; font-size: 20px;
+    color: var(--color-ink, #1C1C1A); text-decoration: none;
+  }
+  .blog-nav-links {
+    display: flex; align-items: center; gap: 24px;
+  }
+  .blog-nav-links a {
+    font-family: var(--font-sans, 'DM Sans', sans-serif);
+    font-size: 13px; color: var(--color-muted, #6B6B66);
+    text-decoration: none; transition: color 0.2s;
+  }
+  .blog-nav-links a:hover { color: var(--color-ink, #1C1C1A); }
+  .blog-nav-links .active {
+    color: var(--color-ink, #1C1C1A); font-weight: 500;
+  }
+  .blog-nav-links .pro {
+    color: #c9b8d8; font-weight: 600;
+    border-bottom: 1.5px solid rgba(201,184,216,0.5);
+    padding-bottom: 1px;
+  }
+  .blog-nav-divider {
+    width: 1px; height: 20px;
+    background: rgba(28,28,26,0.12);
+  }
+  .blog-nav-cta {
+    background: var(--color-ink, #1C1C1A); color: white;
+    border: none; border-radius: 8px;
+    font-family: var(--font-sans, 'DM Sans', sans-serif);
+    font-size: 13px; font-weight: 500;
+    padding: 8px 18px; cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: inline-block;
+  }
+  .blog-nav-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(28,28,26,0.18);
+  }
+
   .blog-hero {
-    padding: 80px 48px 60px;
+    padding: 100px 48px 60px;
     max-width: 1200px; margin: 0 auto;
   }
   .blog-hero-inner {
@@ -209,8 +270,12 @@ const css = `
   .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.8s ease, transform 0.8s ease; }
   .reveal.visible { opacity: 1; transform: translateY(0); }
   .d1{transition-delay:.1s} .d2{transition-delay:.2s} .d3{transition-delay:.3s} .d4{transition-delay:.4s}
+
   @media(max-width:860px){
-    .blog-hero { padding: 60px 24px 40px; }
+    .blog-nav { padding: 0 24px; }
+    .blog-nav-links a:not(.blog-nav-cta) { display: none; }
+    .blog-nav-divider { display: none; }
+    .blog-hero { padding: 80px 24px 40px; }
     .blog-hero-inner { grid-template-columns: 1fr; gap: 36px; }
     .blog-stats { flex-direction: row; flex-wrap: wrap; gap: 8px; }
     .blog-stat { flex: 1 1 calc(50% - 8px); }
@@ -222,6 +287,31 @@ const css = `
   }
 `;
 
+function BlogNav() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  return (
+    <nav className={`blog-nav ${scrolled ? 'scrolled' : ''}`}>
+      <div className="blog-nav-inner">
+        <a href="/" className="blog-nav-logo">daye</a>
+        <div className="blog-nav-links">
+          <a href="/blog" className="active">Blog</a>
+          <a href="/pricing" className="pro">Pro</a>
+          <a href="/">Sign in</a>
+          <div className="blog-nav-divider" />
+          <a href="/" className="blog-nav-cta">Start free</a>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
 export default function BlogIndex() {
   const [heroRef, heroV] = useReveal(0.05);
   const featured = posts[0];
@@ -231,6 +321,8 @@ export default function BlogIndex() {
     <>
       <style>{css}</style>
       <div className="blog-page">
+        <BlogNav />
+
         <div className="blog-hero" ref={heroRef}>
           <div className="blog-hero-inner">
             <div>
