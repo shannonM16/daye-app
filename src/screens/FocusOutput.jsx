@@ -1,7 +1,65 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { getStateLevel, isOverwhelmedOrAnxious } from '../utils/stateDetection'
 import { areSimilar } from '../engine/deduplicateTasks'
 import { getPlanInsight } from '../utils/patternEngine'
+
+// ── Elevated styles ───────────────────────────────────────────────
+const OUTPUT_CSS = `
+  .output-screen { position: relative; }
+  .output-screen::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 200px 200px; pointer-events: none; z-index: 0; opacity: 0.5;
+  }
+  .out-blob {
+    position: fixed; border-radius: 50%; filter: blur(90px); pointer-events: none; z-index: 0;
+  }
+  .out-blob-1 {
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(201,184,216,0.11) 0%, transparent 70%);
+    top: -80px; right: -80px; animation: outB1 16s ease-in-out infinite;
+  }
+  .out-blob-2 {
+    width: 260px; height: 260px;
+    background: radial-gradient(circle, rgba(232,213,204,0.09) 0%, transparent 70%);
+    bottom: 60px; left: -40px; animation: outB2 20s ease-in-out infinite;
+  }
+  @keyframes outB1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-14px,12px)} }
+  @keyframes outB2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(12px,-14px)} }
+  .out-reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.55s ease, transform 0.55s ease; }
+  .out-reveal.in { opacity: 1; transform: translateY(0); }
+  .avoid-elevated {
+    background: var(--color-ink) !important; border: none !important;
+    border-radius: 16px; padding: 20px !important;
+  }
+  .avoid-elevated .avoid-lbl {
+    color: rgba(249,247,245,0.45); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; display: block;
+  }
+  .avoid-tag-dark {
+    background: rgba(249,247,245,0.08) !important;
+    border: 0.5px solid rgba(249,247,245,0.12) !important;
+    color: rgba(249,247,245,0.82) !important;
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 12px; font-family: var(--font-sans);
+    display: inline-block;
+  }
+  .why-elevated {
+    background: var(--color-linen) !important; border: none !important;
+    border-left: 3px solid var(--color-lavender) !important;
+    border-radius: 0 16px 16px 0 !important; padding: 20px 20px 20px 18px !important;
+  }
+  .why-elevated p {
+    font-family: var(--font-serif) !important; font-style: italic;
+    font-size: 14px !important; line-height: 1.75 !important; color: var(--color-ink) !important;
+  }
+  .goal-line {
+    display: flex; align-items: center; gap: 8px; padding: 10px 0;
+  }
+  .goal-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-lavender); flex-shrink: 0; }
+  .goal-text { font-family: var(--font-sans); font-size: 12px; color: var(--color-muted); font-style: italic; }
+`
+
 
 function formatDate() {
   const now = new Date()
@@ -513,6 +571,21 @@ export default function FocusOutput({
   const [cardFilename, setCardFilename] = useState(null)
   const [cardGenerating, setCardGenerating] = useState(false)
 
+  // Staggered reveal on mount + CSS injection
+  const [revealed, setRevealed] = useState([])
+  useEffect(() => {
+    const id = 'output-elevated-css'
+    if (!document.getElementById(id)) {
+      const tag = document.createElement('style')
+      tag.id = id; tag.textContent = OUTPUT_CSS
+      document.head.appendChild(tag)
+    }
+    ;[0,120,240,360,480].forEach((delay, i) => {
+      setTimeout(() => setRevealed(prev => [...prev, i]), delay)
+    })
+  }, [])
+
+
   const generateCard = async () => {
     setCardGenerating(true)
     setCardBlobUrl(null)
@@ -557,6 +630,8 @@ export default function FocusOutput({
 
   return (
     <div className="screen output-screen" style={screenStyle}>
+      <div className="out-blob out-blob-1" />
+      <div className="out-blob out-blob-2" />
       {/* Hidden share card */}
       <ShareCard
         firstName={firstName}
@@ -569,7 +644,7 @@ export default function FocusOutput({
 
       <div className="flex-1 overflow-y-auto">
         {/* ── Header ─────────────────────────────────────────── */}
-        <div style={{ marginBottom: '16px' }}>
+        <div className={`out-reveal ${revealed.includes(0) ? 'in' : ''}`} style={{ marginBottom: '16px' }}>
           <span
             onClick={onHome}
             role="button"
@@ -650,7 +725,7 @@ export default function FocusOutput({
           {/* Left: priorities + add task + why */}
           <div className="output-col-left">
 
-            <div className="card">
+            <div className={`card out-reveal ${revealed.includes(1) ? 'in' : ''}`}>
               <SectionLabel>Focus on</SectionLabel>
               {displayPriorities.length === 0 ? (
                 <div style={{ padding: '12px 0' }}>
@@ -731,9 +806,9 @@ export default function FocusOutput({
             )}
 
             {displayWhy && (
-              <div className="rounded-2xl p-5" style={{ background: 'var(--color-white)', border: '1px solid var(--color-border)', borderLeft: '3px solid var(--color-lavender)' }}>
+              <div className={`why-elevated out-reveal ${revealed.includes(4) ? 'in' : ''}`}>
                 <h2 className="text-[11px] font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-muted)' }}>Why</h2>
-                <p className="text-sm leading-relaxed italic" style={{ color: 'var(--color-muted)' }}>{displayWhy}</p>
+                <p>{displayWhy}</p>
               </div>
             )}
           </div>
@@ -743,7 +818,7 @@ export default function FocusOutput({
 
             {/* FIX 1: Time split — cleaner typography */}
             {timeBlocks && timeBlocks.length > 0 && (
-              <div className="card">
+              <div className={`card out-reveal ${revealed.includes(2) ? 'in' : ''}`}>
                 <SectionLabel>Time split</SectionLabel>
                 <div>
                   {timeBlocks.map((block, i) => {
@@ -788,22 +863,21 @@ export default function FocusOutput({
 
             {/* Avoid — capped at 2 (FIX 6) */}
             {displayAvoid.length > 0 && (
-              <div className="card">
-                <SectionLabel>Avoid today</SectionLabel>
+              <div className={`avoid-elevated out-reveal ${revealed.includes(3) ? 'in' : ''}`}>
+                <span className="avoid-lbl">Avoid today</span>
                 <div className="flex flex-wrap gap-2">
                   {displayAvoid.map((a, i) => (
-                    <span key={i} className="text-xs px-3 py-1.5 rounded-full" style={{ border: '0.5px solid var(--color-border-dark)', color: 'var(--color-muted)', background: 'var(--color-linen)' }}>
-                      {a}
-                    </span>
+                    <span key={i} className="avoid-tag-dark">{a}</span>
                   ))}
                 </div>
               </div>
             )}
 
             {goalAlignment && (
-              <p className="text-xs pb-2" style={{ color: 'var(--color-muted)', opacity: 0.7 }}>
-                {goalAlignment}
-              </p>
+              <div className={`goal-line out-reveal ${revealed.includes(3) ? 'in' : ''}`}>
+                <div className="goal-dot" />
+                <p className="goal-text">{goalAlignment}</p>
+              </div>
             )}
           </div>
         </div>
