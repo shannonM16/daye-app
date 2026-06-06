@@ -9,6 +9,18 @@ import { upsertPlanPartial } from '../lib/db'
 const TIMER_SAVE_KEY = 'df_timerState'
 const REST_DURATION = 5 * 60
 
+const MOOD_EMOJIS = ['🌿', '⚡', '🔥', '💫', '🌊']
+
+const ACTION_CSS = `
+  .action-screen-elevated { background: #F5F0E8; }
+  .action-streak-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(232,196,192,0.2); border:0.5px solid rgba(232,196,192,0.55); border-radius:20px; padding:3px 10px; font-size:11px; font-weight:500; color:#1C1C1E; font-family:var(--font-sans); }
+  .mood-pill { border:none; background:transparent; cursor:pointer; font-size:20px; padding:6px 8px; border-radius:50%; transition:background 0.15s,transform 0.15s; }
+  .mood-pill:hover:not(.mood-pill-active) { background:rgba(197,184,216,0.12); transform:scale(1.08); }
+  .mood-pill-active { background:rgba(197,184,216,0.25); transform:scale(1.12); }
+  .session-log-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:0.5px solid rgba(28,28,26,0.07); font-family:var(--font-sans); font-size:13px; }
+  .session-log-row:last-child { border-bottom:none; }
+`
+
 function getTimerOptions(checkInData, userProfile, taskCount) {
   const energy = checkInData?.energy || 3
   const dayType = checkInData?.dayType || ''
@@ -143,29 +155,27 @@ function formatDuration(seconds) {
 
 function CheckItem({ label, checked, onToggle }) {
   return (
-    <button onClick={onToggle} className="w-full flex items-start gap-3 py-2.5 text-left transition-all">
-      <div
-        className="flex-shrink-0 w-5 h-5 rounded flex items-center justify-center mt-0.5 transition-all"
-        style={{
-          border: `2px solid ${checked ? 'var(--color-ink)' : 'var(--color-border-dark)'}`,
-          background: checked ? 'var(--color-ink)' : 'transparent',
-        }}
-      >
-        {checked && (
-          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-            <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
-      </div>
-      <span
-        className="text-sm leading-relaxed"
-        style={{
-          color: checked ? 'var(--color-border-dark)' : 'var(--color-ink)',
-          textDecoration: checked ? 'line-through' : 'none',
-        }}
-      >
-        {label}
-      </span>
+    <button
+      onClick={onToggle}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+        padding: '10px 14px', marginBottom: '6px',
+        background: 'white', border: '1px solid rgba(28,28,26,0.09)',
+        borderRadius: '12px', textAlign: 'left', cursor: 'pointer',
+        transition: 'opacity 0.2s', boxSizing: 'border-box',
+      }}
+    >
+      <div style={{
+        width: '7px', height: '7px', borderRadius: '50%', flexShrink: 0,
+        background: checked ? 'rgba(197,184,216,0.3)' : '#C5B8D8',
+        transition: 'background 0.2s',
+      }} />
+      <span style={{
+        fontFamily: 'var(--font-sans)', fontSize: '14px', lineHeight: 1.5, flex: 1,
+        color: checked ? 'rgba(28,28,26,0.35)' : '#1C1C1E',
+        textDecoration: checked ? 'line-through' : 'none',
+        transition: 'all 0.2s',
+      }}>{label}</span>
     </button>
   )
 }
@@ -173,6 +183,24 @@ function CheckItem({ label, checked, onToggle }) {
 export default function ActionMode({ priorities, prioritySubtitles, userTasks, extraTasks, checkInData, userProfile, meetings: meetingsProp, dayName, onBack, onHome, onAddMeeting, onEndOfDayReflection }) {
   const mood = checkInData?.mood || ''
   const energy = checkInData?.energy || 3
+
+  // CSS injection
+  useEffect(() => {
+    const id = 'action-elevated-css'
+    if (!document.getElementById(id)) {
+      const tag = document.createElement('style'); tag.id = id; tag.textContent = ACTION_CSS; document.head.appendChild(tag)
+    }
+  }, [])
+
+  // Streak from localStorage
+  const [streak] = useState(() => { try { return parseInt(localStorage.getItem('daye_streak') || '0', 10) } catch { return 0 } })
+
+  // Mood emoji selection
+  const [selectedEmoji, setSelectedEmoji] = useState(null)
+
+  // Session log
+  const [sessionLog, setSessionLog] = useState([])
+  const [sessionLogOpen, setSessionLogOpen] = useState(false)
 
   // Meeting-aware timer (improvement 7)
   const todayMeetings = meetingsProp?.length ? meetingsProp : getTodayMeetings()
@@ -447,6 +475,8 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
   }
 
   const startNextBlock = () => {
+    const logTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    setSessionLog(prev => [...prev, { block: sessionNumber, duration: formatDuration(selectedDuration), time: logTime }])
     setSessionNumber((n) => n + 1)
     setSessionDone(false)
     setShowBreakCard(false)
@@ -514,6 +544,7 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
   const circumference = 2 * Math.PI * 54
   const strokeDashoffset = circumference * (1 - progress)
   const timerStroke = getTimerStroke(mood, energy)
+  const phaseRingColor = restLeft !== null ? '#E8C4C0' : showBreakCard ? '#A8BFB0' : '#C5B8D8'
   const breakContent = getBreakContent(sessionNumber, mood, energy)
 
   const allMainDone = checked.length === orderedItems.length && orderedItems.length > 0
@@ -527,13 +558,13 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
   const showReset = timeLeft < selectedDuration && !running
 
   return (
-    <div className="screen action-screen-wide">
+    <div className="screen action-screen-wide action-screen-elevated">
 
       {/* All-tasks completion overlay */}
       {allMainDone && allExtraDone && (
         <div style={{
           position: 'fixed', inset: 0,
-          background: '#f9f7f5',
+          background: '#F5F0E8',
           zIndex: 800,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
@@ -727,15 +758,20 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
 
         {/* Header */}
         <div style={{ marginBottom: '16px' }}>
-          <span
-            onClick={onHome}
-            role="button"
-            tabIndex={0}
-            style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)', cursor: 'pointer' }}
-            className="text-[13px] font-light block mb-3 hover:opacity-70 transition-opacity"
-          >
-            daye
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <span
+              onClick={onHome}
+              role="button"
+              tabIndex={0}
+              style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)', cursor: 'pointer', fontSize: '13px', fontWeight: 300 }}
+              className="hover:opacity-70 transition-opacity"
+            >
+              daye
+            </span>
+            {streak >= 2 && (
+              <span className="action-streak-badge">🔥 {streak} day streak</span>
+            )}
+          </div>
           {onBack && (
             <button
               onClick={onBack}
@@ -756,6 +792,19 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
               {dayName}
             </h1>
           )}
+        </div>
+
+        {/* Mood check-in row */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', marginBottom: '16px', padding: '6px 0' }}>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-muted)', marginRight: '6px' }}>Vibe</span>
+          {MOOD_EMOJIS.map(emoji => (
+            <button
+              key={emoji}
+              className={`mood-pill${selectedEmoji === emoji ? ' mood-pill-active' : ''}`}
+              onClick={() => setSelectedEmoji(selectedEmoji === emoji ? null : emoji)}
+              aria-label={emoji}
+            >{emoji}</button>
+          ))}
         </div>
 
         {/* ── Two-column body ─────────────────────────────────── */}
@@ -894,28 +943,28 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
                     Block {sessionNumber} of {totalSessions}
                   </p>
 
-                  {/* Timer ring — scales via CSS class */}
+                  {/* Timer ring — SVG progress ring, phase-based colour */}
                   <div className="action-ring-wrap mb-4">
                     <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-                      <circle cx="60" cy="60" r="54" fill="none" stroke="var(--color-linen-dark)" strokeWidth="5" />
+                      <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(28,28,26,0.06)" strokeWidth="6" />
                       <circle
                         cx="60" cy="60" r="54" fill="none"
-                        stroke={timerStroke}
-                        strokeWidth="5"
+                        stroke={phaseRingColor}
+                        strokeWidth="6"
                         strokeLinecap="round"
                         strokeDasharray={circumference}
                         strokeDashoffset={strokeDashoffset}
-                        style={{ transition: 'stroke-dashoffset 1s linear' }}
+                        style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.6s ease' }}
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="timer-display tabular-nums">{formatTime(timeLeft)}</span>
+                      <span className="timer-display tabular-nums" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 300 }}>{formatTime(timeLeft)}</span>
                     </div>
                   </div>
 
                   {/* Micro-copy — between ring and controls/options */}
                   {running && (
-                    <p className="text-xs mb-3 text-center italic" style={{ color: 'var(--color-muted)', opacity: 0.7, minHeight: '16px' }}>
+                    <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 300, fontSize: '14px', color: 'var(--color-muted)', opacity: 0.75, marginBottom: '12px', textAlign: 'center', minHeight: '18px' }}>
                       {microCopyArr[microIdx]}
                     </p>
                   )}
@@ -956,8 +1005,8 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
 
           {/* RIGHT column: checklist + progress */}
           <div className="action-right-col">
-            <div className="card space-y-1">
-              <h2 className="text-[11px] font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-muted)' }}>
+            <div style={{ padding: 0 }}>
+              <h2 className="text-[11px] font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--color-muted)', fontFamily: 'var(--font-sans)' }}>
                 Today's priorities
               </h2>
               {checklistLabel && orderedItems.length > 0 && (
@@ -976,7 +1025,7 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
             </div>
 
             {(extraTasks || []).length > 0 && (
-              <div className="card space-y-1">
+              <div style={{ marginTop: '8px' }}>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="flex-1 h-px" style={{ background: 'var(--color-border)' }} />
                   <span className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--color-muted)' }}>Added by you</span>
@@ -1000,7 +1049,7 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
                     style={{
                       height: '100%',
                       width: `${totalTaskCount > 0 ? (totalDone / totalTaskCount) * 100 : 0}%`,
-                      background: 'var(--color-ink)',
+                      background: '#C5B8D8',
                       borderRadius: '2px',
                       transition: 'width 0.4s ease',
                     }}
@@ -1010,6 +1059,33 @@ export default function ActionMode({ priorities, prioritySubtitles, userTasks, e
             )}
           </div>
         </div>
+
+        {/* Session log */}
+        {sessionLog.length > 0 && (
+          <div style={{ marginTop: '24px' }}>
+            <button
+              onClick={() => setSessionLogOpen(o => !o)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', borderTop: '0.5px solid rgba(28,28,26,0.08)' }}
+            >
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-muted)' }}>
+                Session log · {sessionLog.length} block{sessionLog.length !== 1 ? 's' : ''} done
+              </span>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transform: sessionLogOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: 'var(--color-muted)' }}>
+                <path d="M3 5l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {sessionLogOpen && (
+              <div style={{ paddingBottom: '8px' }}>
+                {sessionLog.map((entry, i) => (
+                  <div key={i} className="session-log-row">
+                    <span style={{ color: '#1C1C1E' }}>Block {entry.block}</span>
+                    <span style={{ color: 'var(--color-muted)' }}>{entry.duration} · {entry.time}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex-shrink-0 pt-4">
