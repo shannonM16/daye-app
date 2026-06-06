@@ -581,48 +581,6 @@ export default function App() {
     setScreen(SCREENS.LANDING)
   }, [setUser, setUserProfile, setUserTasks, setExtraTasks, setCheckInHistory])
 
-  const handleTaskInput = useCallback(async (tasks) => {
-  if (!checkDailyPlanLimit(isPro)) {
-    setShowPlanLimitModal(true)
-    return
-  }
-
-  setUserTasks(tasks)
-  setExtraTasks([])
-  setScreen(SCREENS.LOADING)
-  const storedMeetings = getMeetingsForToday()
-  const freshMeetings = storedMeetings.length > 0 ? storedMeetings : meetings
-  const result = await buildPlan(
-    { ...(userProfile || {}), firstName: user?.firstName },
-    checkInData,
-    tasks,
-    freshMeetings
-  )
-  setPlan(result)
-
-  incrementDailyPlanCount()
-
-  const today = new Date().toISOString().split('T')[0]
-  try { localStorage.setItem('daye_last_plan', JSON.stringify({ plan: result, date: today })) } catch { /* ignore */ }
-  const planEntry = { date: today, ...checkInData, plannedTasks: tasks }
-  setCheckInHistory((prev) =>
-    (prev || []).map((h) => h.date === today ? { ...h, plannedTasks: tasks } : h)
-  )
-  const userId = localStorage.getItem('daye_user_id')
-  if (userId) {
-    savePlan(userId, today, planEntry).catch(() => {})
-  }
-  if (user?.email) {
-    trackEvent('plan_generated')
-    trackPlanGenerated(user.email).catch(() => {})
-    if (!localStorage.getItem('daye_plan_created_sent')) {
-      sendLoopsPlanCreatedEvent(user.email)
-      localStorage.setItem('daye_plan_created_sent', 'true')
-    }
-  }
-  setScreen(SCREENS.OUTPUT)
-}, [userProfile, checkInData, user, meetings, isPro, setUserTasks, setExtraTasks, setCheckInHistory])
-
   const streakCount = calculateStreak(checkInHistory)
   const currentBest = parseInt(localStorage.getItem('daye_best_streak') || '0')
   if (streakCount > currentBest) {
@@ -686,7 +644,8 @@ export default function App() {
 
   if (location.pathname === '/pro-success') {
     return <ProSuccess onStartDay={() => { window.location.href = '/' }} />
-)}
+  }
+
   // ── Landing (pre-signup) ─────────────────────────────────────────
   if (screen === SCREENS.LANDING) {
     return (
@@ -959,30 +918,6 @@ export default function App() {
             />
           </div>
         )}
-
-        function getDailyPlanCount() {
-  try {
-    const raw = localStorage.getItem('daye_daily_plan_count')
-    if (!raw) return { count: 0, date: '' }
-    return JSON.parse(raw)
-  } catch { return { count: 0, date: '' } }
-}
-
-function incrementDailyPlanCount() {
-  const today = new Date().toISOString().split('T')[0]
-  const current = getDailyPlanCount()
-  const count = current.date === today ? current.count + 1 : 1
-  localStorage.setItem('daye_daily_plan_count', JSON.stringify({ count, date: today }))
-  return count
-}
-
-function checkDailyPlanLimit(isPro) {
-  if (isPro) return true
-  const today = new Date().toISOString().split('T')[0]
-  const { count, date } = getDailyPlanCount()
-  if (date !== today) return true
-  return count < 3
-}
       </div>
     </>
   )
