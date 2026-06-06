@@ -343,6 +343,7 @@ export default function Landing({ onStartDay, onSignIn, onViewSettings, onOpenAp
   const [problemRef, problemV] = useReveal(0.1)
   const [howRef, howV] = useReveal(0.08)
   const [demoRef, demoV] = useReveal(0.08)
+  useEffect(() => { if (demoV) setDemoStarted(true) }, [demoV])
   const [demoStarted, setDemoStarted] = useState(false)
   const [replayKey, setReplayKey] = useState(0)
   const phoneRef = useRef(null)
@@ -504,27 +505,7 @@ export default function Landing({ onStartDay, onSignIn, onViewSettings, onOpenAp
             </div>
           </div>
           <div className={`phone-wrap lp-reveal-right lp-d2 ${demoV ? 'visible' : ''}`} ref={phoneRef}>
-            <div className="phone-glow" />
-            <div className="phone">
-              <div className="phone-notch" />
-              <div className="phone-screen">
-                <div className="phone-header"><span className="phone-logo">daye</span><span className="phone-time">08:47</span></div>
-                <div className="phone-greeting">Good morning, Shannon.</div>
-                <div className="phone-sub">Monday · Focus day</div>
-                <div className="phone-focus-label">Focus on</div>
-                <div className="phone-focus-card"><div className="phone-focus-title">Finish the Q2 campaign brief</div><div className="phone-focus-meta">Most important · Do this first</div></div>
-                <div className="phone-focus-card secondary"><div className="phone-focus-title">Prep for manager 1:1</div><div className="phone-focus-meta">Career move · High value</div></div>
-                <div className="phone-time-row">
-                  <div className="phone-time-block"><div className="phone-time-t">9–11am</div><div className="phone-time-v">Brief</div></div>
-                  <div className="phone-time-block"><div className="phone-time-t">11–12</div><div className="phone-time-v">1:1 prep</div></div>
-                  <div className="phone-time-block"><div className="phone-time-t">PM</div><div className="phone-time-v">Comms</div></div>
-                </div>
-                <div className="phone-energy">
-                  <span className="phone-energy-label">Energy today</span>
-                  <div className="phone-energy-dots">{[1,2,3,4,5].map(i => <div key={i} className={`phone-energy-dot ${i > 3 ? 'off' : ''}`} />)}</div>
-                </div>
-              </div>
-            </div>
+            <DemoPhone started={demoStarted} replayKey={replayKey} />
           </div>
         </div>
         <div style={{ textAlign: 'center', marginTop: '32px' }}>
