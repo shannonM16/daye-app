@@ -59,6 +59,32 @@ function getInitialScreen() {
   return SCREENS.CHECKIN
 }
 
+// ── Plan limit helpers (free users: 3 plans/day) ──────────────────
+
+function getDailyPlanCount() {
+  try {
+    const raw = localStorage.getItem('daye_daily_plan_count')
+    if (!raw) return { count: 0, date: '' }
+    return JSON.parse(raw)
+  } catch { return { count: 0, date: '' } }
+}
+
+function incrementDailyPlanCount() {
+  const today = new Date().toISOString().split('T')[0]
+  const current = getDailyPlanCount()
+  const count = current.date === today ? current.count + 1 : 1
+  localStorage.setItem('daye_daily_plan_count', JSON.stringify({ count, date: today }))
+  return count
+}
+
+function hasReachedDailyPlanLimit(isPro) {
+  if (isPro) return false
+  const today = new Date().toISOString().split('T')[0]
+  const { count, date } = getDailyPlanCount()
+  if (date !== today) return false
+  return count >= 3
+}
+
 // ── Right-panel content for two-column desktop layout ──────────────
 
 const ENERGY_LABELS = ['', 'Depleted', 'Low', 'Okay', 'Good', 'Charged']
@@ -84,7 +110,6 @@ function RightPanel({ screen, user, userProfile, checkInData, liveSelectedTasks 
         <h2 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '28px', fontWeight: 300, color: 'var(--color-ink)', lineHeight: 1.2, marginBottom: '40px', maxWidth: '320px' }}>
           How are you starting your day, {name}?
         </h2>
-
         {userProfile && (
           <div style={{ background: 'var(--color-linen)', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '340px', textAlign: 'left' }}>
             <div style={{ marginBottom: '16px' }}>
@@ -113,7 +138,6 @@ function RightPanel({ screen, user, userProfile, checkInData, liveSelectedTasks 
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '48px 40px' }}>
         <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '20px', color: 'var(--color-ink)', fontWeight: 300, display: 'block', marginBottom: '32px' }}>daye</span>
-
         {checkInData && (
           <div style={{ marginBottom: '32px' }}>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-muted)', marginBottom: '12px', fontWeight: 500 }}>
@@ -138,7 +162,6 @@ function RightPanel({ screen, user, userProfile, checkInData, liveSelectedTasks 
             </div>
           </div>
         )}
-
         <div>
           <p style={{ fontFamily: 'var(--font-sans)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-muted)', marginBottom: '12px', fontWeight: 500 }}>
             Selected tasks
@@ -158,7 +181,6 @@ function RightPanel({ screen, user, userProfile, checkInData, liveSelectedTasks 
             </div>
           )}
         </div>
-
         {liveSelectedTasks.length > 0 && (
           <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '13px', color: 'var(--color-muted)', marginTop: '32px', lineHeight: 1.5 }}>
             Daye will rank and prioritise these based on your energy and goals.
@@ -182,12 +204,58 @@ function RightPanel({ screen, user, userProfile, checkInData, liveSelectedTasks 
   return null
 }
 
+// ── Plan limit modal ───────────────────────────────────────────────
+
+function PlanLimitModal({ onClose }) {
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(26,26,26,0.6)',
+        zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '24px', backdropFilter: 'blur(4px)',
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: 'var(--color-linen)', borderRadius: '20px',
+          padding: '40px 36px', maxWidth: '420px', width: '100%',
+          boxShadow: '0 24px 64px rgba(26,26,26,0.2)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--color-muted)', marginBottom: '16px', fontWeight: 500 }}>
+          Free plan
+        </p>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 300, fontSize: '28px', color: 'var(--color-ink)', lineHeight: 1.2, marginBottom: '16px' }}>
+          You've used your 3 plans for today.
+        </h2>
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', color: 'var(--color-muted)', lineHeight: 1.65, marginBottom: '32px' }}>
+          Free Daye includes 3 focus plans per day. Upgrade to Pro for unlimited plans, plus The Letter, The Year in Focus, and weekly insights.
+        </p>
+        <a
+          href="/pricing"
+          style={{ display: 'block', width: '100%', background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '14px 24px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', textAlign: 'center', textDecoration: 'none', marginBottom: '12px', boxSizing: 'border-box' }}
+        >
+          Upgrade to Pro
+        </a>
+        <button
+          onClick={onClose}
+          style={{ width: '100%', background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', cursor: 'pointer', padding: '8px' }}
+        >
+          Come back tomorrow
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Main app ───────────────────────────────────────────────────────
 
 export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { showAuthModal, updateNavUser, updateIsPro } = useAuth()
+  const { showAuthModal, updateNavUser, updateIsPro, isPro } = useAuth()
   const [user, setUser] = useStorage('df_user', null)
   const [userProfile, setUserProfile] = useStorage('df_userProfile', null)
   const [userTasks, setUserTasks] = useStorage('df_userTasks', [])
@@ -209,6 +277,7 @@ export default function App() {
   const [taskFreeText, setTaskFreeText] = useState('')
   const [screen, setScreen] = useState(getInitialScreen)
   const [isOffline, setIsOffline] = useState(!navigator.onLine)
+  const [showPlanLimitModal, setShowPlanLimitModal] = useState(false)
 
   // Offline detection
   useEffect(() => {
@@ -233,7 +302,7 @@ export default function App() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Supabase init: load from DB on mount, run migration if needed ──
+  // ── Supabase init ──────────────────────────────────────────────────
   useEffect(() => {
     async function initFromSupabase() {
       let email = null
@@ -263,7 +332,6 @@ export default function App() {
             localStorage.setItem('daye_weekly_win_' + w.week_start, w.win_text)
           })
         } else {
-          // Migration: localStorage data exists but no Supabase record yet
           let localProfile = null
           let localUser = null
           let localHistory = []
@@ -305,15 +373,11 @@ export default function App() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event !== 'SIGNED_IN') return
-      // In incognito, localStorage may be cleared across the OAuth redirect.
-      // Fall back to the ?pendingProPlan= URL param embedded in the redirectTo URL,
-      // or sessionStorage which survives same-tab redirects better than localStorage in some browsers.
       const urlPendingPlan = new URLSearchParams(window.location.search).get('pendingProPlan')
       const sessionPendingPlan = sessionStorage.getItem('pendingProPlan')
       if (!localStorage.getItem('oauth_redirect_pending') && !urlPendingPlan && !sessionPendingPlan) return
       localStorage.removeItem('oauth_redirect_pending')
 
-      // Wait for Supabase session to fully establish
       await new Promise(r => setTimeout(r, 500))
 
       const authUser = session?.user
@@ -368,13 +432,11 @@ export default function App() {
         const hasProfile = dbUser.profile && Object.keys(dbUser.profile).length > 0
         setScreen(hasProfile ? SCREENS.CHECKIN : SCREENS.ONBOARDING)
       } catch {
-        // Fall back gracefully — localStorage flow will handle on next load
+        // Fall back gracefully
       }
     })
     return () => subscription.unsubscribe()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Supabase user sync helper ──────────────────────────────────────
 
   function syncUserToSupabase(userData, profile) {
     if (!userData?.email) return
@@ -499,6 +561,12 @@ export default function App() {
   }, [])
 
   const handleTaskInput = useCallback(async (tasks) => {
+    // Check daily plan limit for free users
+    if (hasReachedDailyPlanLimit(isPro)) {
+      setShowPlanLimitModal(true)
+      return
+    }
+
     setUserTasks(tasks)
     setExtraTasks([])
     setScreen(SCREENS.LOADING)
@@ -511,6 +579,10 @@ export default function App() {
       freshMeetings
     )
     setPlan(result)
+
+    // Increment plan count after successful generation
+    incrementDailyPlanCount()
+
     const today = new Date().toISOString().split('T')[0]
     try { localStorage.setItem('daye_last_plan', JSON.stringify({ plan: result, date: today })) } catch { /* ignore */ }
     const planEntry = { date: today, ...checkInData, plannedTasks: tasks }
@@ -530,7 +602,7 @@ export default function App() {
       }
     }
     setScreen(SCREENS.OUTPUT)
-  }, [userProfile, checkInData, user, meetings, setUserTasks, setExtraTasks, setCheckInHistory])
+  }, [userProfile, checkInData, user, meetings, isPro, setUserTasks, setExtraTasks, setCheckInHistory])
 
   const handleAddMeetingFromTimer = useCallback(async (meeting) => {
     const updatedMeetings = [...meetings, meeting]
@@ -641,7 +713,6 @@ export default function App() {
       </>
     )
   }
-
   if (location.pathname === '/pro-success') {
     return <ProSuccess onStartDay={() => { window.location.href = '/' }} />
   }
@@ -671,7 +742,6 @@ export default function App() {
     )
   }
 
-  // ── Onboarding (post-auth) ────────────────────────────────────────
   if (screen === SCREENS.ONBOARDING) {
     return (
       <>
@@ -701,7 +771,6 @@ export default function App() {
     )
   }
 
-  // ── Focus output & action: full width ────────────────────────────
   if (screen === SCREENS.LOADING) {
     return (
       <>
@@ -848,7 +917,6 @@ export default function App() {
       )
     }
 
-    // Fallback
     return (
       <CheckIn
         user={user}
@@ -873,26 +941,18 @@ export default function App() {
 
   return (
     <>
+      {showPlanLimitModal && (
+        <PlanLimitModal onClose={() => setShowPlanLimitModal(false)} />
+      )}
       <HoverNav onViewSettings={() => setScreen(SCREENS.SETTINGS)} />
       {isOffline && (
         <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 9999,
-          background: '#1a1a1a',
-          color: 'white',
-          fontFamily: 'var(--font-sans)',
-          fontSize: '13px',
-          textAlign: 'center',
-          padding: '8px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '12px',
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+          background: '#1a1a1a', color: 'white', fontFamily: 'var(--font-sans)',
+          fontSize: '13px', textAlign: 'center', padding: '8px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
         }}>
-          <span>You're offline — your last plan is still available</span>
+          <span>You&#39;re offline — your last plan is still available</span>
           {plan && (
             <button
               onClick={() => setScreen(SCREENS.OUTPUT)}
