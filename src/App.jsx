@@ -686,35 +686,6 @@ export default function App() {
 
   if (location.pathname === '/pro-success') {
     return <ProSuccess onStartDay={() => { window.location.href = '/' }} />
-  }
-{showPlanLimitModal && (
-  <div style={{
-    position: 'fixed', inset: 0, background: 'rgba(26,26,26,0.6)',
-    zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '24px', backdropFilter: 'blur(4px)',
-  }} onClick={() => setShowPlanLimitModal(false)}>
-    <div style={{
-      background: 'var(--color-linen)', borderRadius: '20px',
-      padding: '40px 36px', maxWidth: '420px', width: '100%',
-      boxShadow: '0 24px 64px rgba(26,26,26,0.2)',
-    }} onClick={e => e.stopPropagation()}>
-      <p style={{ fontFamily: 'var(--font-sans)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--color-muted)', marginBottom: '16px', fontWeight: 500 }}>
-        Free plan
-      </p>
-      <h2 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 300, fontSize: '28px', color: 'var(--color-ink)', lineHeight: 1.2, marginBottom: '16px' }}>
-        You've used your 3 plans for today.
-      </h2>
-      <p style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', color: 'var(--color-muted)', lineHeight: 1.65, marginBottom: '32px' }}>
-        Free Daye includes 3 focus plans per day. Upgrade to Pro for unlimited plans, plus The Letter, The Year in Focus, and weekly insights.
-      </p>
-      <a href="/pricing" style={{ display: 'block', width: '100%', background: 'var(--color-ink)', color: 'white', border: 'none', borderRadius: '10px', padding: '14px 24px', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', textAlign: 'center', textDecoration: 'none', marginBottom: '12px' }}>
-        Upgrade to Pro
-      </a>
-      <button onClick={() => setShowPlanLimitModal(false)} style={{ width: '100%', background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'var(--color-muted)', cursor: 'pointer', padding: '8px' }}>
-        Come back tomorrow
-      </button>
-    </div>
-  </div>
 )}
   // ── Landing (pre-signup) ─────────────────────────────────────────
   if (screen === SCREENS.LANDING) {
