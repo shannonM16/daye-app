@@ -300,6 +300,16 @@ const CHECKIN_CSS = `
     opacity: 0;
   }
   @keyframes ciBtnIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* Streak dots */
+  .streak-dots { display: flex; gap: 5px; align-items: center; margin-top: 6px; }
+  .streak-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .streak-dot.active { background: var(--color-lavender); transform: scale(1.15); }
+  .streak-dot.inactive { background: rgba(28,28,26,0.1); }
+  .streak-dot.today { background: var(--color-ink); transform: scale(1.2); }
 `
 
 
@@ -596,6 +606,31 @@ function CustomChipArea({ screenKey, customChips, onAddChip, onRemoveChip, editM
           {editMode ? 'Done editing' : 'Edit my options'}
         </button>
       )}
+    </div>
+  )
+}
+
+
+// Streak dot row — last 7 days
+function StreakDots({ history, streakCount }) {
+  const today = new Date().toISOString().split('T')[0]
+  const dots = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (6 - i))
+    const dateStr = d.toISOString().split('T')[0]
+    const isToday = dateStr === today
+    const hasEntry = history.some(h => h.date === dateStr)
+    return { dateStr, isToday, hasEntry }
+  })
+  return (
+    <div className="streak-dots">
+      {dots.map((dot, i) => (
+        <div
+          key={i}
+          className={`streak-dot ${dot.isToday ? 'today' : dot.hasEntry ? 'active' : 'inactive'}`}
+          title={dot.dateStr}
+        />
+      ))}
     </div>
   )
 }
@@ -1150,6 +1185,7 @@ export default function CheckIn({ user, userProfile, initialValues, history = []
                 >
                   <span>{streakCount} day streak</span>
                 </button>
+                <StreakDots history={history} streakCount={streakCount} />
                 {!isPro && streakCount >= 5 && (
                   <button
                     onClick={() => setShowStreakUpsell(true)}

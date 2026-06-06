@@ -345,6 +345,65 @@ Example: ["Finish the board deck", "1:1 with manager", "Clear email backlog"]`
   return JSON.parse(match[0])
 }
 
+
+// ── Elevated TaskInput styles ─────────────────────────────────────
+const TASK_CSS = `
+  .task-screen { position: relative; }
+  .task-screen::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 200px 200px; pointer-events: none; z-index: 0; opacity: 0.55;
+  }
+  .task-blob {
+    position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0;
+  }
+  .task-blob-1 {
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(184,196,177,0.14) 0%, transparent 70%);
+    top: -60px; right: -60px; animation: taskB1 14s ease-in-out infinite;
+  }
+  .task-blob-2 {
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(201,184,216,0.1) 0%, transparent 70%);
+    bottom: 80px; left: -30px; animation: taskB2 18s ease-in-out infinite;
+  }
+  @keyframes taskB1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-10px,10px)} }
+  @keyframes taskB2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(10px,-10px)} }
+
+  .task-reveal { opacity: 0; transform: translateY(12px); transition: opacity 0.5s ease, transform 0.5s ease; }
+  .task-reveal.in { opacity: 1; transform: translateY(0); }
+
+  /* Selected tasks section — elevated */
+  .task-selected-card {
+    background: var(--color-ink) !important;
+    border-radius: 16px; padding: 16px !important;
+  }
+  .task-selected-label {
+    color: rgba(249,247,245,0.45); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; display: block;
+  }
+  .task-selected-count {
+    color: rgba(249,247,245,0.35); font-size: 10px;
+  }
+  .task-selected-item {
+    background: rgba(249,247,245,0.07) !important;
+    border: 0.5px solid rgba(249,247,245,0.1) !important;
+    border-radius: 10px; padding: 8px 12px;
+    margin-bottom: 6px;
+  }
+  .task-selected-item span { color: rgba(249,247,245,0.88) !important; }
+  .task-selected-item button { color: rgba(249,247,245,0.4) !important; }
+  .task-selected-dot { background: rgba(201,184,216,0.7) !important; }
+
+  /* Chip hover */
+  .task-chip-hover { transition: transform 0.15s, box-shadow 0.15s; }
+  .task-chip-hover:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(26,26,26,0.08); }
+
+  /* Divider text */
+  .task-or-divider { opacity: 0.4; }
+`
+
+
 export default function TaskInput({ user, userProfile, checkInData, initialTasks, initialFreeText, onSubmit, onBack, onTasksChange, onFreeTextChange, onHome }) {
   const stateLevel = checkInData
     ? getStateLevel({ energy: checkInData.energy, sleep: checkInData.sleep, mood: checkInData.mood })
@@ -392,6 +451,19 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
 
   const [freeText, setFreeText] = useState(initialFreeText || '')
   const [loading, setLoading] = useState(false)
+
+  // CSS injection + title reveal
+  const [titleIn, setTitleIn] = useState(false)
+  useEffect(() => {
+    const id = 'task-elevated-css'
+    if (!document.getElementById(id)) {
+      const tag = document.createElement('style')
+      tag.id = id; tag.textContent = TASK_CSS
+      document.head.appendChild(tag)
+    }
+    setTimeout(() => setTitleIn(true), 60)
+  }, [])
+
   const [error, setError] = useState(null)
 
   // Voice dictation
@@ -537,7 +609,9 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
   const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : ''
 
   return (
-    <div className="screen">
+    <div className="screen task-screen">
+      <div className="task-blob task-blob-1" />
+      <div className="task-blob task-blob-2" />
       <div className="flex-1 overflow-y-auto space-y-5">
         <div>
           {onBack && (
@@ -565,7 +639,7 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
 
           <h1
             style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-ink)' }}
-            className="text-[28px] font-normal leading-tight mb-1"
+            className={`text-[28px] font-normal leading-tight mb-1 task-reveal ${titleIn ? 'in' : ''}`}
           >
             {firstName ? `What's on your plate, ${firstName}?` : "What's on your plate?"}
           </h1>
@@ -768,56 +842,19 @@ export default function TaskInput({ user, userProfile, checkInData, initialTasks
 
         {/* Unified task list — "Today's tasks" */}
         {selected.length > 0 && (
-          <div>
+          <div className="task-selected-card">
             <div className="flex items-baseline justify-between mb-2">
-              <label className="text-[11px] font-medium uppercase tracking-widest" style={{ color: 'var(--color-muted)' }}>
-                Today's tasks
-              </label>
-              <span className="text-[11px]" style={{ color: 'var(--color-muted)' }}>
-                {selected.length} {selected.length === 1 ? 'task' : 'tasks'}
-              </span>
+              <span className="task-selected-label">Today&#39;s tasks</span>
+              <span className="task-selected-count">{selected.length} {selected.length === 1 ? 'task' : 'tasks'}</span>
             </div>
             <div className="space-y-1.5">
               {selected.map((task) => (
-                <div
-                  key={task}
-                  className="flex items-center justify-between"
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '10px',
-                    background: 'var(--color-white)',
-                    border: '0.5px solid var(--color-border)',
-                  }}
-                >
+                <div key={task} className="task-selected-item flex items-center justify-between">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div
-                      style={{
-                        width: '7px', height: '7px', borderRadius: '50%',
-                        background: 'var(--color-lavender)', flexShrink: 0,
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-sans)', fontSize: '13px',
-                        color: 'var(--color-ink)', lineHeight: 1.4,
-                      }}
-                      className="truncate"
-                    >
-                      {task}
-                    </span>
+                    <div className="task-selected-dot" style={{ width: '7px', height: '7px', borderRadius: '50%', flexShrink: 0 }} />
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', lineHeight: 1.4 }} className="truncate">{task}</span>
                   </div>
-                  <button
-                    onClick={() => removeTask(task)}
-                    style={{
-                      flexShrink: 0, marginLeft: '8px',
-                      color: 'var(--color-muted)', background: 'none',
-                      border: 'none', cursor: 'pointer', padding: '2px',
-                      fontSize: '16px', lineHeight: 1,
-                    }}
-                    aria-label={`Remove ${task}`}
-                  >
-                    ×
-                  </button>
+                  <button onClick={() => removeTask(task)} style={{ flexShrink: 0, marginLeft: '8px', background: 'none', border: 'none', cursor: 'pointer', padding: '2px', fontSize: '16px', lineHeight: 1 }} aria-label={`Remove ${task}`}>×</button>
                 </div>
               ))}
             </div>

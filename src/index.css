@@ -646,3 +646,53 @@
     font-size: 32px;
   }
 }
+
+
+/* ── Mobile polish ──────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* Tighten screen padding on small phones */
+  .screen { padding: 16px 16px 24px !important; }
+
+  /* Prevent blobs on very small screens */
+  .ci-blob, .task-blob, .out-blob, .loading-blob { display: none; }
+
+  /* Larger tap targets for chips */
+  .task-screen .grid button,
+  .checkin-screen .grid button {
+    padding: 10px 12px !important;
+    min-height: 40px;
+  }
+
+  /* Selected tasks — full width */
+  .task-selected-card { margin-left: -4px; margin-right: -4px; }
+
+  /* Loading screen text size */
+  .loading-wordmark { font-size: 28px !important; }
+
+  /* Focus output grid — single column */
+  .output-grid { grid-template-columns: 1fr !important; }
+
+  /* Plan limit modal */
+  .plan-limit-modal { padding: 28px 20px !important; }
+}
+
+@media (max-width: 380px) {
+  .screen { padding: 12px 12px 20px !important; }
+  .loading-wordmark { font-size: 24px !important; }
+}
+
+/* Touch: remove hover states */
+@media (hover: none) {
+  .task-chip-hover:hover,
+  .ci-chip-lift:hover,
+  .ci-streak:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Smooth scrolling in app screens */
+.screen .flex-1 { -webkit-overflow-scrolling: touch; }
+
+/* Prevent text size adjust on rotate */
+html { -webkit-text-size-adjust: 100%; }
