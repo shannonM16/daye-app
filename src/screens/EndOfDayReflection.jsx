@@ -20,8 +20,11 @@ const END_MOODS = [
 ]
 
 const EOD_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+
   .eod-screen {
     position: relative;
+    background: #F5F0E8 !important;
   }
   .eod-screen::before {
     content: ''; position: fixed; inset: 0;
@@ -49,36 +52,82 @@ const EOD_CSS = `
 
   .eod-chip {
     padding: 7px 16px; border-radius: 20px; font-size: 13px;
-    font-family: var(--font-sans); font-weight: 400;
-    border: 0.5px solid; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-weight: 400;
+    border: 1px solid; cursor: pointer;
     transition: all 0.15s; display: inline-block;
   }
   .eod-chip:active { transform: scale(0.95); }
 
+  .eod-mood-chip {
+    padding: 7px 16px; border-radius: 20px; font-size: 13px;
+    font-family: 'DM Sans', sans-serif; font-weight: 400;
+    border: 1px solid #C5B8D8; cursor: pointer;
+    transition: all 0.15s; display: inline-block;
+    background: #ffffff; color: #1C1C1E;
+  }
+  .eod-mood-chip.eod-mood-active {
+    background: #C5B8D8; border-color: #C5B8D8; color: #1C1C1E;
+  }
+  .eod-mood-chip:active { transform: scale(0.95); }
+
   .eod-question {
-    font-family: var(--font-serif); font-style: italic;
-    font-size: 18px; font-weight: 300; color: var(--color-ink);
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 18px; font-weight: 300; color: #1C1C1E;
     line-height: 1.4; margin: 0 0 16px 0;
   }
 
   .eod-section {
-    background: var(--color-white);
-    border: 1px solid var(--color-border);
+    background: #ffffff;
+    border: 1px solid rgba(28,28,30,0.1);
     border-radius: 16px;
     padding: 20px;
   }
+
+  .eod-flourish {
+    display: flex; align-items: center; gap: 10px;
+    margin: 12px 0 0 0;
+  }
+  .eod-flourish-line {
+    flex: 1; height: 1px; background: #C5B8D8; opacity: 0.7;
+  }
+  .eod-flourish-symbol {
+    font-size: 10px; color: #C5B8D8; line-height: 1; letter-spacing: 0;
+  }
+
+  .eod-textarea {
+    width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    padding: 14px 16px; border-radius: 12px;
+    border: 1px solid rgba(28,28,30,0.15);
+    background: #F5F0E8; color: #1C1C1E;
+    outline: none; resize: none; line-height: 1.6;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+  }
+  .eod-textarea:focus { border-color: #C5B8D8; }
+  .eod-textarea::placeholder { color: rgba(28,28,30,0.32); }
 `
 
-function Chip({ label, active, onClick }) {
+function FocusChip({ label, active, onClick }) {
   return (
     <button
       onClick={onClick}
       className="eod-chip"
       style={{
-        borderColor: active ? 'var(--color-ink)' : 'var(--color-border)',
-        background: active ? 'var(--color-ink)' : 'var(--color-white)',
-        color: active ? 'var(--color-white)' : 'var(--color-ink)',
+        borderColor: active ? '#1C1C1E' : 'rgba(28,28,30,0.2)',
+        background: active ? '#1C1C1E' : '#ffffff',
+        color: active ? '#F5F0E8' : '#1C1C1E',
       }}
+    >
+      {label}
+    </button>
+  )
+}
+
+function MoodChip({ label, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`eod-mood-chip${active ? ' eod-mood-active' : ''}`}
     >
       {label}
     </button>
@@ -147,20 +196,28 @@ export default function EndOfDayReflection({ user, onComplete, onHome }) {
             onClick={onHome}
             role="button"
             tabIndex={0}
-            style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-muted)', cursor: 'pointer' }}
+            style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', color: 'rgba(28,28,30,0.4)', cursor: 'pointer' }}
             className="text-[13px] font-light block mb-3 hover:opacity-70 transition-opacity"
           >
             daye
           </span>
-          <p className="text-[11px] font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-muted)' }}>
+          <p
+            className="text-[11px] font-medium uppercase tracking-widest mb-2"
+            style={{ fontFamily: "'DM Sans', sans-serif", color: 'rgba(28,28,30,0.4)' }}
+          >
             End of day
           </p>
-          <h1 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '28px', fontWeight: 300, color: 'var(--color-ink)', lineHeight: 1.2, margin: '0 0 4px 0' }}>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', fontSize: '28px', fontWeight: 300, color: '#1C1C1E', lineHeight: 1.2, margin: '0 0 4px 0' }}>
             How did today go?
           </h1>
-          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+          <p className="text-sm" style={{ fontFamily: "'DM Sans', sans-serif", color: 'rgba(28,28,30,0.45)' }}>
             A moment to close the day with intention.
           </p>
+          <div className="eod-flourish">
+            <div className="eod-flourish-line" />
+            <span className="eod-flourish-symbol">✦</span>
+            <div className="eod-flourish-line" />
+          </div>
         </div>
 
         {/* Q1 */}
@@ -168,7 +225,7 @@ export default function EndOfDayReflection({ user, onComplete, onHome }) {
           <p className="eod-question">Did you focus on what mattered?</p>
           <div className="flex gap-2 flex-wrap">
             {FOCUS_OPTIONS.map(opt => (
-              <Chip key={opt.id} label={opt.label} active={focusRating === opt.id} onClick={() => setFocusRating(opt.id)} />
+              <FocusChip key={opt.id} label={opt.label} active={focusRating === opt.id} onClick={() => setFocusRating(opt.id)} />
             ))}
           </div>
         </div>
@@ -178,17 +235,21 @@ export default function EndOfDayReflection({ user, onComplete, onHome }) {
           <p className="eod-question">How do you feel now?</p>
           <div className="flex flex-wrap gap-1.5">
             {END_MOODS.map(opt => (
-              <Chip key={opt.id} label={opt.label} active={endMood === opt.id} onClick={() => setEndMood(opt.id)} />
+              <MoodChip key={opt.id} label={opt.label} active={endMood === opt.id} onClick={() => setEndMood(opt.id)} />
             ))}
           </div>
         </div>
 
         {/* Q3 */}
         <div className={`eod-reveal ${revealed.includes(3) ? 'in' : ''}`} style={{ transitionDelay: '0.3s' }}>
-          <p className="text-[11px] font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--color-muted)' }}>
+          <p
+            className="text-[11px] font-medium uppercase tracking-widest mb-2"
+            style={{ fontFamily: "'DM Sans', sans-serif", color: 'rgba(28,28,30,0.4)' }}
+          >
             Anything to carry forward?
           </p>
           <textarea
+            className="eod-textarea"
             value={carryForward}
             onChange={e => {
               const v = e.target.value
@@ -196,21 +257,29 @@ export default function EndOfDayReflection({ user, onComplete, onHome }) {
             }}
             placeholder="A task, a thought, something to remember..."
             rows={3}
-            style={{
-              width: '100%', fontFamily: 'var(--font-sans)', fontSize: '14px',
-              padding: '14px 16px', borderRadius: '12px',
-              border: '1px solid var(--color-border)',
-              background: 'var(--color-white)', color: 'var(--color-ink)',
-              outline: 'none', resize: 'none', lineHeight: 1.6,
-              boxSizing: 'border-box',
-            }}
           />
-          <p className="text-[11px] mt-1" style={{ color: 'var(--color-muted)', fontStyle: 'italic' }}>Optional</p>
+          <p className="text-[11px] mt-1" style={{ fontFamily: "'DM Sans', sans-serif", color: 'rgba(28,28,30,0.35)', fontStyle: 'italic' }}>Optional</p>
         </div>
       </div>
 
       <div className="flex-shrink-0 pt-4 space-y-2">
-        <button className="btn-primary" onClick={handleSubmit} disabled={!canSubmit || saving}>
+        <button
+          onClick={handleSubmit}
+          disabled={!canSubmit || saving}
+          style={{
+            width: '100%',
+            background: canSubmit ? '#1C1C1E' : 'rgba(28,28,30,0.18)',
+            color: '#F5F0E8',
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: '15px',
+            fontWeight: 400,
+            padding: '14px',
+            borderRadius: '12px',
+            border: 'none',
+            cursor: canSubmit ? 'pointer' : 'default',
+            transition: 'background 0.15s',
+          }}
+        >
           {saving ? 'Saving...' : 'Close the day'}
         </button>
         <button className="btn-ghost" onClick={onHome}>Skip for now</button>
