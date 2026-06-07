@@ -1,0 +1,323 @@
+/**
+ * Daye — Mobile Stylesheet
+ *
+ * Import this once at your app root, after your main styles.
+ * Covers: nav, hero, sections, cards, blog, pricing — all pages.
+ *
+ * import "./mobile.css";
+ */
+
+/* ── Breakpoints
+   sm: 640px  (large phones landscape / small tablets)
+   xs: 480px  (standard phones)
+   xxs: 380px (small phones)
+──────────────────────────────────────────────────── */
+
+/* ═══════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .nav {
+    padding: 0 20px !important;
+    height: 60px !important;
+  }
+
+  /* Hide nav links on small screens, keep logo + CTA */
+  .nav-links li:not(:last-child) {
+    display: none;
+  }
+
+  .nav-links {
+    gap: 12px !important;
+  }
+
+  .nav-divider {
+    display: none !important;
+  }
+
+  .btn-nav {
+    padding: 8px 16px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   HERO SECTION
+═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .hero-body {
+    grid-template-columns: 1fr !important;
+    padding: 90px 24px 64px !important;
+    gap: 56px !important;
+    text-align: center;
+  }
+
+  .hero-copy {
+    padding-right: 0 !important;
+  }
+
+  .hero-copy .eyebrow,
+  .hero-copy .subheadline {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .cta-row {
+    justify-content: center !important;
+  }
+
+  .hero-card-wrap {
+    justify-content: center;
+  }
+
+  .daye-card {
+    max-width: 360px;
+    margin: 0 auto;
+  }
+
+  .scroll-hint {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .headline-line {
+    font-size: clamp(42px, 11vw, 56px) !important;
+  }
+
+  .daye-card {
+    padding: 24px 22px 20px !important;
+  }
+
+  .time-grid {
+    gap: 6px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   PROBLEM SECTION
+═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .problem-section {
+    padding: 80px 0 60px !important;
+  }
+
+  .problem-inner {
+    grid-template-columns: 1fr !important;
+    gap: 40px !important;
+  }
+
+  .problem-visual {
+    display: none !important;
+  }
+
+  .problem-copy {
+    max-width: 100% !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   HOW IT WORKS
+═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .how-section {
+    padding: 80px 0 80px !important;
+  }
+
+  .steps-row {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+
+  .steps-row::before {
+    display: none !important;
+  }
+
+  .step {
+    padding: 28px 0 28px !important;
+    border-bottom: 1px solid rgba(28,28,26,0.07);
+  }
+
+  .step:last-child {
+    border-bottom: none;
+  }
+
+  .step-dot {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   DEMO SECTION
+═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .demo-section {
+    padding: 80px 0 80px !important;
+  }
+
+  .demo-inner {
+    grid-template-columns: 1fr !important;
+    gap: 48px !important;
+  }
+
+  .phone-wrap {
+    order: -1;
+  }
+
+  .phone {
+    width: 260px !important;
+  }
+
+  .phone-screen {
+    min-height: 440px !important;
+    padding: 20px 16px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   WHO IT'S FOR
+═══════════════════════════════════════════ */
+@media (max-width: 860px) {
+  .who-section {
+    padding: 80px 0 80px !important;
+  }
+
+  .who-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .who-card {
+    padding: 28px 28px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   BLOG PAGE
+═══════════════════════════════════════════ */
+@media (max-width: 860px) {
+  .blog-hero {
+    padding: 100px 24px 60px !important;
+  }
+
+  .blog-hero-inner {
+    grid-template-columns: 1fr !important;
+    gap: 40px !important;
+  }
+
+  .blog-stats {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  .blog-stat {
+    flex: 1 1 calc(50% - 10px) !important;
+    min-width: 140px;
+  }
+
+  .blog-divider,
+  .blog-grid-wrap {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
+
+  .featured-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  .featured-visual {
+    min-height: 180px !important;
+    order: -1;
+  }
+
+  .featured-content {
+    padding: 28px 28px !important;
+  }
+
+  .cards-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .blog-heading {
+    font-size: clamp(38px, 10vw, 52px) !important;
+  }
+
+  .post-card {
+    padding: 28px 24px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   PRO / PRICING PAGE
+═══════════════════════════════════════════ */
+@media (max-width: 860px) {
+  .pro-hero {
+    padding: 120px 24px 56px !important;
+  }
+
+  .pricing-row {
+    grid-template-columns: 1fr !important;
+    max-width: 480px !important;
+    padding: 0 24px 64px !important;
+  }
+
+  .plan-card {
+    padding: 36px 28px !important;
+  }
+
+  .faq-section {
+    padding: 0 24px 80px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .pro-heading {
+    font-size: clamp(38px, 10vw, 52px) !important;
+  }
+
+  .plan-amount {
+    font-size: 48px !important;
+  }
+
+  .billing-toggle {
+    margin-bottom: 44px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   SHARED INNER PADDING
+═══════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .section-inner {
+    padding: 0 20px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   TOUCH: remove hover effects on mobile
+═══════════════════════════════════════════ */
+@media (hover: none) {
+  .who-card:hover,
+  .post-card:hover,
+  .featured-card:hover,
+  .plan-card:hover,
+  .step:hover {
+    transform: none !important;
+    box-shadow: unset;
+  }
+
+  /* Keep shadows on cards for depth */
+  .post-card,
+  .featured-card {
+    box-shadow: 0 2px 8px rgba(28,28,26,0.06), 0 8px 24px rgba(28,28,26,0.05) !important;
+  }
+
+  /* Cursor ring shouldn't appear on touch */
+  .cursor-dot,
+  .cursor-ring {
+    display: none !important;
+  }
+}

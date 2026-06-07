@@ -20,7 +20,12 @@
       "Bash(sudo chmod -R 777 /Users/shannonmacaulay/.npm/_cacache)",
       "Read(//Users/shannonmacaulay/.npm/_cacache/content-v2/sha512/d4/**)",
       "Bash(rm -rf \"/Users/shannonmacaulay/.npm/_cacache/content-v2/sha512/d4/82\")",
-      "Bash(npm cache *)"
+      "Bash(npm cache *)",
+      "Bash(git *)",
+      "Bash(wait)",
+      "Bash(node -e \"require\\('/Users/shannonmacaulay/Desktop/daily-focus-app/node_modules/@playwright/test/package.json'\\)\")",
+      "Bash(sudo chown -R 501:20 \"/Users/shannonmacaulay/.npm\")",
+      "Bash(npx playwright *)"
     ]
   }
 }

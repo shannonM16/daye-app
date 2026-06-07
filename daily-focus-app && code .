@@ -1,0 +1,3 @@
+find ~/Documents ~/Desktop -name "App.jsx" -not -path "*/node_modules/*" 2>/dev/null
+find ~/Documents ~/Desktop -name "App.jsx" -not -path "*/node_modules/*" 2>/dev/null
+
